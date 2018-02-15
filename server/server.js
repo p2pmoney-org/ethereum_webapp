@@ -42,6 +42,18 @@ app.disable('etag');
 
 app.use(logger('dev'));
 
+// allow Cross Origin Resource Share
+app.use(function(req, res, next) {
+	var origin = "*"; // domain allowed to cross
+	var headers = "Origin, X-Requested-With, Content-Type, Accept"; // standard fields
+	headers += ", sessiontoken, accesstoken, apikey"; // specific fields
+	
+	res.header("Access-Control-Allow-Origin", origin);
+	res.header("Access-Control-Allow-Headers", headers); 
+	
+	next();
+});
+
 /*
 // view engine setup
 app.set('views', path.join(__dirname, '../app/views'));

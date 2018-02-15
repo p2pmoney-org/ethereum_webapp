@@ -17,7 +17,13 @@ config.json
 "dapp_root_dir": "/home/frederic/home/p2pmoney-dev/usr/local/primus-ethereum-securities-dap-dev",
 "rest_server_url": "http://dev1.p2pmoney.org:8280",
 "rest_server_api_path": "/dapp/api"
+
+"defaultgaslimit": "4712388",
+"defaultgasprice": "100000000000"
 }
+
+1st part (up to "write_to_log_file") are value that are used on the server
+2nd part (below "write_to_log_file") are values that will be used on the client or that could overload standard dapp confi
 
 users.json
 ----------

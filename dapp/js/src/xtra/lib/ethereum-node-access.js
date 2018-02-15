@@ -50,7 +50,7 @@ class Xtra_EthereumNodeAccess {
 		    }
 		    else {
 		    	if (callback)
-		    		callback(xhr.statusText, null);	
+		    		callback(xhttp.statusText, null);	
 			}
 	    	
 	    };
@@ -298,6 +298,7 @@ class Xtra_EthereumNodeAccess {
 					});
 				}
 				catch(e) {
+					console.log("error during loading of artifact: " + err);
 					reject('rest exception: ' + e);
 				}
 			});
@@ -334,6 +335,8 @@ class Xtra_EthereumNodeAccess {
 					if (res) {
 						var contractinstanceuuid = res['contractinstanceuuid'];
 						
+						console.log("loading of contract successful, contractinstanceuuid is " + contractinstanceuuid);
+						
 						var constractinstanceproxy = new ContractInstanceProxy(address, contractinstanceuuid);
 						
 						resolve(constractinstanceproxy);
@@ -341,6 +344,7 @@ class Xtra_EthereumNodeAccess {
 						return Promise.resolve(constractinstanceproxy);
 					}
 					else {
+						console.log("error during loading of contract: " + err);
 						reject('rest error calling ' + resource);
 					}
 					
@@ -354,11 +358,11 @@ class Xtra_EthereumNodeAccess {
 		return promise;
 	}
 
-	truffle_contract_new(constractinstance, params) {
-		console.log("Xtra_EthereumNodeAccess.truffle_contract_new called for contractinstanceuuid " + constractinstance.contractinstanceuuid + " and method " + methodname);
+	truffle_contract_new(trufflecontract, params) {
+		console.log("Xtra_EthereumNodeAccess.truffle_contract_new called for contractuuid " + trufflecontract);
 		
-		if (!constractinstance) {
-			throw "contract instance is not defined";
+		if (!trufflecontract) {
+			throw "contract is not defined";
 		}
 		
 		var self = this
@@ -367,14 +371,13 @@ class Xtra_EthereumNodeAccess {
 		var promise = new Promise(function (resolve, reject) {
 			
 			try {
-				var address = constractinstance.getAddress();
-				var contractinstanceuuid = constractinstance.contractinstanceuuid;
+				var contractuuid = trufflecontract;
 				
 				var resource = "/truffle/contract/new";
 				
 				var postdata = [];
 				
-				postdata = {contractinstanceuuid: contractinstanceuuid, methodname: methodname, params: JSON.stringify(params)};
+				postdata = {contractuuid: contractuuid, params: JSON.stringify(params)};
 				
 				var promise2 = self.rest_post(resource, postdata, function (err, res) {
 					if (res) {
@@ -383,6 +386,7 @@ class Xtra_EthereumNodeAccess {
 						return resolve(constractinstanceproxy);
 					}
 					else {
+						console.log("error during new of contract: " + err);
 						reject('rest error calling ' + resource);
 					}
 					
@@ -425,6 +429,7 @@ class Xtra_EthereumNodeAccess {
 						return resolve(result);
 					}
 					else {
+						console.log("error during truffle_method_call: " + err);
 						reject('rest error calling ' + resource);
 					}
 					
@@ -467,6 +472,7 @@ class Xtra_EthereumNodeAccess {
 						return resolve(result);
 					}
 					else {
+						console.log("error during truffle_method_sendTransaction: " + err);
 						reject('rest error calling ' + resource);
 					}
 					

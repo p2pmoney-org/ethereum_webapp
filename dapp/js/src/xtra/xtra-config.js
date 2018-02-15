@@ -14,12 +14,19 @@ class XtraConfig {
 		this.rest_server_url = ':rest_server_url';
 		this.rest_server_api_path = ':rest_server_api_path';
 		
+		this.defaultgaslimit = ':defaultgaslimit';
+		this.defaultgasprice = ':defaultgasprice';
+		
 		this.init();
 	}
 	
 	init() {
 		console.log("XtraConfig initializing");
 		
+		// replace if necessary sme values of Config
+		this.overloadConfig();
+
+		// hooks
 		this.initHooks();
 	}
 	
@@ -31,6 +38,19 @@ class XtraConfig {
 
 		// overload handleDisplayIdentificationBox
 		controllers.handleDisplayIdentificationBox = this.handleDisplayIdentificationBox;
+	}
+	
+	overloadConfig() {
+		if ( typeof window !== 'undefined' && window && window.Config) {
+			
+			var overloadgaslimit = (this.defaultgaslimit.substring(1) == 'defaultgaslimit' ? false : true);
+			if (overloadgaslimit)
+				window.Config.defaultGasLimit =  parseInt(this.defaultgaslimit);
+			
+			var overloadgasprice = (this.defaultgasprice.substring(1) == 'defaultgasprice' ? false : true);
+			if (overloadgasprice)
+				window.Config.defaultGasPrice = this.defaultgasprice;
+		}
 	}
 	
 	handleDisplayIdentificationBox() {

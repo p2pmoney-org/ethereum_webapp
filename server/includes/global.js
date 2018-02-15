@@ -69,9 +69,10 @@ class Global {
 		this.service_name = (config && config["service_name"] ? config["service_name"] : 'ethereum_securities_webapp');
 		this.server_listening_port = (config && config["server_listening_port"] ? config["server_listening_port"] : 8000);
 		this.route_root_path = (config && config["route_root_path"] ? config["route_root_path"] : '/api');
+		
 		this.web3_provider_url = (config && config["web3_provider_url"] ? config["web3_provider_url"] : 'http://localhost');
 		this.web3_provider_port= (config && config["web3_provider_port"] ? config["web3_provider_port"] : '8545');
-		
+
 		this.dapp_root_dir = (config && config["dapp_root_dir"] ? config["dapp_root_dir"] : null);
 		
 		// logging
