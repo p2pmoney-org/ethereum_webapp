@@ -46,6 +46,16 @@ class EthereumNode {
 		return balance;
 	}
 	
+	web3_unlockAccount(address, password, duration) {
+		var res = web3.personal.unlockAccount(address, password, duration);
+		
+		return res;
+	}
+	
+	web3_lockAccount(address) {
+		web3.personal.lockAccount(address);
+	}
+
 	
 	//
 	// Truffle

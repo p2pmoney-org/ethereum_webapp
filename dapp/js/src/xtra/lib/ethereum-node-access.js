@@ -11,10 +11,56 @@ class ContractInstanceProxy {
 	}
 }
 
+class CredentialsStorage {
+	constructor() {
+		this.map = Object.create(null); // use a simple object to implement the map
+	}
+	
+	store(address, password, duration) {
+		var key = address.toString().toLowerCase();
+		
+		var now = Math.trunc(Date.now()/1000); // in seconds
+		
+		var array = [];
+		
+		array['address'] = address;
+		array['from'] = now;
+		array['during'] = duration;
+		array['password'] = password;
+		
+		this.map[key] = array;
+	}
+	
+	retrieve(address) {
+		var key = address.toString().toLowerCase();
+		
+		if (key in this.map) {
+			var credential = this.map[key];
+			
+			var now = Math.trunc(Date.now()/1000); // in seconds
+			var from = credential['from'];
+			var duration = credential['during'];
+			
+			if (now - from < duration) {
+				return credential;
+			}
+		}
+		
+	}
+	
+	remove(address) {
+		var key = address.toString().toLowerCase();
+
+		delete this.map[key];
+	}
+}
+
 
 class Xtra_EthereumNodeAccess {
 	constructor(session) {
 		this.session = session;
+		
+		this.credentials_storage = new CredentialsStorage();
 	}
 	
 	rest_get(resource, callback) {
@@ -230,6 +276,25 @@ class Xtra_EthereumNodeAccess {
 		return promise;
 	}
 
+	web3_unlockAccount(account, password, duration) {
+		// we store the credentials and will use it later on
+		// to keep it a sync call
+		this.credentials_storage.store(account.getAddress(), password, duration);
+		
+		// we can not know if password is correct
+		// and return true by default
+		return true; 
+		
+	}
+	
+	web3_lockAccount(account) {
+		var address = account.getAddress();
+		
+		this.credentials_storage.remove(address);
+		
+		// TODO: make a rest call to lock on the server
+	}
+
 	//
 	// Truffle
 	//
@@ -358,6 +423,26 @@ class Xtra_EthereumNodeAccess {
 		return promise;
 	}
 
+	getTransactionCredentials(params) {
+		// last param contains json for transaction
+		var json = params[params.length - 1];
+		
+		if (json['from']) {
+			var payeraddress = json['from'];
+			
+			var credentials = this.credentials_storage.retrieve(payeraddress);
+			
+			if (!credentials)
+				console.log('no credentials found for ' + payeraddress);
+			
+			return credentials;
+		}
+		else {
+			console.log('no from field found in json');
+		}
+	}
+	
+	
 	truffle_contract_new(trufflecontract, params) {
 		console.log("Xtra_EthereumNodeAccess.truffle_contract_new called for contractuuid " + trufflecontract);
 		
@@ -377,7 +462,18 @@ class Xtra_EthereumNodeAccess {
 				
 				var postdata = [];
 				
-				postdata = {contractuuid: contractuuid, params: JSON.stringify(params)};
+				var credentials = self.getTransactionCredentials(params);
+				var walletaddress = (credentials['address'] ? credentials['address'] : null);
+				var password = (credentials['password'] ? credentials['password'] : null);
+				var time = (credentials['from'] ? credentials['from'] : null);
+				var duration = (credentials['during'] ? credentials['during'] : null);
+				
+				postdata = {contractuuid: contractuuid, 
+							walletaddress: walletaddress,
+							password: password,
+							time: time,
+							duration: duration,
+							params: JSON.stringify(params)};
 				
 				var promise2 = self.rest_post(resource, postdata, function (err, res) {
 					if (res) {
@@ -420,7 +516,9 @@ class Xtra_EthereumNodeAccess {
 				
 				var postdata = [];
 				
-				postdata = {contractinstanceuuid: contractinstanceuuid, methodname: methodname, params: JSON.stringify(params)};
+				postdata = {contractinstanceuuid: contractinstanceuuid, 
+							methodname: methodname, 
+							params: JSON.stringify(params)};
 				
 				var promise2 = self.rest_post(resource, postdata, function (err, res) {
 					if (res) {
@@ -463,7 +561,19 @@ class Xtra_EthereumNodeAccess {
 				
 				var postdata = [];
 				
-				postdata = {contractinstanceuuid: contractinstanceuuid, methodname: methodname, params: JSON.stringify(params)};
+				var credentials = self.getTransactionCredentials(params);
+				var walletaddress = (credentials['address'] ? credentials['address'] : null);
+				var password = (credentials['password'] ? credentials['password'] : null);
+				var time = (credentials['from'] ? credentials['from'] : null);
+				var duration = (credentials['during'] ? credentials['during'] : null);
+				
+				postdata = {contractinstanceuuid: contractinstanceuuid, 
+							walletaddress: walletaddress,
+							password: password,
+							time: time,
+							duration: duration,
+							methodname: methodname, 
+							params: JSON.stringify(params)};
 				
 				var promise2 = self.rest_post(resource, postdata, function (err, res) {
 					if (res) {
@@ -486,6 +596,20 @@ class Xtra_EthereumNodeAccess {
 		return promise;
 	}
 	
+	
+	// uuid
+	guid() {
+		// we could make a rest call to get a more
+		// "universal" guid factory
+		function s4() {
+		    return Math.floor((1 + Math.random()) * 0x10000)
+		      .toString(16)
+		      .substring(1);
+		  }
+		  return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+		    s4() + '-' + s4() + s4() + s4();
+	}
+
 }
 
 console.log("Xtra_EthereumNodeAccess is loaded");

@@ -153,16 +153,34 @@ exports.truffle_contract_new = function(req, res) {
 	var sessionuuid = req.get("sessiontoken");
 	
 	var contractuuid = req.body.contractuuid;
-	var params = (req.body.params ? JSON.parse(req.body.params) : []);;
+	var params = (req.body.params ? JSON.parse(req.body.params) : []);
+
+	var walletaddress = (req.body.walletaddress ? req.body.walletaddress : null);
+	var password = (req.body.password ? req.body.password : null);
+	var time = (req.body.time ? req.body.time : null);
+	var duration = (req.body.duration ? req.body.duration : null);
+	
 
 	global.log("truffle_contract_new called for sessiontoken " + sessionuuid);
+	global.log("wallet address: " + walletaddress);
 	
 	var session = Session.getSession(sessionuuid);
 	var ethnode = session.getEthereumNode();
 	
-	var constractinstance = session.getObject(contractuuid);
+	var contractinstance = session.getObject(contractuuid);
 	
-	var contract = ethnode.truffle_contract_new(constractinstance, params);
+	try {
+		// we unlock the wallet account
+		if (walletaddress)
+		ethnode.web3_unlockAccount(walletaddress, password, duration);
+		
+		var contract = ethnode.truffle_contract_new(contractinstance, params);
+		
+	}
+	catch(e) {
+		global.log("exception in truffle_contract_new: " + e);
+	}
+	
 
 	var jsonresult;
 	
@@ -188,14 +206,14 @@ exports.truffle_method_call = function(req, res) {
 	var methodname  = req.body.methodname;
 	var params = (req.body.params ? JSON.parse(req.body.params) : []);
 
-	global.log("truffle_method_call called for sessiontoken " + sessionuuid + " method " + methodname + " constractinstanceuuid " + contractinstanceuuid);
+	global.log("truffle_method_call called for sessiontoken " + sessionuuid + " method " + methodname + " contractinstanceuuid " + contractinstanceuuid);
 	
 	var session = Session.getSession(sessionuuid);
 	var ethnode = session.getEthereumNode();
 	
-	var constractinstance = session.getObject(contractinstanceuuid);
+	var contractinstance = session.getObject(contractinstanceuuid);
 	
-	var result = ethnode.truffle_method_call(constractinstance, methodname, params);
+	var result = ethnode.truffle_method_call(contractinstance, methodname, params);
 	
 	global.log("truffle_method_call called for sessiontoken "+ " method " + methodname + " result is " + result);
 
@@ -220,14 +238,31 @@ exports.truffle_method_sendTransaction = function(req, res) {
 	var methodname  = req.body.methodname;
 	var params = (req.body.params ? JSON.parse(req.body.params) : []);
 
-	global.log("truffle_method_sendTransaction called for sessiontoken " + sessionuuid + " method " + methodname + " constractinstanceuuid " + contractinstanceuuid);
+	var walletaddress = (req.body.walletaddress ? req.body.walletaddress : null);
+	var password = (req.body.password ? req.body.password : null);
+	var time = (req.body.time ? req.body.time : null);
+	var duration = (req.body.duration ? req.body.duration : null);
+	
+	global.log("truffle_method_sendTransaction called for sessiontoken " + sessionuuid + " method " + methodname + " contractinstanceuuid " + contractinstanceuuid);
+	global.log("wallet address: " + walletaddress);
 	
 	var session = Session.getSession(sessionuuid);
 	var ethnode = session.getEthereumNode();
 	
-	var constractinstance = session.getObject(contractinstanceuuid);
+	var contractinstance = session.getObject(contractinstanceuuid);
 	
-	var result = ethnode.truffle_method_sendTransaction(constractinstance, methodname, params);
+
+	try {
+		// we unlock the wallet account
+		if (walletaddress)
+		ethnode.web3_unlockAccount(walletaddress, password, duration);
+		
+		var result = ethnode.truffle_method_sendTransaction(contractinstance, methodname, params);
+		
+	}
+	catch(e) {
+		global.log("exception in truffle_contract_new: " + e);
+	}
 
 	var jsonresult;
 	

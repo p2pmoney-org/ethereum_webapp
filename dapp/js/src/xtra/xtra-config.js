@@ -17,6 +17,10 @@ class XtraConfig {
 		this.defaultgaslimit = ':defaultgaslimit';
 		this.defaultgasprice = ':defaultgasprice';
 		
+		this.need_to_unlock_accounts = ':need_to_unlock_accounts';
+		this.wallet_account_challenge = ':wallet_account_challenge';
+		this.wallet_account = ':wallet_account';
+		
 		this.init();
 	}
 	
@@ -43,13 +47,30 @@ class XtraConfig {
 	overloadConfig() {
 		if ( typeof window !== 'undefined' && window && window.Config) {
 			
-			var overloadgaslimit = (this.defaultgaslimit.substring(1) == 'defaultgaslimit' ? false : true);
-			if (overloadgaslimit)
+			var overload_gaslimit = (this.defaultgaslimit.substring(1) == 'defaultgaslimit' ? false : true);
+			if (overload_gaslimit)
 				window.Config.defaultGasLimit =  parseInt(this.defaultgaslimit);
 			
-			var overloadgasprice = (this.defaultgasprice.substring(1) == 'defaultgasprice' ? false : true);
-			if (overloadgasprice)
+			var overload_gasprice = (this.defaultgasprice.substring(1) == 'defaultgasprice' ? false : true);
+			if (overload_gasprice)
 				window.Config.defaultGasPrice = this.defaultgasprice;
+
+		
+			
+			var overload_need_to_unlock_accounts = (this.need_to_unlock_accounts.substring(1) == 'need_to_unlock_accounts' ? false : true);
+			if (overload_need_to_unlock_accounts)
+				window.Config.need_to_unlock_accounts = this.need_to_unlock_accounts;
+		
+			var overload_wallet_account_challenge = (this.wallet_account_challenge.substring(1) == 'wallet_account_challenge' ? false : true);
+			if (overload_wallet_account_challenge)
+				window.Config.wallet_account_challenge = this.wallet_account_challenge;
+		
+			var overload_wallet_account = (this.wallet_account.substring(1) == 'wallet_account' ? false : true);
+			if (overload_wallet_account)
+				window.Config.wallet_account = this.wallet_account;
+		
+		
+		
 		}
 	}
 	
@@ -81,13 +102,20 @@ class XtraConfig {
 				if (authenticated) {
 					var privatekey = res['private_key'];
 					
-					var sessionaccount = global.createBlankAccountObject();
+					if (privatekey) {
+						var sessionaccount = global.createBlankAccountObject();
+						
+						sessionaccount.setPrivateKey(privatekey);
+						
+						session.impersonateAccount(sessionaccount);
+						
+						app.refreshDisplay();
+					}
+					else {
+						prompt("Could not retrieve private key!");
 					
-					sessionaccount.setPrivateKey(privatekey);
+					}
 					
-					session.impersonateAccount(sessionaccount);
-					
-					app.refreshDisplay();
 				}
 				else {
 					prompt("Could not authenticate you with these credentials!");

@@ -1,0 +1,18 @@
+
+
+# node modules (run npm install)
+node_modules
+
+#eclipse files
+.project
+.settings
+
+# json settings
+settings/*
+!settings/readme.txt
+
+#logs
+server.log
+
+
+
