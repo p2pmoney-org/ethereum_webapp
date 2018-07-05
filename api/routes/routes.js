@@ -43,4 +43,14 @@ module.exports = function(app) {
 	.post(Controller.session_authenticate);
 	app.route(route_root_path + '/session/:id/user')
 	.get(Controller.session_getUser);
+	
+	//
+	// AuthKey routes
+	//
+	var AuthKeyRoutes = require('../routes/authkey-routes');
+		
+	var authkeyroutes = new AuthKeyRoutes(app, global);
+	
+	authkeyroutes.registerRoutes();
+	
 };

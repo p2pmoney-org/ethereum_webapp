@@ -213,9 +213,14 @@ exports.truffle_method_call = function(req, res) {
 	
 	var contractinstance = session.getObject(contractinstanceuuid);
 	
-	var result = ethnode.truffle_method_call(contractinstance, methodname, params);
-	
-	global.log("truffle_method_call called for sessiontoken "+ " method " + methodname + " result is " + result);
+	try {
+		var result = ethnode.truffle_method_call(contractinstance, methodname, params);
+		
+		global.log("truffle_method_call called for sessiontoken "+ sessionuuid + " method " + methodname + " result is " + result);
+	}
+	catch(e) {
+		global.log("exception in truffle_method_call for sessiontoken " + sessionuuid + " method " + methodname + " contractinstanceuuid " + contractinstanceuuid + ": " + e);
+	}
 
 	var jsonresult;
 	

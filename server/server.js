@@ -8,11 +8,17 @@ var Global = require('./includes/global.js');
 
 var global = Global.getGlobalInstance();
 
+global.log("*********");
 global.log("Started service: " + global.service_name);
+
+global.log("Configuration file: " + global.config_path);
+global.log("*********");
+global.log("");
+global.log("****Server initialization*****");
 
 global.initServer();
 
-
+global.log("");
 
 var express = require('express');
 var path = require('path');
@@ -21,17 +27,39 @@ var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 
-var index = require('../api/routes/index');
-var users = require('../api/routes/users');
+var index = require('../app/routes/index');
+var users = require('../app/routes/users');
+
 
 
 var app = express();
 
 // dapp
 
-var dapp_root_dir = (global.dapp_root_dir ? global.dapp_root_dir : '');
+var dapp_root_dir = global.getServedDappDirectory();
 
+global.log("****Files****");
 global.log("DAPP root directory is " + dapp_root_dir);
+global.log("Log enabled is " + global.enable_log);
+global.log("Log write is " + global.write_to_log_file);
+global.log("Log path is " + global.logPath);
+
+global.log("****Ethereum****");
+global.log("Web3 provider is " + global.web3_provider_url);
+global.log("Web3 port is " + global.web3_provider_port);
+
+global.log("****Mysql****");
+global.log("Mysql host is " + global.mysql_host);
+global.log("Mysql port is " + global.mysql_port);
+global.log("Mysql database is " + global.mysql_database);
+global.log("Mysql username is " + global.mysql_username);
+//global.log("Mysql password is " + global.mysql_password);
+
+global.log("****REST****");
+global.log("API root path is " + global.route_root_path);
+global.log("REST server url is " + global.config['rest_server_url']);
+global.log("REST server api path is " + global.config['rest_server_api_path']);
+
 
 //app.use(express.static(dapp_root_dir + '/app'));
 app.use("/", express.static(dapp_root_dir + '/app'));

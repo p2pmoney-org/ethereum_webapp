@@ -16,21 +16,6 @@ class Global {
 		
 		this.execution_dir = (process.env.root_dir ? process.env.root_dir :  path.join(__dirname, '../..'));
 		
-		// log file
-		this.logPath = null;
-		
-		try {
-			var logPath = path.join(this.execution_dir, './logs', 'server.log');
-		
-			if (fs.existsSync(logPath)) {
-				this.logPath = logPath;
-			}	
-			
-		}
-		catch(e) {
-			this.log('exception checking log file: ' + e.message); 
-		}
-
 		// command line arguments
 		this.commandline = process.argv;
 		this.options = [];
@@ -54,8 +39,21 @@ class Global {
 		this.config = null;
 		
 		try {
-			jsonFileName = (this.options['jsonfile'] !== undefined ? this.options['jsonfile'] : 'config.json');
-			jsonPath = path.join(this.execution_dir, './settings', jsonFileName);
+			var jsonConfigPath = (this.options['jsonfile'] !== undefined ? this.options['jsonfile'] : 'config.json');
+			
+			if (path.isAbsolute(jsonConfigPath)) {
+				this.log("jsonConfigPath is " + jsonConfigPath)
+				jsonPath = jsonConfigPath;
+			}
+			else {
+				jsonFileName = (this.options['jsonfile'] !== undefined ? this.options['jsonfile'] : 'config.json');
+				jsonPath = path.join(this.execution_dir, './settings', jsonFileName);
+				
+			}
+			
+			
+			this.config_path = jsonPath;
+
 			jsonFile = fs.readFileSync(jsonPath, 'utf8');
 			this.config = JSON.parse(jsonFile);
 			
@@ -64,21 +62,89 @@ class Global {
 			this.log('exception reading json file: ' + e.message); 
 		}
 		
+		//
+		// configuration
+		//
 		var config = this.config;
 		
-		this.service_name = (config && config["service_name"] ? config["service_name"] : 'ethereum_securities_webapp');
-		this.server_listening_port = (config && config["server_listening_port"] ? config["server_listening_port"] : 8000);
-		this.route_root_path = (config && config["route_root_path"] ? config["route_root_path"] : '/api');
-		
-		this.web3_provider_url = (config && config["web3_provider_url"] ? config["web3_provider_url"] : 'http://localhost');
-		this.web3_provider_port= (config && config["web3_provider_port"] ? config["web3_provider_port"] : '8545');
-
-		this.dapp_root_dir = (config && config["dapp_root_dir"] ? config["dapp_root_dir"] : null);
-		
 		// logging
-		this.enable_log = (config && config["enable_log"] ? config["enable_log"] : 1);
-		this.write_to_log_file = (config && config["write_to_log_file"] ? config["write_to_log_file"] : 0);
+		this.enable_log = (config && (typeof config["enable_log"] != 'undefined') ? config["enable_log"] : 1);
+		this.write_to_log_file = (config && (typeof config["write_to_log_file"] != 'undefined') ? config["write_to_log_file"] : 0);
+		this.can_write_to_log_file = false;
 		
+		this.logPath = (config && (typeof config["log_path"] != 'undefined') ? config["log_path"] : null);
+		
+		var bCreateFile = false;
+
+		try {
+			if (!this.logPath) {
+				var logPath = path.join(this.execution_dir, './logs', 'server.log');
+				
+				if (fs.existsSync(logPath)) {
+					this.logPath = logPath;
+					this.can_write_to_log_file = true;
+				}	
+			}
+			else {
+				if (this.enable_log && this.write_to_log_file ) {
+					if (!fs.existsSync(this.logPath)) {
+						bCreateFile = true; // normally never reached because existsSync would throw an error
+					}
+					else {
+						this.can_write_to_log_file = true;
+					}
+				}
+			}
+			
+			
+		}
+		catch(e) {
+			bCreateFile = true;
+			
+			if (this.enable_log)
+			this.log('exception checking log file: ' + e.message); 
+		}
+		
+		if ( this.logPath && bCreateFile) {
+			try {
+				// we try to create the log file
+				if (this.enable_log) {
+					this.log('log file does not exist: ' + this.logPath);
+					this.log('creating log file: ' + this.logPath);
+					
+					this.createfile(this.logPath);
+					this.can_write_to_log_file = true;
+				}
+				
+			}
+			catch(e) {
+				this.write_to_log_file = 0;
+				this.log('exception creating log file: ' + e.message); 
+			}
+		}
+
+		
+		// configuration parameters
+		this.service_name = (config && (typeof config["service_name"] != 'undefined') ? config["service_name"] : 'ethereum_securities_webapp');
+		this.server_listening_port = (config && (typeof config["server_listening_port"] != 'undefined') ? config["server_listening_port"] : 8000);
+		this.route_root_path = (config && (typeof config["route_root_path"] != 'undefined') ? config["route_root_path"] : '/api');
+		
+		this.web3_provider_url = (config && (typeof config["web3_provider_url"] != 'undefined') ? config["web3_provider_url"] : 'http://localhost');
+		this.web3_provider_port= (config && (typeof config["web3_provider_port"] != 'undefined') ? config["web3_provider_port"] : '8545');
+
+		this.dapp_root_dir = (config && (typeof config["dapp_root_dir"] != 'undefined') ? config["dapp_root_dir"] : null);
+		this.overload_dapp_files = (config && (typeof config["overload_dapp_files"] != 'undefined') ? config["overload_dapp_files"] : 1);
+		
+		this.webapp_app_dir = (config && (typeof config["webapp_app_dir"] != 'webapp_app_dir') ? config["webapp_app_dir"] : path.join(this.execution_dir, './webapp/app'));
+		this.copy_dapp_files = (config && (typeof config["copy_dapp_files"] != 'undefined') ? config["copy_dapp_files"] : 0);
+
+		
+		this.mysql_host = (config && (typeof config["mysql_host"] != 'undefined') ? config["mysql_host"] : "localhost");
+		this.mysql_port = (config && (typeof config["mysql_port"] != 'undefined') ? config["mysql_port"] : 3306);
+		this.mysql_database = (config && (typeof config["mysql_database"] != 'undefined') ? config["mysql_database"] : null);
+		this.mysql_username = (config && (typeof config["mysql_username"] != 'undefined') ? config["mysql_username"] : null);
+		this.mysql_password = (config && (typeof config["mysql_password"] != 'undefined') ? config["mysql_password"] : null);
+
 		
 		// user database (json file)
 		this.users = {};
@@ -107,9 +173,38 @@ class Global {
 	initServer() {
 		this.log("Initializing server environment");
 		
-		// copy files to standard dapp
-		this.copyDappFiles();
+		if (this.copy_dapp_files == 1) {
+			this.log("Copying DAPP app directory")
+			// copy dapp files to webapp dir
+			this.copyDappFiles();
+		}
 		
+		if (this.overload_dapp_files == 1) {
+			this.log("Overloading DAPP files")
+			// copy files to standard dapp
+			this.overloadDappFiles();
+		}
+		
+		// instantiate services
+		var AuthKeyService = require('../../server/includes/authkey/authkey-service.js');
+		var authkeyservice = AuthKeyService.instantiateService(this);
+		
+	}
+	
+	getServedDappDirectory() {
+		if (this.copy_dapp_files == 1) {
+			var path = require('path');
+
+			return path.join(this.webapp_app_dir, '/../');
+		}
+		else {
+			if (this.dapp_root_dir) {
+				return this.dapp_root_dir;
+			}
+			else {
+				return this.execution_dir + '/webapp';
+			}
+		}
 	}
 	
 	processText(text) {
@@ -120,6 +215,26 @@ class Global {
 
 	    // Replace the string by the value in object
 	    return text.replace(regex, (m, $1) => config[$1] || m);
+	}
+	
+	_checkFileExist(fs, filepath) {
+		try {
+			if (fs.existsSync(filepath))
+				return true;
+		}
+		catch(e) {
+		}
+		
+		// check if it's a link
+		try {
+			if (fs.readlinkSync(contractslink))
+				return true;
+		}
+		catch(e) {
+			
+		}
+		
+		return false;
 	}
 	
 	copyfile(fs, path, sourcepath, destdir) {
@@ -133,7 +248,7 @@ class Global {
 		var filename = path.basename(sourcepath);
 		
 		// check destdir exists
-		if (!fs.existsSync(destdir)) {
+		if (!this._checkFileExist(fs, destdir)) {
 			fs.mkdirSync(destdir); // good for one level down
 		}		
 		
@@ -163,7 +278,90 @@ class Global {
 		});
 	}
 	
+	createfile(filepath) {
+		var fs = require('fs');
+		var path = require('path');
+		
+		// create directory
+		var dirpath = path.dirname(filepath);
+
+		this.createdirectory(dirpath);
+		
+		// create file
+		fs.openSync(filepath, 'w');
+	}
+	
+	createdirectory(dirpath) {
+		var shell = require('shelljs');
+		shell.mkdir('-p', dirpath);
+	}
+	
+	copydirectory(sourcedir, destdir) {
+		var self = this;
+		var fs = require('fs');
+		
+		if (this._checkFileExist(fs, sourcedir)) {
+			
+			if (!this._checkFileExist(fs, destdir)) {
+				this.log('destination directory does not exist: ' + destdir);
+				this.log('creating destination directory: ' + destdir);
+				this.createdirectory(destdir);
+			}
+			
+			var ncp = require('ncp').ncp;
+			var finished = false;
+			 
+			ncp.limit = 5; 
+			 
+			self.log('copying all files from ' + sourcedir + ' to '+ destdir);
+			
+			ncp(sourcedir, destdir, function (err) {
+				
+				if (err) {
+					finished = true;
+					return self.log('error while copying dapp directory ' + err);
+				}
+			 
+				finished = true;
+				self.log(sourcedir + ' copied in '+ destdir);
+			});
+			
+			// wait to turn into synchronous call
+			while(!finished)
+			{require('deasync').runLoopOnce();}
+			
+		}
+		else {
+			this.log('source directory does not exist: ' + sourcedir);
+		}
+		
+	}
+	
 	copyDappFiles() {
+		var path = require('path');
+		var fs = require('fs');
+		
+		var sourcedir = path.join(this.dapp_root_dir, './app');
+		var destdir = this.webapp_app_dir;
+		
+		this.copydirectory(sourcedir, destdir);
+		
+		// compiled contracts
+		
+		// remove copied simlink, if any
+		var contractslink =  path.join(this.webapp_app_dir, './contracts');
+		if (this._checkFileExist(fs, contractslink) ) {
+			fs.unlink(contractslink);
+		}
+		
+		sourcedir = path.join(this.dapp_root_dir, './build');
+		destdir = path.join(this.webapp_app_dir, '../build');
+		
+		this.copydirectory(sourcedir, destdir);
+		
+	}
+	
+	overloadDappFiles() {
 		var fs = require('fs');
 		var path = require('path');
 		
@@ -172,20 +370,20 @@ class Global {
 		
 		// replace xtr-config.js
 		sourcepath = this.execution_dir + '/dapp/js/src/xtra/xtra-config.js';
-		destdir = this.dapp_root_dir + '/app/js/src/xtra';
+		destdir = (this.copy_dapp_files ? path.join(this.webapp_app_dir, './js/src/xtra') : path.join(this.dapp_root_dir, './app/js/src/xtra'));
 		
 		this.copyfile(fs, path, sourcepath, destdir);
 		
 		// add ethereum-node-access.js
 		sourcepath = this.execution_dir + '/dapp/js/src/xtra/lib/ethereum-node-access.js';
-		destdir = this.dapp_root_dir + '/app/js/src/xtra/lib';
+		destdir = (this.copy_dapp_files ? path.join(this.webapp_app_dir, './js/src/xtra/lib') : path.join(this.dapp_root_dir, './app/js/src/xtra/lib'));
 		
 		this.copyfile(fs, path, sourcepath, destdir);
 	}
 
 	getWeb3ProviderFullUrl() {
 		return this.web3_provider_url + ':' + this.web3_provider_port;
-	};
+	}
 	
 	getWeb3Provider() {
 		var Web3 = require('web3');
@@ -212,6 +410,14 @@ class Global {
 		return this.web3instance;
 	}
 	
+	getMySqlConnection() {
+		var MySqlConnection = require('./common/mysqlcon.js')
+		
+		var sqlcon = new MySqlConnection(this, this.mysql_host, this.mysql_port, this.mysql_database, this.mysql_username, this.mysql_password);
+		
+		return sqlcon;
+	}
+	
 
 	
 	log(string) {
@@ -224,7 +430,7 @@ class Global {
 		
 		console.log(line);
 		
-		if ( (this.write_to_log_file != 0)  && (this.logPath != null )) {
+		if ( (this.write_to_log_file != 0)  && (this.can_write_to_log_file) && (this.logPath)) {
 			var fs = require('fs');
 
 			// also write line in log/server.log

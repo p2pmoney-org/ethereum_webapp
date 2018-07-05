@@ -4,12 +4,126 @@
  */
 'use strict';
 
+class XtraConfigModule {
+	constructor() {
+		this.name = 'xtraconfig';
+		
+		this.global = null; // put by global on registration
+		this.isready = false;
+		this.isloading = false;
+		
+		this.ethereum_node_access_path = './js/src/xtra/lib/ethereum-node-access.js';
+	}
+	
+	init() {
+		console.log('xtraconfig module init called');
+		
+		this.isready = true;
+	}
+	
+	// compulsory  module functions
+	loadModule(parentscriptloader, callback) {
+		console.log('xtraconfig module loadModule called');
+		
+		if (this.isloading)
+			return;
+			
+		this.isloading = true;
+
+		var self = this;
+
+		var modulescriptloader = parentscriptloader.getChildLoader('xtraconfigmoduleloader');
+
+		modulescriptloader.load_scripts(function() { self.init(); if (callback) callback(null, self); });
+
+		return modulescriptloader;	
+	}
+	
+	isReady() {
+		return this.isready;
+	}
+
+	hasLoadStarted() {
+		return this.isloading;
+	}
+
+	// optional  module functions
+	registerHooks() {
+		console.log('xtraconfig module registerHooks called');
+		
+		var global = this.global;
+		
+		global.registerHook('preFinalizeGlobalScopeInit_hook', 'xtraconfig', this.preFinalizeGlobalScopeInit_hook);
+		global.registerHook('postFinalizeGlobalScopeInit_hook', 'xtraconfig', this.postFinalizeGlobalScopeInit_hook);
+		
+		global.registerHook('getEthereumNodeAccessInstance_hook', 'xtraconfig', this.getEthereumNodeAccessInstance_hook);
+	}
+	
+	//
+	// hooks
+	//
+	preFinalizeGlobalScopeInit_hook(result, params) {
+		console.log('xtraconfig preFinalizeGlobalScopeInit_hook called');
+		
+		var global = this.global;
+
+		// create script load promise now
+		var ethereum_node_access_path = this.ethereum_node_access_path;
+		
+		var nodeaccesspromise = ScriptLoader.createScriptLoadPromise(ethereum_node_access_path, function() {
+			console.log('XtraEthereumNodeAccess loaded')
+		})
+		
+		global.pushFinalInitializationPromise(nodeaccesspromise);
+
+				
+		result['xtraconfig'] = true;
+		
+		return true;
+	}
+
+	postFinalizeGlobalScopeInit_hook(result, params) {
+		console.log('xtraconfig postFinalizeGlobalScopeInit_hook called');
+		
+		var global = this.global;
+		var commonmodule = global.getModuleObject('common');
+
+		// overload EthereumNodeAccess class
+		this.EthereumNodeAccess = window.Xtra_EthereumNodeAccess;
+		
+		// reset ethereum instance if already instantiated
+		var session = commonmodule.getSessionObject();
+		session.ethereum_node_access_instance = null;
+
+		result['xtraconfig'] = true;
+		
+		return true;
+	}
+
+
+	getEthereumNodeAccessInstance_hook(result, params) {
+		console.log('xtraconfig getEthereumNodeAccessInstance_hook called');
+		
+		var global = XtraConfig.getGlobalObject();
+		var xtraconfigmodule = global.getModuleObject('xtraconfig');
+		
+		var session = params[0];
+		
+		result[0] = new this.EthereumNodeAccess(session); 
+		
+		return true;
+	}
+
+
+	
+}
+
 class XtraConfig {
 	
 	constructor() {
 		console.log("XtraConfig constructor called");
 		
-		this.ethereum_node_access_path = './js/src/xtra/lib/ethereum-node-access.js';
+		//this.ethereum_node_access_path = './js/src/xtra/lib/ethereum-node-access.js';
 		this.allow_remote_access = 'enabled';
 		this.rest_server_url = ':rest_server_url';
 		this.rest_server_api_path = ':rest_server_api_path';
@@ -27,7 +141,7 @@ class XtraConfig {
 	init() {
 		console.log("XtraConfig initializing");
 		
-		// replace if necessary sme values of Config
+		// replace if necessary values of Config
 		this.overloadConfig();
 
 		// hooks
@@ -35,13 +149,20 @@ class XtraConfig {
 	}
 	
 	initHooks() {
+		// OBSOLETE: should use module mechanism now
 		console.log("XtraConfig initializing hooks");
 		
 		var global = XtraConfig.getGlobalObject();
-		var controllers = global.getControllersObject();
+		var mvcmodule = global.getModuleObject('mvc');
+		var controllers = mvcmodule.getControllersObject();
 
+		//
+		// violent javascript overloading when not hooks exists
+		//
+		
 		// overload handleDisplayIdentificationBox
 		controllers.handleDisplayIdentificationBox = this.handleDisplayIdentificationBox;
+		
 	}
 	
 	overloadConfig() {
@@ -80,8 +201,11 @@ class XtraConfig {
 		// watch-out, 'this' is defined as the context
 		// of the calling object from event listener
 		var global = XtraConfig.getGlobalObject();
+		
 		var app = global.getAppObject();
-		var session = global.getSessionObject();
+		
+		var commonmodule = global.getModuleObject('common');
+		var session = commonmodule.getSessionObject();
 
 		var username = prompt("Enter username", "");
 		var password = prompt("Enter password", "");
@@ -144,6 +268,17 @@ class XtraConfig {
 
 
 //export
-
 if ( typeof window !== 'undefined' && window ) // if we are in browser and not node js (e.g. truffle)
 window.Config.XtraConfig = XtraConfig;
+
+GlobalClass.getGlobalObject().registerModuleObject(new XtraConfigModule());
+
+/*if ( typeof window !== 'undefined' && window ) // if we are in browser and not node js (e.g. truffle)
+{
+	window.Config.XtraConfig = XtraConfig;
+	
+	// register xtraconfig module
+	var global = GlobalClass.getGlobalObject();
+	
+	global.registerModuleObject(new XtraConfigModule());
+}*/
