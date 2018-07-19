@@ -4,11 +4,12 @@
 
 'use strict';
 
-var Global = require('../../server/includes/global.js');
+var Global = require('../../server/includes/common/global.js');
 
 var global = Global.getGlobalInstance();
 
-var Session = require('../../server/includes/session.js');
+var commonservice = global.getServiceInstance('common');
+var Session = commonservice.Session;
 
 
 exports.dapp = function(req, res) {
@@ -24,6 +25,8 @@ exports.version = function(req, res) {
   	
 }
 
+
+/*
 // web 3
 exports.web3_balance = function(req, res) {
 	var sessionuuid = req.get("sessiontoken");
@@ -31,7 +34,7 @@ exports.web3_balance = function(req, res) {
 	
 	global.log("web3_balance called for sessiontoken " + sessionuuid);
 	
-	var session = Session.getSession(sessionuuid);
+	var session = Session.getSession(global, sessionuuid);
 	var ethnode = session.getEthereumNode();
 	
 	var balance = ethnode.web3_getBalance(address);
@@ -57,7 +60,7 @@ exports.truffle_loadartifact = function(req, res) {
 	
 	var artifactpath = req.body.artifactpath;
 	
-	var session = Session.getSession(sessionuuid);
+	var session = Session.getSession(global, sessionuuid);
 	var ethnode = session.getEthereumNode();
 	
 	var contractartifact = ethnode.truffle_loadArtifact(artifactpath);
@@ -92,7 +95,7 @@ exports.truffle_loadContract = function(req, res) {
 	
 	global.log("truffle_loadContract called for sessiontoken " + sessionuuid + " and artifactuuid " + artifactuid);
 	
-	var session = Session.getSession(sessionuuid);
+	var session = Session.getSession(global, sessionuuid);
 	var ethnode = session.getEthereumNode();
 	
 	var artifact = session.getObject(artifactuid);
@@ -125,7 +128,7 @@ exports.truffle_contract_at = function(req, res) {
 
 	global.log("truffle_contract_at called for sessiontoken " + sessionuuid + " and contractuuid " + contractuuid + " and address " + address);
 	
-	var session = Session.getSession(sessionuuid);
+	var session = Session.getSession(global, sessionuuid);
 	var ethnode = session.getEthereumNode();
 	
 	var trufflecontract = session.getObject(contractuuid);
@@ -164,7 +167,7 @@ exports.truffle_contract_new = function(req, res) {
 	global.log("truffle_contract_new called for sessiontoken " + sessionuuid);
 	global.log("wallet address: " + walletaddress);
 	
-	var session = Session.getSession(sessionuuid);
+	var session = Session.getSession(global, sessionuuid);
 	var ethnode = session.getEthereumNode();
 	
 	var contractinstance = session.getObject(contractuuid);
@@ -208,7 +211,7 @@ exports.truffle_method_call = function(req, res) {
 
 	global.log("truffle_method_call called for sessiontoken " + sessionuuid + " method " + methodname + " contractinstanceuuid " + contractinstanceuuid);
 	
-	var session = Session.getSession(sessionuuid);
+	var session = Session.getSession(global, sessionuuid);
 	var ethnode = session.getEthereumNode();
 	
 	var contractinstance = session.getObject(contractinstanceuuid);
@@ -251,7 +254,7 @@ exports.truffle_method_sendTransaction = function(req, res) {
 	global.log("truffle_method_sendTransaction called for sessiontoken " + sessionuuid + " method " + methodname + " contractinstanceuuid " + contractinstanceuuid);
 	global.log("wallet address: " + walletaddress);
 	
-	var session = Session.getSession(sessionuuid);
+	var session = Session.getSession(global, sessionuuid);
 	var ethnode = session.getEthereumNode();
 	
 	var contractinstance = session.getObject(contractinstanceuuid);
@@ -280,10 +283,10 @@ exports.truffle_method_sendTransaction = function(req, res) {
   	
   	res.json(jsonresult);
 }
-
+*/
 
 // session
-exports.session_authenticate = function(req, res) {
+/*exports.session_authenticate = function(req, res) {
 	var sessionuuid = req.get("sessiontoken");
 	
 	global.log("session_authenticate called for sessiontoken " + sessionuuid);
@@ -291,7 +294,7 @@ exports.session_authenticate = function(req, res) {
 	var username  = req.body.username;
 	var password = req.body.password;
 	
-	var session = Session.getSession(sessionuuid);
+	var session = Session.getSession(global, sessionuuid);
 	
 	var jsonresult;
 	
@@ -317,7 +320,7 @@ exports.session_getUser = function(req, res) {
 	var username  = req.body.username;
 	var password = req.body.username;
 	
-	var session = Session.getSession(sessionuuid);
+	var session = Session.getSession(global, sessionuuid);
 	
 	var jsonresult;
 	var user =session.getUser();
@@ -330,7 +333,7 @@ exports.session_getUser = function(req, res) {
 	}
   	
   	res.json(jsonresult);
-}
+}*/
 
 
 

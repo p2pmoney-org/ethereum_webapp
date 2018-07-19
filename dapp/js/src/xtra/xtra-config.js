@@ -13,17 +13,32 @@ class XtraConfigModule {
 		this.isloading = false;
 		
 		this.ethereum_node_access_path = './js/src/xtra/lib/ethereum-node-access.js';
+		this.authkey_server_access_path = './js/src/xtra/lib/authkey-server-access.js';
+		
+		this.registerAdditionalModules();
+	}
+	
+	registerAdditionalModules() {
+		// load and register additional modules
+		var modulescriptloader = ScriptLoader.findScriptLoader('moduleloader')
+		var xtramodulescriptloader = modulescriptloader.getChildLoader('xtramoduleloader')
+		
+		// authkey
+		xtramodulescriptloader.push_script('./js/includes/authkey/module.js');
+		
+		xtramodulescriptloader.load_scripts();
+		
 	}
 	
 	init() {
-		console.log('xtraconfig module init called');
+		console.log('module init called for ' + this.name);
 		
 		this.isready = true;
 	}
 	
 	// compulsory  module functions
 	loadModule(parentscriptloader, callback) {
-		console.log('xtraconfig module loadModule called');
+		console.log('loadModule called for module ' + this.name);
 		
 		if (this.isloading)
 			return;
@@ -49,13 +64,15 @@ class XtraConfigModule {
 
 	// optional  module functions
 	registerHooks() {
-		console.log('xtraconfig module registerHooks called');
+		console.log('module registerHooks called for ' + this.name);
 		
 		var global = this.global;
 		
 		global.registerHook('preFinalizeGlobalScopeInit_hook', 'xtraconfig', this.preFinalizeGlobalScopeInit_hook);
 		global.registerHook('postFinalizeGlobalScopeInit_hook', 'xtraconfig', this.postFinalizeGlobalScopeInit_hook);
 		
+		global.registerHook('handleShowLoginBox_hook', 'xtraconfig', this.handleShowLoginBox_hook);
+
 		global.registerHook('getEthereumNodeAccessInstance_hook', 'xtraconfig', this.getEthereumNodeAccessInstance_hook);
 	}
 	
@@ -63,11 +80,13 @@ class XtraConfigModule {
 	// hooks
 	//
 	preFinalizeGlobalScopeInit_hook(result, params) {
-		console.log('xtraconfig preFinalizeGlobalScopeInit_hook called');
+		console.log('preFinalizeGlobalScopeInit_hook called for ' + this.name);
 		
 		var global = this.global;
 
-		// create script load promise now
+		// create script load promises now
+		
+		// ethereum node access
 		var ethereum_node_access_path = this.ethereum_node_access_path;
 		
 		var nodeaccesspromise = ScriptLoader.createScriptLoadPromise(ethereum_node_access_path, function() {
@@ -76,14 +95,23 @@ class XtraConfigModule {
 		
 		global.pushFinalInitializationPromise(nodeaccesspromise);
 
+		// authkey access
+		var authkey_server_access_path = this.authkey_server_access_path;
+		
+		var authkeyaccesspromise = ScriptLoader.createScriptLoadPromise(authkey_server_access_path, function() {
+			console.log('XtraAuthKeyServerAccess loaded')
+		})
+		
+		global.pushFinalInitializationPromise(authkeyaccesspromise);
+
 				
-		result['xtraconfig'] = true;
+		result.push({module: 'xtraconfig', handled: true});
 		
 		return true;
 	}
 
 	postFinalizeGlobalScopeInit_hook(result, params) {
-		console.log('xtraconfig postFinalizeGlobalScopeInit_hook called');
+		console.log('postFinalizeGlobalScopeInit_hook called for ' + this.name);
 		
 		var global = this.global;
 		var commonmodule = global.getModuleObject('common');
@@ -95,9 +123,59 @@ class XtraConfigModule {
 		var session = commonmodule.getSessionObject();
 		session.ethereum_node_access_instance = null;
 
-		result['xtraconfig'] = true;
+		result.push({module: 'xtraconfig', handled: true});
 		
 		return true;
+	}
+	
+	handleShowLoginBox_hook(result, params) {
+		console.log('handleShowLoginBox_hook called for ' + this.name);
+		
+		this.displayIdentificationBox();
+		
+		result.push({module: 'xtraconfig', handled: true});
+		
+		return true;
+	}
+	
+	displayIdentificationBox() {
+		var global = XtraConfig.getGlobalObject();
+		
+		var app = global.getAppObject();
+		
+		var commonmodule = global.getModuleObject('common');
+		var session = commonmodule.getSessionObject();
+
+		var username = prompt("Enter username", "");
+		var password = prompt("Enter password", "");
+
+		if (username != null) {
+			var authkeymodule = global.getModuleObject('authkey');
+			var authkeyinterface = authkeymodule.getAuthKeyInterface();
+			
+			authkeyinterface.authenticate(session, username, password)
+			.then(function(res) {
+				var authenticated = (res['status'] == '1' ? true : false);
+				
+				console.log("authentication is " + authenticated);
+				
+				if (authenticated) {
+					
+					app.refreshDisplay();
+					
+				}
+				else {
+					alert("Could not authenticate you with these credentials!");
+				}
+				
+			})
+			.catch(function (err) {
+				alert(err);
+			});
+			
+			
+		}	
+		
 	}
 
 
@@ -113,10 +191,9 @@ class XtraConfigModule {
 		
 		return true;
 	}
-
-
 	
 }
+
 
 class XtraConfig {
 	
@@ -143,7 +220,7 @@ class XtraConfig {
 		
 		// replace if necessary values of Config
 		this.overloadConfig();
-
+		
 		// hooks
 		this.initHooks();
 	}
@@ -166,6 +243,8 @@ class XtraConfig {
 	}
 	
 	overloadConfig() {
+		console.log("XtraConfig.overloadConfig called");
+
 		if ( typeof window !== 'undefined' && window && window.Config) {
 			
 			var overload_gaslimit = (this.defaultgaslimit.substring(1) == 'defaultgaslimit' ? false : true);
@@ -193,11 +272,23 @@ class XtraConfig {
 		
 		
 		}
+		
+		// we reset the session object in case it has been created with prevous config values
+		var global = XtraConfig.getGlobalObject();
+		var commonmodule = global.getModuleObject('common');
+		
+		commonmodule.resetSessionObject();
 	}
 	
 	handleDisplayIdentificationBox() {
 		console.log("XtraConfig.handleDisplayIdentificationBox called");
+		
+		var global = XtraConfig.getGlobalObject();
+		var xtraconfigmodule = global.getModuleObject('xtraconfig');
+		
+		return xtraconfigmodule.displayIdentificationBox();
 
+/*
 		// watch-out, 'this' is defined as the context
 		// of the calling object from event listener
 		var global = XtraConfig.getGlobalObject();
@@ -211,8 +302,30 @@ class XtraConfig {
 		var password = prompt("Enter password", "");
 
 		if (username != null) {
+			var authkeymodule = global.getModuleObject('authkey');
+			var authkeyinterface = authkeymodule.getAuthKeyInterface();
 			
-			var EthereumNodeAccess = session.getEthereumNodeAccessInstance();
+			authkeyinterface.authenticate(session, username, password)
+			.then(function(res) {
+				var authenticated = (res['status'] == '1' ? true : false);
+				
+				console.log("authentication is " + authenticated);
+				
+				if (authenticated) {
+					
+					app.refreshDisplay();
+					
+				}
+				else {
+					alert("Could not authenticate you with these credentials!");
+				}
+				
+			})
+			.catch(function (err) {
+				alert(err);
+			});*/
+			
+			/*var EthereumNodeAccess = session.getEthereumNodeAccessInstance();
 			
 			var versionpromise = EthereumNodeAccess.webapp_version(function(err, version) {
 				console.log("version is " + version);
@@ -245,10 +358,10 @@ class XtraConfig {
 					prompt("Could not authenticate you with these credentials!");
 				}
 				
-			});
+			});*/
 
 			
-		}	
+/*		}	*/
 		
 	}
 	

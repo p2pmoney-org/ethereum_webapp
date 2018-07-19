@@ -3,8 +3,9 @@
  */
 'use strict';
 
+
 // instantiating global object
-var Global = require('./includes/global.js');
+var Global = require('./includes/common/global.js');
 
 var global = Global.getGlobalInstance();
 
@@ -16,9 +17,28 @@ global.log("*********");
 global.log("");
 global.log("****Server initialization*****");
 
-global.initServer();
+// register services
+var Service;
+
+Service = require('./includes/authkey/service.js');
+global.registerServiceInstance(new Service());
+
+Service = require('./includes/ethnode/service.js');
+global.registerServiceInstance(new Service());
+
+// initialization
+try {
+	global.initServer();
+}
+catch(e) {
+	global.log("ERROR during initServer: " + e);
+	global.log(e.stack);
+}
+
 
 global.log("");
+
+global.log("****Loading express*****");
 
 var express = require('express');
 var path = require('path');
@@ -35,6 +55,7 @@ var users = require('../app/routes/users');
 var app = express();
 
 // dapp
+global.log("");
 
 var dapp_root_dir = global.getServedDappDirectory();
 
@@ -129,7 +150,7 @@ app.use(BodyParser.json());
 //load routes
 global.log("Loading routes")
 var routes = require('../api/routes/routes.js'); //importing routes
-routes(app); //register the routes
+routes(app, global); //register the routes
 
 
 

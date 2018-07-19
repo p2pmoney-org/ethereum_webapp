@@ -3,7 +3,7 @@
  */
 'use strict';
 
-var GlobalInstance;
+var globalinstance;
 //var GlobalWeb3;
 
 
@@ -14,7 +14,7 @@ class Global {
 		var fs = require('fs');
 		var path = require('path');
 		
-		this.execution_dir = (process.env.root_dir ? process.env.root_dir :  path.join(__dirname, '../..'));
+		this.execution_dir = (process.env.root_dir ? process.env.root_dir :  path.join(__dirname, '../../..'));
 		
 		// command line arguments
 		this.commandline = process.argv;
@@ -135,7 +135,7 @@ class Global {
 		this.dapp_root_dir = (config && (typeof config["dapp_root_dir"] != 'undefined') ? config["dapp_root_dir"] : null);
 		this.overload_dapp_files = (config && (typeof config["overload_dapp_files"] != 'undefined') ? config["overload_dapp_files"] : 1);
 		
-		this.webapp_app_dir = (config && (typeof config["webapp_app_dir"] != 'webapp_app_dir') ? config["webapp_app_dir"] : path.join(this.execution_dir, './webapp/app'));
+		this.webapp_app_dir = (config && (typeof config["webapp_app_dir"] != 'undefined') ? config["webapp_app_dir"] : path.join(this.execution_dir, './webapp/app'));
 		this.copy_dapp_files = (config && (typeof config["copy_dapp_files"] != 'undefined') ? config["copy_dapp_files"] : 0);
 
 		
@@ -164,7 +164,9 @@ class Global {
 		// 
 		// operation members
 		//
-
+		
+		// services
+		this.services = [];
 	
 		// web3
 		this.web3instance = null;
@@ -185,9 +187,20 @@ class Global {
 			this.overloadDappFiles();
 		}
 		
-		// instantiate services
-		var AuthKeyService = require('../../server/includes/authkey/authkey-service.js');
-		var authkeyservice = AuthKeyService.instantiateService(this);
+		// register common service
+		var Service = require('./service.js');
+		this.registerServiceInstance(new Service());
+		
+		// init services
+		this.initServices();
+	}
+	
+	initServices() {
+		for (var i=0; i < this.services.length; i++) {
+			var service = this.services[i];
+			
+			service.loadService();
+		}
 		
 	}
 	
@@ -368,17 +381,46 @@ class Global {
 		var sourcepath;
 		var destdir;
 		
+		
 		// replace xtr-config.js
 		sourcepath = this.execution_dir + '/dapp/js/src/xtra/xtra-config.js';
 		destdir = (this.copy_dapp_files ? path.join(this.webapp_app_dir, './js/src/xtra') : path.join(this.dapp_root_dir, './app/js/src/xtra'));
 		
 		this.copyfile(fs, path, sourcepath, destdir);
 		
-		// add ethereum-node-access.js
-		sourcepath = this.execution_dir + '/dapp/js/src/xtra/lib/ethereum-node-access.js';
+		
+		
+		
+		// copy files from xtra/lib (e.g.  ethereum-node-access.js)
+		var sourcedir = this.execution_dir + '/dapp/js/src/xtra/lib';
+		
+		if (this._checkFileExist(fs, sourcedir)) {
+			destdir = (this.copy_dapp_files ? path.join(this.webapp_app_dir, './js/src/xtra/lib') : path.join(this.dapp_root_dir, './app/js/src/xtra/lib'));
+			
+			this.copydirectory(sourcedir, destdir);
+		}
+		/*sourcepath = this.execution_dir + '/dapp/js/src/xtra/lib/ethereum-node-access.js';
 		destdir = (this.copy_dapp_files ? path.join(this.webapp_app_dir, './js/src/xtra/lib') : path.join(this.dapp_root_dir, './app/js/src/xtra/lib'));
 		
-		this.copyfile(fs, path, sourcepath, destdir);
+		this.copyfile(fs, path, sourcepath, destdir);*/
+		
+		// copy modules in js/includes
+		var sourcedir = this.execution_dir + '/dapp/js/includes';
+		
+		if (this._checkFileExist(fs, sourcedir)) {
+			destdir = (this.copy_dapp_files ? path.join(this.webapp_app_dir, './js/includes') : path.join(this.dapp_root_dir, './app/js/includes'));
+			
+			this.copydirectory(sourcedir, destdir);
+		}
+		
+		// copy modules in js/src/includes
+		var sourcedir = this.execution_dir + '/dapp/js/src/includes';
+		
+		if (this._checkFileExist(fs, sourcedir)) {
+			destdir = (this.copy_dapp_files ? path.join(this.webapp_app_dir, './js/src/includes') : path.join(this.dapp_root_dir, './app/js/src/includes'));
+			
+			this.copydirectory(sourcedir, destdir);
+		}
 	}
 
 	getWeb3ProviderFullUrl() {
@@ -438,12 +480,39 @@ class Global {
 		}
 	}
 	
-	static getGlobalInstance() {
-		if (!GlobalInstance)
-			GlobalInstance = new Global();
+	// services
+	getServiceInstance(servicename) {
+		if (!servicename)
+		return;
 		
-		return GlobalInstance;
+		return (this.services[servicename] ? this.services[servicename] : null);
+	}
+	
+	registerServiceInstance(service) {
+		console.log('Global.registerServiceInstance called for ' + (service ? service.name : 'invalid'));
+		
+		if (!service)
+			throw 'passed a null value to registerServiceInstance';
+		
+		if (!service.name)
+			throw 'service needs to have a name property';
+		
+		this.services[service.name] = service; // for direct access by name in getServiceInstance
+		this.services.push(service); //for iteration on the array
+		
+		// we set global property
+		service.global = this;
+	}
+	
+	// static
+	static getGlobalInstance() {
+		if (!globalinstance)
+			globalinstance = new Global();
+		
+		return globalinstance;
 	}
 }
+
+var GlobalClass = Global;
 
 module.exports = Global;

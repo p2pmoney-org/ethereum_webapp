@@ -61,10 +61,27 @@ class Xtra_EthereumNodeAccess {
 		this.session = session;
 		
 		this.credentials_storage = new CredentialsStorage();
+		
+		this.rest_connection = null;
+	}
+	
+	getRestConnection() {
+		if (this.rest_connection)
+			return this.rest_connection;
+		
+	    var rest_server_url = this.session.getXtraConfigValue('rest_server_url');
+	    var rest_server_api_path = this.session.getXtraConfigValue('rest_server_api_path');
+
+	    this.rest_connection = this.session.createRestConnection(rest_server_url, rest_server_api_path);
+		
+		return this.rest_connection;
 	}
 	
 	rest_get(resource, callback) {
-		console.log("Xtra_EthereumNodeAccess.rest_get called for resource " + resource);
+		var rest_connection = this.getRestConnection();
+		
+		return rest_connection.rest_get(resource, callback);
+		/*console.log("Xtra_EthereumNodeAccess.rest_get called for resource " + resource);
 		
 		var session = this.session;
 	    
@@ -83,7 +100,7 @@ class Xtra_EthereumNodeAccess {
 	    
 	    xhttp.onload = function(e) {
 		    if (xhttp.status == 200) {
-			    console.log('response text is ' + xhttp.responseText);
+			    //console.log('response text is ' + xhttp.responseText);
 			    
 		    	if (callback) {
 			    	var jsonresponse = JSON.parse(xhttp.responseText);
@@ -106,12 +123,15 @@ class Xtra_EthereumNodeAccess {
 	    	
 	    	if (callback)
 	    		callback(xhttp.statusText, null);	
-	    };
+	    };*/
 	    
 	}
 	
 	rest_post(resource, postdata, callback) {
-		console.log("Xtra_EthereumNodeAccess.rest_post called for resource " + resource);
+		var rest_connection = this.getRestConnection();
+		
+		return rest_connection.rest_post(resource, postdata, callback);
+		/*console.log("Xtra_EthereumNodeAccess.rest_post called for resource " + resource);
 		
 		var session = this.session;
 	    
@@ -151,15 +171,16 @@ class Xtra_EthereumNodeAccess {
 	    	
 	    	if (callback)
 	    		callback(xhttp.statusText, null);	
-	    };
+	    };*/
 	    
 	}
 	
 	//
 	// rest API
 	//
-	webapp_version(callback) {
-		console.log("Xtra_EthereumNodeAccess.webapp_session_authenticate called");
+	
+	ethnode_version(callback) {
+		console.log("Xtra_EthereumNodeAccess.ethnode_version called");
 		
 		var self = this
 		var session = this.session;
@@ -192,10 +213,14 @@ class Xtra_EthereumNodeAccess {
 		return promise;
 		
 	}
-	
-	
-	webapp_session_authenticate(username, password, callback) {
-		console.log("Xtra_EthereumNodeAccess.webapp_session_authenticate called");
+
+	//
+	// Web3
+	//
+
+	// node
+	web3_isSyncing(callback) {
+		console.log("Xtra_EthereumNodeAccess.web3_isSyncing called for " + address);
 		
 		var self = this
 		var session = this.session;
@@ -203,19 +228,14 @@ class Xtra_EthereumNodeAccess {
 		var promise = new Promise(function (resolve, reject) {
 			
 			try {
-				var resource = "/session/authenticate";
+				var resource = "/node";
 				
-				var postdata = [];
-				
-				postdata = {username: username, password: password};
-				
-				self.rest_post(resource, postdata, function (err, res) {
+				var promise2 = self.rest_get(resource, function (err, res) {
 					if (res) {
-						
 						if (callback)
-							callback(null, res);
+							callback(null, res['issyncing']);
 						
-						return resolve(res);
+						return resolve(res['issyncing']);
 					}
 					else {
 						reject('rest error calling ' + resource);
@@ -229,18 +249,14 @@ class Xtra_EthereumNodeAccess {
 		});
 		
 		return promise;
-		
 	}
 	
-	//
-	// Web3
-	//
-	web3_getBalance(address) {
-		var web3 = this.session.getWeb3Instance();
-		var balance = web3.eth.getBalance(address);
-		
-		return balance;
+	
+	// accounts
+	web3_getBalanceSync(address) {
+		throw 'web3_getBalanceSync can not be served';
 	}
+	
 	
 	web3_getBalance(address, callback) {
 		console.log("Xtra_EthereumNodeAccess.web3_getBalance called for " + address);
@@ -251,7 +267,7 @@ class Xtra_EthereumNodeAccess {
 		var promise = new Promise(function (resolve, reject) {
 			
 			try {
-				var resource = "/web3/" + address + "/balance";
+				var resource = "/web3/account/" + address + "/balance";
 				
 				var promise2 = self.rest_get(resource, function (err, res) {
 					if (res) {
@@ -276,9 +292,44 @@ class Xtra_EthereumNodeAccess {
 		return promise;
 	}
 
+	web3_getCode(address, callback) {
+		var self = this
+		var session = this.session;
+
+		var promise = new Promise(function (resolve, reject) {
+			try {
+				var resource = "/web3/account/" + address + "/code";
+				
+				var promise2 = self.rest_get(resource, function (err, res) {
+					if (res) {
+						var code = res['code'];
+						
+						if (callback)
+							callback(null, code);
+						
+						return resolve(code);
+					}
+					else {
+						reject('rest error calling ' + resource);
+					}
+					
+				});
+			}
+			catch(e) {
+				reject('web3 exception: ' + e);
+			}
+			
+		});
+		
+		return promise;
+	}
+	
 	web3_unlockAccount(account, password, duration) {
 		// we store the credentials and will use it later on
 		// to keep it a sync call
+		var address = account.getAddress();
+		console.log("Xtra_EthereumNodeAccess.web3_unlockAccount called for " + address);
+
 		this.credentials_storage.store(account.getAddress(), password, duration);
 		
 		// we can not know if password is correct
@@ -290,11 +341,223 @@ class Xtra_EthereumNodeAccess {
 	web3_lockAccount(account) {
 		var address = account.getAddress();
 		
+		console.log("Xtra_EthereumNodeAccess.web3_lockAccount called for " + address);
+
 		this.credentials_storage.remove(address);
 		
 		// TODO: make a rest call to lock on the server
 	}
 
+	// blocks
+	web3_getBlockNumber(callback) {
+		var self = this
+		var session = this.session;
+
+		var promise = new Promise(function (resolve, reject) {
+			try {
+				var resource = "/web3/block/currentnumber";
+				
+				var promise2 = self.rest_get(resource, function (err, res) {
+					if (res) {
+						var number = res['number'];
+						
+						if (callback)
+							callback(null, number);
+						
+						return resolve(number);
+					}
+					else {
+						reject('rest error calling ' + resource);
+					}
+					
+				});
+			}
+			catch(e) {
+				reject('web3 exception: ' + e);
+			}
+			
+		});
+		
+		return promise;
+	}
+	
+	web3_getBlock(blockid, bWithTransactions, callback) {
+		var self = this
+		var session = this.session;
+
+		var promise = new Promise(function (resolve, reject) {
+			try {
+				var resource = "/web3/block/" + blockid + (bWithTransactions ? "/txs" : "");
+				
+				var promise2 = self.rest_get(resource, function (err, res) {
+					if (res) {
+						if (callback)
+							callback(null, res['data']);
+						
+						return resolve(res['data']);
+					}
+					else {
+						reject('rest error calling ' + resource);
+					}
+					
+				});
+			}
+			catch(e) {
+				reject('web3 exception: ' + e);
+			}
+			
+		});
+		
+		return promise;
+	}
+	
+	// transactions
+	web3_getTransaction(hash, callback) {
+		var self = this
+		var session = this.session;
+
+		var promise = new Promise(function (resolve, reject) {
+			try {
+				var resource = "/web3/tx/" + hash;
+				
+				var promise2 = self.rest_get(resource, function (err, res) {
+					if (res) {
+						if (callback)
+							callback(null, res['data']);
+						
+						return resolve(res['data']);
+					}
+					else {
+						reject('rest error calling ' + resource);
+					}
+					
+				});
+			}
+			catch(e) {
+				reject('web3 exception: ' + e);
+			}
+			
+		});
+		
+		return promise;
+	}
+	
+	web3_getTransactionReceipt(hash, callback) {
+		var self = this
+		var session = this.session;
+
+		var promise = new Promise(function (resolve, reject) {
+			try {
+				var resource = "/web3/tx/" + hash + "/receipt";
+				
+				var promise2 = self.rest_get(resource, function (err, res) {
+					if (res) {
+						if (callback)
+							callback(null, res['data']);
+						
+						return resolve(res['data']);
+					}
+					else {
+						reject('rest error calling ' + resource);
+					}
+					
+				});
+			}
+			catch(e) {
+				reject('web3 exception: ' + e);
+			}
+			
+		});
+		
+		return promise
+	}
+	
+	// contracts
+	web3_contract_load_at(abi, address, callback) {
+
+		var abijsonstring = JSON.stringify(abi);
+		
+		var self = this
+		var session = this.session;
+		
+		var promise = new Promise(function (resolve, reject) {
+			
+			try {
+				var resource = "/web3/contract/load";
+				
+				var postdata = [];
+				
+				postdata = {address: address, abi: abijsonstring};
+				
+				self.rest_post(resource, postdata, function (err, res) {
+					var contractinstanceuuid = res['contractinstanceuuid'];
+					var constractinstanceproxy = new ContractInstanceProxy(address, contractinstanceuuid);
+					
+					if (callback)
+						callback(null, constractinstanceproxy);
+					
+					return resolve(constractinstanceproxy);				
+				});
+			}
+			catch(e) {
+				if (callback)
+					callback('rest exception: ' + e, null);
+
+				reject('rest exception: ' + e);
+			}
+		}); 
+		
+		return promise;
+
+	}
+	
+	web3_contract_dynamicMethodCall(web3_contract, abidef, params, callback) {
+		console.log("Xtra_EthereumNodeAccess.web3_contract_dynamicMethodCall called for contractinstanceuuid " + web3_contract.contractinstanceuuid + " and method " + abidef.name);
+		
+		if (!web3_contract) {
+			throw "contract instance is not defined";
+		}
+		
+		var self = this
+		var session = this.session;
+
+		var promise = new Promise(function (resolve, reject) {
+			
+			try {
+				var address = web3_contract.getAddress();
+				var contractinstanceuuid = web3_contract.contractinstanceuuid;
+				var abidefjsonstring = JSON.stringify(abidef);
+				
+				var resource = "/web3/contract/" + address + "/call";
+				
+				var postdata = [];
+				
+				postdata = {contractinstanceuuid: contractinstanceuuid, 
+							abidef: abidefjsonstring, 
+							params: JSON.stringify(params)};
+				
+				var promise2 = self.rest_post(resource, postdata, function (err, res) {
+					if (res) {
+						var result = res['result'];
+						
+						return resolve(result);
+					}
+					else {
+						console.log("error during web3_contract_dynamicMethodCall: " + err);
+						reject('rest error calling ' + resource);
+					}
+					
+				});
+			}
+			catch(e) {
+				reject('rest exception: ' + e);
+			}
+		});
+		
+		return promise;
+	}
+	
+	
 	//
 	// Truffle
 	//

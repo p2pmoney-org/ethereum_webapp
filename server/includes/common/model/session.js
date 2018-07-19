@@ -3,12 +3,6 @@
  */
 'use strict';
 
-var Global = require('./global.js');
-
-var global = Global.getGlobalInstance();
-
-var EthereumNode = require('./ethnode.js');
-
 
 class SessionMap {
 	constructor() {
@@ -47,7 +41,9 @@ class SessionMap {
 var sessionmap = new SessionMap();
 
 class Session {
-	constructor() {
+	constructor(global) {
+		this.global = global;
+		
 		this.ethereum_node = null;
 		
 		this.session_uuid = null;
@@ -60,14 +56,21 @@ class Session {
 		this.objectmap = Object.create(null);
 	}
 	
-	getEthereumNode() {
+	getGlobalInstance() {
+		return this.global;
+	}
+	
+	/*getEthereumNode() {
 		if (this.ethereum_node)
 			this.ethereum_node;
 		
+		var service = this.global.getServiceInstance('ethnode');
+		var EthereumNode = service.EthereumNode;
+
 		this.ethereum_node = new EthereumNode(this);
 		
 		return this.ethereum_node;
-	}
+	}*/
 	
 	getSessionUUID() {
 		return this.session_uuid;
@@ -98,7 +101,9 @@ class Session {
 	}
 	
 	// session
-	authenticate(username, password) {
+	/*authenticate(username, password) {
+		var global = this.global;
+		
 		global.log("Session.authenticate called for user '" + username);
 		var users = global.users;
 		
@@ -113,6 +118,18 @@ class Session {
 		}
 		
 		return false;
+	}*/
+	
+	isAnonymous() {
+		return (this.user === null);
+	}
+	
+	impersonateUser(user) {
+		this.user = user;
+	}
+	
+	disconnectUser() {
+		this.user = null;
 	}
 	
 	getUser() {
@@ -120,7 +137,7 @@ class Session {
 	}
 	
 	// static
-	static getSession(sessionuuid) {
+	static getSession(global, sessionuuid) {
 		var session;
 		
 		var key = sessionuuid.toString();
@@ -133,7 +150,7 @@ class Session {
 			session = mapvalue;
 		}
 		else {
-			session = new Session();
+			session = new Session(global);
 			session.session_uuid = sessionuuid;
 			
 			sessionmap.pushSession(session);
