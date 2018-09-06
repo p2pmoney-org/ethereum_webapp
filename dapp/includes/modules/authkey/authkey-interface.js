@@ -89,10 +89,32 @@ var AuthKeyInterface = class {
 		promises.push(authenticationpromise);
 		
 		return Promise.all(promises).then(function(res) {
+			if (callback)
+				callback(null, res[1]);
+			
 			return res[1];
 		});
 	}
 	
+	logout(session, callback) {
+		console.log('AuthKeyInterface.logout called');
+		var global = this.global;
+		
+		var authkeyserveraccess = this.module.getAuthKeyServerAccessInstance(session);
+		
+		var useruuid = (session.getSessionUserObject() ? session.getSessionUserObject().getUserUUID() : null);
+		
+		return authkeyserveraccess.auth_session_logout(useruuid, function(err, res) {
+			var loggedout = (res['status'] == '1' ? true : false);
+			
+			console.log("log out result is " + loggedout);
+			
+			if (callback)
+				callback(null, loggedout);
+			
+			return loggedout;
+		});
+	}
 }
 
 if ( typeof GlobalClass !== 'undefined' && GlobalClass )

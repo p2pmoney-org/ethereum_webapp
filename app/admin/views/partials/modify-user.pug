@@ -1,0 +1,57 @@
+h3 Modify user
+
+// modify user form
+form(method='POST' action='/admin')
+	input#action.form-control(type='hidden' name='action' value='users')
+	input#session.form-control(type='hidden' name='sessionuuid' value=session.sessionuuid)
+	input#session.form-control(type='hidden' name='useruuid' value=selecteduser.useruuid)
+	input#action.form-control(type='hidden' name='operation' value='modify')
+
+	div.form-group
+		label(for='name') User name:
+		input#name.form-control(type='text', placeholder='username' name='username', value=username)
+	div.form-group
+		label(for='email') Email:
+		input#email.form-control(type='email', placeholder='name@email.com' name='useremail', value=useremail)
+	div.form-group
+		label(for='pw') Password:
+		input#pw.form-control(type='password' name='password')
+	div.form-group
+		label(for='pw2') Confirm Password:
+		input#pw2.form-control(type='password' name='confirmPassword')
+	
+	button.btn.btn-primary(type='submit') Modify
+
+
+hr
+
+h3 Add key
+
+form(method='POST' action='/admin')
+	input#action.form-control(type='hidden' name='action' value='users')
+	input#session.form-control(type='hidden' name='sessionuuid' value=session.sessionuuid)
+	input#session.form-control(type='hidden' name='useruuid' value=selecteduser.useruuid)
+	input#action.form-control(type='hidden' name='operation' value='addkey')
+
+	div.form-group
+		label(for='privatekey') Private key:
+		input#privatekey.form-control(type='text', name='privatekey', required)
+	
+	button.btn.btn-primary(type='submit') Add
+
+
+h3 User keys
+
+table(style='width:800px', border='0')
+
+	tr#headtag
+		th key uuid
+		th private key
+		th 
+ 
+	each userkey in selecteduser.keys
+		tr
+			td #{userkey.keyuuid}
+			td #{userkey.privatekey}
+			td 
+				a(href="?sessionuuid=" + session.sessionuuid + "&tab=users" + "&useruuid=" + selecteduser.useruuid + "&operation=deletekey&keyuuid="+ userkey.keyuuid) delete key

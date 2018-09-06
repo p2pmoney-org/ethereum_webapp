@@ -1,0 +1,13 @@
+block navBar
+	div.nav
+		table(style='width: 600px; margin: 10px;padding: 5px; text-align: center;', border='0')
+			tr
+				td 
+					a(href="?sessionuuid=" + session.sessionuuid + "&tab=container") Container
+				td 
+					a(href="?sessionuuid=" + session.sessionuuid + "&tab=application") Application
+				td 
+					a(href="?sessionuuid=" + session.sessionuuid + "&tab=users") Users
+				td 
+					a(href="?sessionuuid=" + session.sessionuuid + "&tab=login" + (session.islogged ? "&action=logout" : "")) Logout
+				

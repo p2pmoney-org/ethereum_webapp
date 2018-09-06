@@ -35,11 +35,13 @@ var Module = class {
 		// authkey
 		var modulescriptloader = global.getScriptLoader('authkeyloader', parentscriptloader);
 		
-		modulescriptloader.push_script('./js/includes/authkey/authkey-interface.js');
+		var moduleroot = './includes/modules/authkey';
 
-		//modulescriptloader.push_script('./js/includes/authkey/control/controllers.js');
+		modulescriptloader.push_script( moduleroot + '/authkey-interface.js');
 
-		modulescriptloader.push_script('./js/includes/authkey/model/user.js');
+		//modulescriptloader.push_script( moduleroot + '/control/controllers.js');
+
+		modulescriptloader.push_script( moduleroot + '/model/user.js');
 		
 		modulescriptloader.load_scripts(function() { self.init(); if (callback) callback(null, self); });
 		

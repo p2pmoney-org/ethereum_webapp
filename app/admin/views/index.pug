@@ -1,0 +1,46 @@
+extends layout
+	
+mixin Header
+	block content
+		h1= title
+		p Welcome to #{title}
+		
+		if (message)
+		p Message: #{message}
+		
+		hr
+		
+block content
+
+	if server.setupdone
+		if session.islogged
+		
+			+Header
+			
+			include ./partials/tab-bar.pug
+			
+			case navigation.tab
+				when 0  
+					h2 Login/logout
+					include ./partials/login.pug
+				when 1  
+					h2 Container
+					include ./partials/container-status.pug
+				when 2
+					h2 Application
+					include ./partials/server-status.pug			
+				when 3  
+					h2 Users
+					include ./partials/user-management.pug
+				default
+					h2 Login
+					include ./partials/login.pug
+		else
+			+Header
+		
+			h2 Login
+			include ./partials/login.pug
+	else
+		h2 Setup
+		include ./partials/install.pug
+	

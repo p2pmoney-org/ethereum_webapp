@@ -138,6 +138,44 @@ class Xtra_AuthKeyServerAccess {
 		
 	}
 	
+	auth_session_logout(useruuid, callback) {
+		console.log("Xtra_AuthKeyServerAccess.auth_session_logout called");
+		
+		var self = this
+		var session = this.session;
+
+		var promise = new Promise(function (resolve, reject) {
+			
+			try {
+				var resource = "/session/logout";
+				
+				var postdata = [];
+				
+				postdata = {useruuid: useruuid};
+				
+				self.rest_auth_post(resource, postdata, function (err, res) {
+					if (res) {
+						
+						if (callback)
+							callback(null, res);
+						
+						return resolve(res);
+					}
+					else {
+						reject('rest error calling ' + resource);
+					}
+					
+				});
+			}
+			catch(e) {
+				reject('rest exception: ' + e);
+			}
+		});
+		
+		return promise;
+		
+	}
+	
 	//
 	// rest Key API
 	//

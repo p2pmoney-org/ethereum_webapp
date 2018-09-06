@@ -1,0 +1,10 @@
+h3 Variables
+
+p Variables set in launch.config. Paths are internal to the container.
+
+table(style='width:400px', border='1')
+
+	each variable in launchvariables
+		tr
+			td #{variable.key}
+			td #{variable.value}

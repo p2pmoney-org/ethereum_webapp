@@ -14,7 +14,8 @@ class Global {
 		var fs = require('fs');
 		var path = require('path');
 		
-		this.execution_dir = (process.env.root_dir ? process.env.root_dir :  path.join(__dirname, '../../..'));
+		this.base_dir = (Global.ETHEREUM_WEBAPP_BASE_DIR ? Global.ETHEREUM_WEBAPP_BASE_DIR : (process.env.root_dir ? process.env.root_dir :  path.join(__dirname, '../../..')));
+		this.execution_dir = (Global.ETHEREUM_WEBAPP_EXEC_DIR ? Global.ETHEREUM_WEBAPP_EXEC_DIR : (process.env.root_dir ? process.env.root_dir :  path.join(__dirname, '../../..')));
 		
 		// command line arguments
 		this.commandline = process.argv;
@@ -36,7 +37,7 @@ class Global {
 		var jsonFileName;
 		var jsonPath;
 		var jsonFile;
-		this.config = null;
+		this.config = {};
 		
 		try {
 			var jsonConfigPath = (this.options['jsonfile'] !== undefined ? this.options['jsonfile'] : 'config.json');
@@ -132,33 +133,14 @@ class Global {
 		this.web3_provider_url = (config && (typeof config["web3_provider_url"] != 'undefined') ? config["web3_provider_url"] : 'http://localhost');
 		this.web3_provider_port= (config && (typeof config["web3_provider_port"] != 'undefined') ? config["web3_provider_port"] : '8545');
 
-		this.dapp_root_dir = (config && (typeof config["dapp_root_dir"] != 'undefined') ? config["dapp_root_dir"] : null);
-		this.overload_dapp_files = (config && (typeof config["overload_dapp_files"] != 'undefined') ? config["overload_dapp_files"] : 1);
-		
-		this.webapp_app_dir = (config && (typeof config["webapp_app_dir"] != 'undefined') ? config["webapp_app_dir"] : path.join(this.execution_dir, './webapp/app'));
-		this.copy_dapp_files = (config && (typeof config["copy_dapp_files"] != 'undefined') ? config["copy_dapp_files"] : 0);
-
 		
 		this.mysql_host = (config && (typeof config["mysql_host"] != 'undefined') ? config["mysql_host"] : "localhost");
 		this.mysql_port = (config && (typeof config["mysql_port"] != 'undefined') ? config["mysql_port"] : 3306);
 		this.mysql_database = (config && (typeof config["mysql_database"] != 'undefined') ? config["mysql_database"] : null);
 		this.mysql_username = (config && (typeof config["mysql_username"] != 'undefined') ? config["mysql_username"] : null);
 		this.mysql_password = (config && (typeof config["mysql_password"] != 'undefined') ? config["mysql_password"] : null);
+		this.mysql_table_prefix = (config && (typeof config["mysql_table_prefix"] != 'undefined') ? config["mysql_table_prefix"] : null);
 
-		
-		// user database (json file)
-		this.users = {};
-		
-		try {
-			jsonFileName = 'users.json';
-			jsonPath = path.join(this.execution_dir, './settings', jsonFileName);
-			jsonFile = fs.readFileSync(jsonPath, 'utf8');
-			this.users = JSON.parse(jsonFile);
-			
-		}
-		catch(e) {
-			this.log('exception reading json file: ' + e.message); 
-		}
 		
 		
 		// 
@@ -168,24 +150,15 @@ class Global {
 		// services
 		this.services = [];
 	
+		// hooks
+		this.hook_arrays = [];
+
 		// web3
 		this.web3instance = null;
 	}
 	
 	initServer() {
 		this.log("Initializing server environment");
-		
-		if (this.copy_dapp_files == 1) {
-			this.log("Copying DAPP app directory")
-			// copy dapp files to webapp dir
-			this.copyDappFiles();
-		}
-		
-		if (this.overload_dapp_files == 1) {
-			this.log("Overloading DAPP files")
-			// copy files to standard dapp
-			this.overloadDappFiles();
-		}
 		
 		// register common service
 		var Service = require('./service.js');
@@ -196,28 +169,125 @@ class Global {
 	}
 	
 	initServices() {
-		for (var i=0; i < this.services.length; i++) {
-			var service = this.services[i];
-			
-			service.loadService();
-		}
+		this.loadAllServices();
 		
+		// ask modules to register hooks
+		this.registerServicesHooks();
 	}
 	
-	getServedDappDirectory() {
-		if (this.copy_dapp_files == 1) {
-			var path = require('path');
+	exit() {
+		var process = require('process');
 
-			return path.join(this.webapp_app_dir, '/../');
+		process.exit(1);		
+	}
+	
+	reload() {
+		// dirty exit to restart process
+		this.exit();
+	}
+	
+	readJson(jsonname) {
+		var fs = require('fs');
+		var path = require('path');
+
+		var jsonFileName;
+		var jsonPath;
+		var jsonFile;
+		
+		var jsoncontent;
+		
+		try {
+			jsonFileName = jsonname + ".json";
+			
+			jsonPath = path.join(this.execution_dir, './settings', jsonFileName);
+	
+	
+			jsonFile = fs.readFileSync(jsonPath, 'utf8');
+			jsoncontent = JSON.parse(jsonFile);
+	
 		}
-		else {
-			if (this.dapp_root_dir) {
-				return this.dapp_root_dir;
+		catch(e) {
+			this.log('exception reading json file: ' + e.message); 
+		}
+		
+		return jsoncontent;
+	}
+	
+	saveJson(jsonname, jsoncontent) {
+		var bSuccess = false;
+		var fs = require('fs');
+		var path = require('path');
+
+		var jsonFileName;
+		var jsonPath;
+		var jsonFile;
+		
+		var finished = false;
+		
+		try {
+			jsonFileName = jsonname + ".json";
+			
+			jsonPath = path.join(this.execution_dir, './settings', jsonFileName);
+		
+			var jsonstring = JSON.stringify(jsoncontent);
+
+			fs.writeFile(jsonPath, jsonstring, 'utf8', function() {
+				bSuccess = true;
+			
+				finished = true;
+			});
+			
+		}
+		catch(e) {
+			this.log('exception writing json file: ' + e.message); 
+			finished = true;
+		}
+		
+		// wait to turn into synchronous call
+		while(!finished)
+		{require('deasync').runLoopOnce();}
+
+		return bSuccess;
+	}
+	
+	readVariableFile(filepath) {
+		var fs = require('fs');
+		var path = require('path');
+
+		var fileContent;
+		
+		var array = {};
+		
+		try {
+			
+			if (this._checkFileExist(fs, filepath)) {
+				fileContent = fs.readFileSync(filepath, 'utf8');
+				
+				var lines = fileContent.split('\n');
+			    
+				for (var i = 0; i < lines.length; i++) {
+					var line = lines[i];
+					
+					if ( (!line.startsWith('#')) && (line.indexOf('=') > -1))  {
+						var pair = line.split('=');
+						
+						array[pair[0]] = pair[1];
+
+					}
+			    }
+				
+				
 			}
 			else {
-				return this.execution_dir + '/webapp';
+				this.log('file does not exist: ' + filepath);
 			}
+	
 		}
+		catch(e) {
+			this.log('exception reading variable file: ' + e.message); 
+		}
+		
+		return array;
 	}
 	
 	processText(text) {
@@ -254,8 +324,8 @@ class Global {
 		var self = this;
 		var global = this;
 		
-		this.log("copying file " + sourcepath);
-		this.log("to directory " + destdir);
+		//this.log("copying file " + sourcepath);
+		//this.log("to directory " + destdir);
 		
 		//gets file name and adds it to destdir
 		var filename = path.basename(sourcepath);
@@ -285,7 +355,7 @@ class Global {
 				fs.writeFile(destpath, data, (err) => {  
 					if (err) throw err;
 
-					global.log(filename + ' succesfully copied');
+					//self.log(filename + ' succesfully copied');
 				});				  
 			}
 		});
@@ -303,6 +373,30 @@ class Global {
 		// create file
 		fs.openSync(filepath, 'w');
 	}
+	
+	executeCmdLine(cmdline) {
+		var child_process = require('child_process');
+		var output = false;
+		
+		var finished = false;
+		var self = this;
+		self.log('executing command line: ' + cmdline);
+		
+		var batch = child_process.exec(cmdline, function(error, stdout, stderr){ 
+			self.log('stdout is ' + JSON.stringify(stdout));
+			output = stdout; 
+			finished = true;
+		});
+		
+	    
+	    // wait to turn into synchronous call
+		while(!finished)
+		{require('deasync').runLoopOnce();}
+
+		return output;
+	}
+	
+
 	
 	createdirectory(dirpath) {
 		var shell = require('shelljs');
@@ -326,7 +420,7 @@ class Global {
 			 
 			ncp.limit = 5; 
 			 
-			self.log('copying all files from ' + sourcedir + ' to '+ destdir);
+			//self.log('copying all files from ' + sourcedir + ' to '+ destdir);
 			
 			ncp(sourcedir, destdir, function (err) {
 				
@@ -336,7 +430,7 @@ class Global {
 				}
 			 
 				finished = true;
-				self.log(sourcedir + ' copied in '+ destdir);
+				//self.log(sourcedir + ' copied in '+ destdir);
 			});
 			
 			// wait to turn into synchronous call
@@ -350,85 +444,23 @@ class Global {
 		
 	}
 	
-	copyDappFiles() {
-		var path = require('path');
-		var fs = require('fs');
+	require(module) {
+		var process = require('process');
+		// set the proper node_module path for module
+		//this.log("loading module " + module + " NODE_PATH is " + process.env.NODE_PATH);
 		
-		var sourcedir = path.join(this.dapp_root_dir, './app');
-		var destdir = this.webapp_app_dir;
-		
-		this.copydirectory(sourcedir, destdir);
-		
-		// compiled contracts
-		
-		// remove copied simlink, if any
-		var contractslink =  path.join(this.webapp_app_dir, './contracts');
-		if (this._checkFileExist(fs, contractslink) ) {
-			fs.unlink(contractslink);
-		}
-		
-		sourcedir = path.join(this.dapp_root_dir, './build');
-		destdir = path.join(this.webapp_app_dir, '../build');
-		
-		this.copydirectory(sourcedir, destdir);
-		
+		if (process.env.NODE_PATH)
+			return require(process.env.NODE_PATH + '/' + module);
+		else
+			return require(module);
 	}
 	
-	overloadDappFiles() {
-		var fs = require('fs');
-		var path = require('path');
-		
-		var sourcepath;
-		var destdir;
-		
-		
-		// replace xtr-config.js
-		sourcepath = this.execution_dir + '/dapp/js/src/xtra/xtra-config.js';
-		destdir = (this.copy_dapp_files ? path.join(this.webapp_app_dir, './js/src/xtra') : path.join(this.dapp_root_dir, './app/js/src/xtra'));
-		
-		this.copyfile(fs, path, sourcepath, destdir);
-		
-		
-		
-		
-		// copy files from xtra/lib (e.g.  ethereum-node-access.js)
-		var sourcedir = this.execution_dir + '/dapp/js/src/xtra/lib';
-		
-		if (this._checkFileExist(fs, sourcedir)) {
-			destdir = (this.copy_dapp_files ? path.join(this.webapp_app_dir, './js/src/xtra/lib') : path.join(this.dapp_root_dir, './app/js/src/xtra/lib'));
-			
-			this.copydirectory(sourcedir, destdir);
-		}
-		/*sourcepath = this.execution_dir + '/dapp/js/src/xtra/lib/ethereum-node-access.js';
-		destdir = (this.copy_dapp_files ? path.join(this.webapp_app_dir, './js/src/xtra/lib') : path.join(this.dapp_root_dir, './app/js/src/xtra/lib'));
-		
-		this.copyfile(fs, path, sourcepath, destdir);*/
-		
-		// copy modules in js/includes
-		var sourcedir = this.execution_dir + '/dapp/js/includes';
-		
-		if (this._checkFileExist(fs, sourcedir)) {
-			destdir = (this.copy_dapp_files ? path.join(this.webapp_app_dir, './js/includes') : path.join(this.dapp_root_dir, './app/js/includes'));
-			
-			this.copydirectory(sourcedir, destdir);
-		}
-		
-		// copy modules in js/src/includes
-		var sourcedir = this.execution_dir + '/dapp/js/src/includes';
-		
-		if (this._checkFileExist(fs, sourcedir)) {
-			destdir = (this.copy_dapp_files ? path.join(this.webapp_app_dir, './js/src/includes') : path.join(this.dapp_root_dir, './app/js/src/includes'));
-			
-			this.copydirectory(sourcedir, destdir);
-		}
-	}
-
 	getWeb3ProviderFullUrl() {
 		return this.web3_provider_url + ':' + this.web3_provider_port;
 	}
 	
 	getWeb3Provider() {
-		var Web3 = require('web3');
+		var Web3 = this.require('web3');
 
 		var web3providerfullurl = this.getWeb3ProviderFullUrl();
 		
@@ -441,7 +473,7 @@ class Global {
 		if (this.web3instance)
 			return this.web3instance;
 		
-		var Web3 = require('web3');
+		var Web3 = this.require('web3');
 
 		var web3Provider = this.getWeb3Provider();
 		  
@@ -453,9 +485,12 @@ class Global {
 	}
 	
 	getMySqlConnection() {
-		var MySqlConnection = require('./common/mysqlcon.js')
+		var MySqlConnection = require('./model/mysqlcon.js')
 		
 		var sqlcon = new MySqlConnection(this, this.mysql_host, this.mysql_port, this.mysql_database, this.mysql_username, this.mysql_password);
+		
+		if (this.mysql_table_prefix)
+			sqlcon.setTablePrefix(this.mysql_table_prefix);
 		
 		return sqlcon;
 	}
@@ -480,6 +515,52 @@ class Global {
 		}
 	}
 	
+	guid() {
+		  return this.generateUUID(8) + '-' + this.generateUUID(4) + '-' + this.generateUUID(4) + '-' +
+		  this.generateUUID(4) + '-' + this.generateUUID(12);
+	}
+	
+	generateUUID(length) {
+		function s4() {
+		    return Math.floor((1 + Math.random()) * 0x10000)
+		      .toString(16)
+		      .substring(1);
+		  }
+		
+		var uuid = '';
+		
+		while (uuid.length < length) {
+			uuid += s4();
+		}
+		
+		return uuid.substring(0, length);
+	}
+	
+	formatDate(date, format) {
+		var d = date;
+		
+		switch(format) {
+			case 'YYYY-mm-dd HH:MM:SS':
+			return d.getFullYear().toString()+"-"
+			+((d.getMonth()+1).toString().length==2?(d.getMonth()+1).toString():"0"+(d.getMonth()+1).toString())+"-"
+			+(d.getDate().toString().length==2?d.getDate().toString():"0"+d.getDate().toString())+" "
+			+(d.getHours().toString().length==2?d.getHours().toString():"0"+d.getHours().toString())+":"
+			+(d.getMinutes().toString().length==2?d.getMinutes().toString():"0"+d.getMinutes().toString())+":"
+			+(d.getSeconds().toString().length==2?d.getSeconds().toString():"0"+d.getSeconds().toString());
+			
+			default:
+				return date.toString(format);
+		}
+	}
+	
+	getConstant(name) {
+		var Constants = require('./constants.js');
+		
+		var val = Constants[name];
+		
+		return val;
+	}
+	
 	// services
 	getServiceInstance(servicename) {
 		if (!servicename)
@@ -497,12 +578,95 @@ class Global {
 		if (!service.name)
 			throw 'service needs to have a name property';
 		
+		if ((!service.loadService) || (typeof service.loadService != 'function'))
+			throw 'service needs to have a loadService function';
+		
 		this.services[service.name] = service; // for direct access by name in getServiceInstance
 		this.services.push(service); //for iteration on the array
 		
 		// we set global property
 		service.global = this;
 	}
+	
+	getClass() {
+		return Global;
+	}
+	
+	loadAllServices() {
+		console.log('Global.loadAllServices called');
+				
+		for (var i=0; i < this.services.length; i++) {
+			var service = this.services[i];
+			
+			service.loadService();
+		}
+		
+		return true;
+	}
+	
+	//
+	// hooks mechanism
+	//
+	registerServicesHooks() {
+		console.log('Global.registerServicesHooks called');
+		
+		// call registerHooks function for all services if functions exists
+		for (var i=0; i < this.services.length; i++) {
+			var service = this.services[i];
+			
+			if (service.registerHooks)
+				service.registerHooks();
+		}
+	}
+	
+	getHookArray(hookentry) {
+		var entry = hookentry.toString();
+		
+		if (!this.hook_arrays[hookentry])
+			this.hook_arrays[hookentry] = [];
+			
+		return this.hook_arrays[hookentry];
+	}
+	
+	registerHook(hookentry, servicename, hookfunction) {
+		var hookarray = this.getHookArray(hookentry);
+		
+		if (typeof hookfunction === "function") {
+			var hookfunctionname = hookfunction.toString();
+			var entry = [];
+			
+			entry['servicename'] = servicename;
+			entry['functionname'] = hookfunctionname;
+			entry['function'] = hookfunction;
+			
+			console.log('registering hook '+ hookentry + ' for ' + servicename);
+			hookarray.push(entry);
+		}
+	}
+	
+	invokeHooks(hookentry, result, inputparams) {
+		console.log('Global.invokeHooks called for ' + hookentry);
+
+		var hookarray = this.getHookArray(hookentry);
+
+		for (var i=0; i < hookarray.length; i++) {
+			var entry = hookarray[i];
+			var func = entry['function'];
+			var servicename = entry['servicename'];
+			var service = this.getServiceInstance(servicename);
+			
+			if (service) {
+				var ret = func.call(service, result, inputparams);
+				
+				if ((ret) && (ret === false))
+					return ret
+			}
+			
+		}
+		
+		return true;
+	}
+	
 	
 	// static
 	static getGlobalInstance() {
@@ -511,8 +675,25 @@ class Global {
 		
 		return globalinstance;
 	}
+	
+	static registerServiceClass(servicename, classname, classprototype) {
+		Global.getGlobalInstance().getServiceInstancet(servicename)[classname] = classprototype;
+		
+		classprototype.getClass = function() {
+			return classprototype;
+		}
+		
+		classprototype.getClassName = function() {
+			return classname;
+		}
+		
+		classprototype.getGlobalInstance = function() {
+			return Global.getGlobalInstance();
+		}
+	}
+
 }
 
-var GlobalClass = Global;
+//var GlobalClass = Global;
 
 module.exports = Global;

@@ -1,0 +1,38 @@
+h3 Add user
+
+// add user form
+form(method='POST' action='/admin')
+	input#action.form-control(type='hidden' name='action' value='users')
+	input#session.form-control(type='hidden' name='sessionuuid' value=session.sessionuuid)
+
+	div.form-group
+		label(for='name') User name:
+		input#name.form-control(type='text', placeholder='username' name='username', required)
+	div.form-group
+		label(for='email') Email:
+		input#email.form-control(type='email', placeholder='name@email.com' name='useremail', required)
+	div.form-group
+		label(for='pw') Password:
+		input#pw.form-control(type='password' name='password', required)
+	div.form-group
+		label(for='pw2') Confirm Password:
+		input#pw2.form-control(type='password' name='confirmPassword', required)
+	
+	button.btn.btn-primary(type='submit') Add
+
+h3 List of users
+
+table(style='width:800px', border='1')
+
+	tr#headtag
+		th email
+		th username
+		th user uuid
+ 
+	each user in users
+		tr
+			td 
+				a(href="?sessionuuid=" + session.sessionuuid + "&tab=users" + "&useruuid=" + user.useruuid) #{user.useremail}
+			td #{user.username}
+			td #{user.useruuid}
+			

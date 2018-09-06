@@ -1,0 +1,12 @@
+h2 Login
+
+// register form
+form(method='POST' action='/admin')
+	input#action.form-control(type='hidden' name='action' value='login')
+	input#session.form-control(type='hidden' name='sessionuuid' value=session.sessionuuid)
+	
+	div.form-group
+		label(for='pw') Password:
+		input#pw.form-control(type='password' name='password')
+
+	button.btn.btn-primary(type='submit') Login

@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS `webapp`.`webapp_users` (
+  `UserId` int(11) NOT NULL AUTO_INCREMENT,
+  `UserUUID` varchar(36) NOT NULL,
+  `UserEmail` varchar(100) NOT NULL,
+  `Password` varchar(64) DEFAULT NULL,
+  `Salt` varchar(16) NOT NULL,
+  `HashMethod` int(11) NOT NULL DEFAULT '-1',
+  `AltLoginMethod` varchar(25) NOT NULL,
+  `AccountStatus` int(11) NOT NULL,
+  `UserName` varchar(50) NOT NULL,
+  `RegistrationDate` datetime NOT NULL,
+  `LastModificationOn` datetime NOT NULL,
+  `DisabledOn` datetime DEFAULT NULL,
+  `DiscardedOn` datetime DEFAULT NULL,
+  `LastLoginOn` datetime DEFAULT NULL,
+  `LastSessionOn` datetime DEFAULT NULL,
+  PRIMARY KEY (`UserId`),
+  UNIQUE KEY `UserUUID` (`UserUUID`),
+  UNIQUE KEY `UserEmail` (`UserEmail`),
+  KEY `UserId` (`UserId`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;

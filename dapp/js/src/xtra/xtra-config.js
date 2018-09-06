@@ -23,11 +23,12 @@ class XtraConfigModule {
 		var modulescriptloader = ScriptLoader.findScriptLoader('moduleloader')
 		var xtramodulescriptloader = modulescriptloader.getChildLoader('xtramoduleloader')
 		
+		var moduleroot = './includes/modules/';
+
 		// authkey
-		xtramodulescriptloader.push_script('./js/includes/authkey/module.js');
+		xtramodulescriptloader.push_script( moduleroot + 'authkey/module.js');
 		
 		xtramodulescriptloader.load_scripts();
-		
 	}
 	
 	init() {
@@ -68,11 +69,21 @@ class XtraConfigModule {
 		
 		var global = this.global;
 		
+		// initialization
 		global.registerHook('preFinalizeGlobalScopeInit_hook', 'xtraconfig', this.preFinalizeGlobalScopeInit_hook);
 		global.registerHook('postFinalizeGlobalScopeInit_hook', 'xtraconfig', this.postFinalizeGlobalScopeInit_hook);
 		
+		// popup login box
 		global.registerHook('handleShowLoginBox_hook', 'xtraconfig', this.handleShowLoginBox_hook);
+		
+		// angular login page
+		global.registerHook('alterLoginForm_hook', 'xtraconfig', this.alterLoginForm_hook);
+		global.registerHook('handleLoginSubmit_hook', 'xtraconfig', this.handleLoginSubmit_hook);
 
+		global.registerHook('alterLogoutForm_hook', 'xtraconfig', this.alterLogoutForm_hook);
+		global.registerHook('handleLogoutSubmit_hook', 'xtraconfig', this.handleLogoutSubmit_hook);
+
+		// node access facade
 		global.registerHook('getEthereumNodeAccessInstance_hook', 'xtraconfig', this.getEthereumNodeAccessInstance_hook);
 	}
 	
@@ -128,6 +139,7 @@ class XtraConfigModule {
 		return true;
 	}
 	
+	// popup login
 	handleShowLoginBox_hook(result, params) {
 		console.log('handleShowLoginBox_hook called for ' + this.name);
 		
@@ -139,15 +151,20 @@ class XtraConfigModule {
 	}
 	
 	displayIdentificationBox() {
-		var global = XtraConfig.getGlobalObject();
+
+		var username = prompt("Enter username", "");
+		var password = prompt("Enter password", "");
+
+		this._authenticate(username, password);
+	}
+
+	_authenticate(username, password) {
+		var global = this.global;
 		
 		var app = global.getAppObject();
 		
 		var commonmodule = global.getModuleObject('common');
 		var session = commonmodule.getSessionObject();
-
-		var username = prompt("Enter username", "");
-		var password = prompt("Enter password", "");
 
 		if (username != null) {
 			var authkeymodule = global.getModuleObject('authkey');
@@ -177,8 +194,137 @@ class XtraConfigModule {
 		}	
 		
 	}
+	
+	_logout() {
+		var global = this.global;
+		
+		var app = global.getAppObject();
+		
+		var commonmodule = global.getModuleObject('common');
+		var session = commonmodule.getSessionObject();
 
+		if (!session.isAnonymous()) {
+			var authkeymodule = global.getModuleObject('authkey');
+			var authkeyinterface = authkeymodule.getAuthKeyInterface();
+			
+			authkeyinterface.logout(session)
+			.then(function(res) {
+				var loggedout = (res['status'] == '1' ? true : false);
+				
+				if (loggedout) {
+					
+					app.refreshDisplay();
+					
+				}
+				else {
+					alert("Could not log out on authentication server!");
+				}
+				
+			})
+			.catch(function (err) {
+				alert(err);
+			});
+			
+			
+		}	
+		
+	}
+	
+	// angular login page
+	alterLoginForm_hook(result, params) {
+		console.log('alterLoginForm_hook called for ' + this.name);
+		
+		var global = this.global;
 
+		var $scope = params[0];
+		var logoutform = params[1];
+
+		// remove private key input
+		var privkeyspan = document.getElementById('privkey-span');
+		
+		if ( privkeyspan ) {
+			privkeyspan.parentNode.removeChild(privkeyspan);
+		}
+		
+		// add our inputs
+		var formdiv = document.createElement("div");
+		logoutform.insertBefore(formdiv, logoutform.firstChild);
+
+		var span;
+		var label;
+		var textbox;
+
+		// name text box
+		span = document.createElement("span");
+		formdiv.appendChild(span);
+
+		label = document.createElement("Label");
+		label.innerHTML = global.t("User name:");
+		label.setAttribute('for',"username");
+		
+		span.appendChild(label);
+		
+		textbox = document.createElement("input"); //input element, text
+		textbox.setAttribute('type',"text");
+		textbox.setAttribute('name',"username");
+		textbox.classList.add('form-textbox');
+		
+		span.appendChild(textbox);
+		
+		// password
+		span = document.createElement("span");
+		formdiv.appendChild(span);
+
+		label = document.createElement("Label");
+		label.innerHTML = global.t("Passwordl:");
+		label.setAttribute('for',"password");
+		
+		span.appendChild(label);
+		
+		textbox = document.createElement("input"); //input element, text
+		textbox.setAttribute('type',"password");
+		textbox.setAttribute('name',"password");
+		textbox.classList.add('form-textbox');
+		
+		span.appendChild(textbox);
+		
+		result.push({module: 'xtraconfig', handled: true});
+		
+		return true;
+	}
+	
+	handleLoginSubmit_hook(result, params) {
+		console.log('handleLoginSubmit_hook called for ' + this.name);
+
+		var $scope = params[0];
+		
+		var username = this.getFormValue("username");
+		var password = this.getFormValue("password");
+		
+		this._authenticate(username, password);
+
+		result.push({module: 'xtraconfig', handled: true});
+		
+		return true;
+	}
+	
+	alterLogoutForm_hook(result, params) {
+		console.log('alterLogoutForm_hook called for ' + this.name);
+	}
+	
+	handleLogoutSubmit_hook(result, params) {
+		console.log('handleLogoutSubmit_hook called for ' + this.name);
+		
+		this._logout();
+		
+		result.push({module: 'xtraconfig', handled: true});
+		
+		return true;
+	}
+
+	
+
+	// node access facade
 	getEthereumNodeAccessInstance_hook(result, params) {
 		console.log('xtraconfig getEthereumNodeAccessInstance_hook called');
 		
@@ -191,6 +337,14 @@ class XtraConfigModule {
 		
 		return true;
 	}
+	
+	getFormValue(formelementname) {
+		var value = document.getElementsByName(formelementname)[0].value;
+		
+		return value;
+	}
+	
+
 	
 }
 
@@ -287,82 +441,6 @@ class XtraConfig {
 		var xtraconfigmodule = global.getModuleObject('xtraconfig');
 		
 		return xtraconfigmodule.displayIdentificationBox();
-
-/*
-		// watch-out, 'this' is defined as the context
-		// of the calling object from event listener
-		var global = XtraConfig.getGlobalObject();
-		
-		var app = global.getAppObject();
-		
-		var commonmodule = global.getModuleObject('common');
-		var session = commonmodule.getSessionObject();
-
-		var username = prompt("Enter username", "");
-		var password = prompt("Enter password", "");
-
-		if (username != null) {
-			var authkeymodule = global.getModuleObject('authkey');
-			var authkeyinterface = authkeymodule.getAuthKeyInterface();
-			
-			authkeyinterface.authenticate(session, username, password)
-			.then(function(res) {
-				var authenticated = (res['status'] == '1' ? true : false);
-				
-				console.log("authentication is " + authenticated);
-				
-				if (authenticated) {
-					
-					app.refreshDisplay();
-					
-				}
-				else {
-					alert("Could not authenticate you with these credentials!");
-				}
-				
-			})
-			.catch(function (err) {
-				alert(err);
-			});*/
-			
-			/*var EthereumNodeAccess = session.getEthereumNodeAccessInstance();
-			
-			var versionpromise = EthereumNodeAccess.webapp_version(function(err, version) {
-				console.log("version is " + version);
-			});
-			
-			var authenticationpromise = EthereumNodeAccess.webapp_session_authenticate(username, password, function(err, res) {
-				var authenticated = (res['status'] == '1' ? true : false);
-				
-				console.log("authentication is " + authenticated);
-				
-				if (authenticated) {
-					var privatekey = res['private_key'];
-					
-					if (privatekey) {
-						var sessionaccount = global.createBlankAccountObject();
-						
-						sessionaccount.setPrivateKey(privatekey);
-						
-						session.impersonateAccount(sessionaccount);
-						
-						app.refreshDisplay();
-					}
-					else {
-						prompt("Could not retrieve private key!");
-					
-					}
-					
-				}
-				else {
-					prompt("Could not authenticate you with these credentials!");
-				}
-				
-			});*/
-
-			
-/*		}	*/
-		
 	}
 	
 	static getGlobalObject() {

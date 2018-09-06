@@ -19,10 +19,13 @@ module.exports = function(app, global) {
 	app.route(route_root_path + '/version')
 	.get(Controller.version);
 
+	
+	var includeroot = '../../server/includes';
+	
 	//
 	// EthNode routes
 	//
-	var EthNodeRoutes = require('../../server/includes/ethnode/routes/routes.js');
+	var EthNodeRoutes = require( includeroot + '/ethnode/routes/routes.js');
 		
 	var ethnoderoutes = new EthNodeRoutes(app, global);
 	
@@ -32,10 +35,11 @@ module.exports = function(app, global) {
 	//
 	// AuthKey routes
 	//
-	var AuthKeyRoutes = require('../../server/includes/authkey/routes/routes.js');
+	var AuthKeyRoutes = require( includeroot + '/authkey/routes/routes.js');
 		
 	var authkeyroutes = new AuthKeyRoutes(app, global);
 	
 	authkeyroutes.registerRoutes();
 	
+
 };

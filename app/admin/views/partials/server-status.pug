@@ -1,0 +1,67 @@
+  
+form(method='POST' action='/admin')
+	input#action.form-control(type='hidden' name='action' value='application')
+	input#session.form-control(type='hidden' name='sessionuuid' value=session.sessionuuid)
+
+	h3 Ethereum
+	
+	table(style='width:400px', border='1')
+		tr
+			td URL
+			td 
+				input#web3_provider_url.form-control(type='text', name='web3_provider_url', value=web3_provider_url, required)
+		tr
+			td Port
+			td
+				input#web3_provider_port.form-control(type='text', name='web3_provider_port', value=web3_provider_port, required)
+	
+	h3 MySQL Connection
+	  
+	table(style='width:400px', border='1')
+		tr
+			td Mysql version
+			td #{mysql_version}
+		tr
+			td Host
+			td
+				input#mysql_host.form-control(type='text', name='mysql_host', value=mysql_host, required)
+		tr
+			td Port
+			td
+				input#mysql_port.form-control(type='text', name='mysql_port', value=mysql_port, required)
+		tr
+			td Database
+			td #{mysql_database}
+		tr
+			td Table prefix
+			td #{mysql_table_prefix}
+		tr
+			td User Name
+			td #{mysql_username}
+				
+	h3 REST API
+	  
+	table(style='width:400px', border='1')
+		tr
+			td Server url
+			td
+				input#rest_server_url.form-control(type='text', name='rest_server_url', value=rest_server_url, required)
+		tr
+			td API path
+			td
+				input#rest_server_api_path.form-control(type='text', name='rest_server_api_path', value=rest_server_api_path, required)
+
+	button.btn.btn-primary(type='submit') Save
+	
+	hr
+	
+	h3 Application info
+	
+	p Values set in json.config or in the database.
+	
+	table(style='width:400px', border='1')
+	
+		each variable in applicationvariables
+			tr
+				td #{variable.key}
+				td #{variable.value}	
