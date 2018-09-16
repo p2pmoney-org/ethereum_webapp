@@ -12,8 +12,8 @@ class XtraConfigModule {
 		this.isready = false;
 		this.isloading = false;
 		
-		this.ethereum_node_access_path = './js/src/xtra/lib/ethereum-node-access.js';
-		this.authkey_server_access_path = './js/src/xtra/lib/authkey-server-access.js';
+		this.ethereum_node_access_path = './js/src/xtra/interface/ethereum-node-access.js';
+		this.authkey_server_access_path = './js/src/xtra/interface/authkey-server-access.js';
 		
 		this.registerAdditionalModules();
 	}
@@ -354,7 +354,6 @@ class XtraConfig {
 	constructor() {
 		console.log("XtraConfig constructor called");
 		
-		//this.ethereum_node_access_path = './js/src/xtra/lib/ethereum-node-access.js';
 		this.allow_remote_access = 'enabled';
 		this.rest_server_url = ':rest_server_url';
 		this.rest_server_api_path = ':rest_server_api_path';

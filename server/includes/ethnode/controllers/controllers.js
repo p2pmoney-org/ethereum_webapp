@@ -130,10 +130,10 @@ class EthNodeControllers {
 
 		global.log("web3_block_current_number called for sessiontoken " + sessionuuid);
 		
-		var session = Session.getSession(global, sessionuuid);
-		var ethnode = this.getEthereumNode(session);
-		
 		try {
+			var session = Session.getSession(global, sessionuuid);
+			var ethnode = this.getEthereumNode(session);
+			
 			var blocknumber = ethnode.web3_getHighestBlockNumber();
 		}
 		catch(e) {
@@ -164,10 +164,10 @@ class EthNodeControllers {
 
 		global.log("web3_block called for sessiontoken " + sessionuuid + " and blockid " + blockid);
 		
-		var session = Session.getSession(global, sessionuuid);
-		var ethnode = this.getEthereumNode(session);
-		
 		try {
+			var session = Session.getSession(global, sessionuuid);
+			var ethnode = this.getEthereumNode(session);
+			
 			var blockjson = ethnode.web3_getBlock(blockid, false);
 		}
 		catch(e) {
@@ -199,10 +199,10 @@ class EthNodeControllers {
 
 		global.log("web3_block_and_transactions called for sessiontoken " + sessionuuid + " and blockid " + blockid);
 		
-		var session = Session.getSession(global, sessionuuid);
-		var ethnode = this.getEthereumNode(session);
-		
 		try {
+			var session = Session.getSession(global, sessionuuid);
+			var ethnode = this.getEthereumNode(session);
+			
 			var blockjson = ethnode.web3_getBlock(blockid, true);
 		}
 		catch(e) {
@@ -234,10 +234,10 @@ class EthNodeControllers {
 
 		global.log("web3_transaction called for sessiontoken " + sessionuuid + " and transaction " + txhash);
 		
-		var session = Session.getSession(global, sessionuuid);
-		var ethnode = this.getEthereumNode(session);
-		
 		try {
+			var session = Session.getSession(global, sessionuuid);
+			var ethnode = this.getEthereumNode(session);
+			
 			var txjson = ethnode.web3_getTransaction(txhash);
 		}
 		catch(e) {
@@ -269,10 +269,10 @@ class EthNodeControllers {
 
 		global.log("web3_transaction_receipt called for sessiontoken " + sessionuuid + " and transaction " + txhash);
 		
-		var session = Session.getSession(global, sessionuuid);
-		var ethnode = this.getEthereumNode(session);
-		
 		try {
+			var session = Session.getSession(global, sessionuuid);
+			var ethnode = this.getEthereumNode(session);
+			
 			var txjson = ethnode.web3_getTransactionReceipt(txhash);
 		}
 		catch(e) {
@@ -302,15 +302,15 @@ class EthNodeControllers {
 
 		global.log("web3_contract_load called for sessiontoken " + sessionuuid);
 		
-		var session = Session.getSession(global, sessionuuid);
-		var ethnode = this.getEthereumNode(session);
-		
 		var contractaddress = req.body.address;
 		var abistring = req.body.abi;
 		var abi = JSON.parse(abistring);
 
 		
 		try {
+			var session = Session.getSession(global, sessionuuid);
+			var ethnode = this.getEthereumNode(session);
+			
 			var contractinstance = ethnode.web3_contract_load_at(abi, contractaddress);
 		}
 		catch(e) {
@@ -357,19 +357,19 @@ class EthNodeControllers {
 		global.log("web3_contract_call called for sessiontoken " + sessionuuid + " and address " + contractaddress 
 				+ " and contractinstanceuuid " + contractinstanceuuid + " and method " + methodname);
 		
-		var session = Session.getSession(global, sessionuuid);
-		var ethnode = this.getEthereumNode(session);
-		
-		var contractinstance = ethnode.getWeb3ContractInstance(contractinstanceuuid)
-		//var contractinstance = session.getObject(contractinstanceuuid);
-		
 		try {
+			var session = Session.getSession(global, sessionuuid);
+			var ethnode = this.getEthereumNode(session);
+			
+			var contractinstance = ethnode.getWeb3ContractInstance(contractinstanceuuid)
+			//var contractinstance = session.getObject(contractinstanceuuid);
+			
 			var result = ethnode.web3_contract_dynamicMethodCall(contractinstance, abidef, params);
 			
 			//global.log("web3_contract_call called for sessiontoken "+ sessionuuid + " method " + methodname + " result is " + result);
 		}
 		catch(e) {
-			global.log("exception in web3_contract_call for sessiontoken " + sessionuuid + " method " + methodname + " contractinstanceuuid " + contractinstanceuuid + ": " + e);
+			global.log("exception in web3_contract_call for sessiontoken " + sessionuuid + " method " + methodname + " contractinstanceuuid " + contractinstanceuuid + ": " + e.stack);
 		}
 
 		var jsonresult;
@@ -621,11 +621,11 @@ class EthNodeControllers {
 			
 			var result = ethnode.truffle_method_call(contractinstance, methodname, params);
 				
-			//global.log("truffle_method_call called for sessiontoken "+ sessionuuid + " method " + methodname + " result is " + result);
+			global.log("truffle_method_call called for sessiontoken "+ sessionuuid + " method " + methodname + " result is " + result);
 
 		}
 		catch(e) {
-			global.log("exception in truffle_method_call for sessiontoken " + sessionuuid + " method " + methodname + " contractinstanceuuid " + contractinstanceuuid + ": " + e);
+			global.log("exception in truffle_method_call for sessiontoken " + sessionuuid + " method " + methodname + " contractinstanceuuid " + contractinstanceuuid + ": " + e.stack);
 		}
 		
 		var jsonresult;
@@ -685,7 +685,7 @@ class EthNodeControllers {
 		var jsonresult;
 		
 		if (result !== null) {
-			jsonresult = {status: 1, result: result};
+			jsonresult = {status: 1, result: (result ? result.toString() : null)};
 		}
 		else {
 			jsonresult = {status: 0, error: "could not get result for method " + methodname};

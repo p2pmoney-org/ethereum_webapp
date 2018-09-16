@@ -25,12 +25,15 @@ class Service {
 		var global = this.global;
 		var config = global.config;
 
-		this.dapp_root_dir = (config && (typeof config["dapp_root_dir"] != 'undefined') ? config["dapp_root_dir"] : null);
+		this.dapp_root_base_dir = (config && (typeof config["dapp_root_dir"] != 'undefined') ? config["dapp_root_dir"] : null);
+		
 		this.overload_dapp_files = (config && (typeof config["overload_dapp_files"] != 'undefined') ? config["overload_dapp_files"] : 0);
 		
 		this.webapp_app_dir = (config && (typeof config["webapp_app_dir"] != 'undefined') ? config["webapp_app_dir"] : path.join(global.execution_dir, './webapp/app'));
 		this.copy_dapp_files = (config && (typeof config["copy_dapp_files"] != 'undefined') ? config["copy_dapp_files"] : 0);
 		
+		this.dapp_root_exec_dir = (this.copy_dapp_files == 1 ? path.join(this.webapp_app_dir, '../') : this.dapp_root_base_dir);
+
 		if (this.copy_dapp_files == 1) {
 			global.log("Copying DAPP app directory")
 			// copy dapp files to webapp dir
@@ -91,7 +94,7 @@ class Service {
 		var path = require('path');
 		var fs = require('fs');
 		
-		var sourcedir = path.join(this.dapp_root_dir, './app');
+		var sourcedir = path.join(this.dapp_root_base_dir, './app');
 		var destdir = this.webapp_app_dir;
 		
 		global.copydirectory(sourcedir, destdir);
@@ -104,7 +107,7 @@ class Service {
 			fs.unlink(contractslink);
 		}
 		
-		sourcedir = path.join(this.dapp_root_dir, './build');
+		sourcedir = path.join(this.dapp_root_base_dir, './build');
 		destdir = path.join(this.webapp_app_dir, '../build');
 		
 		global.copydirectory(sourcedir, destdir);
@@ -122,18 +125,18 @@ class Service {
 		
 		// replace xtr-config.js
 		sourcepath = global.base_dir + '/dapp/js/src/xtra/xtra-config.js';
-		destdir = (this.copy_dapp_files ? path.join(this.webapp_app_dir, './js/src/xtra') : path.join(this.dapp_root_dir, './app/js/src/xtra'));
+		destdir = (this.copy_dapp_files ? path.join(this.webapp_app_dir, './js/src/xtra') : path.join(this.dapp_root_exec_dir, './app/js/src/xtra'));
 		
 		global.copyfile(fs, path, sourcepath, destdir);
 		
 		
 		
 		
-		// copy files from xtra/lib (e.g.  ethereum-node-access.js)
-		var sourcedir = global.base_dir + '/dapp/js/src/xtra/lib';
+		// copy files from xtra/interface (e.g.  ethereum-node-access.js)
+		var sourcedir = global.base_dir + '/dapp/js/src/xtra/interface';
 		
 		if (global._checkFileExist(fs, sourcedir)) {
-			destdir = (this.copy_dapp_files ? path.join(this.webapp_app_dir, './js/src/xtra/lib') : path.join(this.dapp_root_dir, './app/js/src/xtra/lib'));
+			destdir = (this.copy_dapp_files ? path.join(this.webapp_app_dir, './js/src/xtra/interface') : path.join(this.dapp_root_exec_dir, './app/js/src/xtra/interface'));
 			
 			global.copydirectory(sourcedir, destdir);
 		}
@@ -142,7 +145,7 @@ class Service {
 		var sourcedir = global.base_dir + '/dapp/includes/modules';
 		
 		if (global._checkFileExist(fs, sourcedir)) {
-			destdir = (this.copy_dapp_files ? path.join(this.webapp_app_dir, './includes/modules') : path.join(this.dapp_root_dir, './app/includes/modules'));
+			destdir = (this.copy_dapp_files ? path.join(this.webapp_app_dir, './includes/modules') : path.join(this.dapp_root_exec_dir, './app/includes/modules'));
 			
 			global.copydirectory(sourcedir, destdir);
 		}
@@ -151,7 +154,7 @@ class Service {
 		var sourcedir = global.base_dir + '/dapp/dapps';
 		
 		if (global._checkFileExist(fs, sourcedir)) {
-			destdir = (this.copy_dapp_files ? path.join(this.webapp_app_dir, './dapps') : path.join(this.dapp_root_dir, './app/dapps'));
+			destdir = (this.copy_dapp_files ? path.join(this.webapp_app_dir, './dapps') : path.join(this.dapp_root_exec_dir, './app/dapps'));
 			
 			global.copydirectory(sourcedir, destdir);
 		}
@@ -164,8 +167,8 @@ class Service {
 			return path.join(this.webapp_app_dir, '/../');
 		}
 		else {
-			if (this.dapp_root_dir) {
-				return this.dapp_root_dir;
+			if (this.dapp_root_exec_dir) {
+				return this.dapp_root_exec_dir;
 			}
 			else {
 				return global.execution_dir + '/webapp';
@@ -303,7 +306,7 @@ class Service {
 
 		var global = this.global;
 		
-		var dapp_root_dir = this.dapp_root_dir;
+		var dapp_root_dir = this.dapp_root_exec_dir;
 		
 		var truffle_relative_build_dir = './build';
 		

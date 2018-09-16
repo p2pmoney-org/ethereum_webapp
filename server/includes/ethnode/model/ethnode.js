@@ -349,15 +349,110 @@ class EthereumNode {
 		// Web3 > 1.0
 		//var web3_contract_instance = new web3.eth.Contract(abi, address);
 		
-		return web3_contract_instance;
+		var abiuuid = this._getAbiUUID(abi);
+		
+		return {contractinstance: web3_contract_instance, abiuuid: abiuuid, address: address};
 	}
 	
+	_getAbiUUID(abi) {
+		var global = this.session.getGlobalInstance();
+		var session = this.session;
+
+		var array = session.getSessionVariables();
+		var abisignature = abi.toString();
+		
+		for (var i = 0; i < array.length; i++) {
+			var entry = array[i];
+			if (abisignature == entry.value.toString()) {
+				global.log('found abi saved with uuid ' + entry.key);
+				return entry.key;
+			}
+		}
+		
+		// else put abi in session variables
+		var abiuuid = session.guid();
+		
+		global.log('inserting abi with uuid ' + entry.key);
+		
+		session.setSessionVariable(abiuuid, abi);
+		
+		return abiuuid;
+	}
+	
+	_getAbiFromUUID(abiuuid) {
+		var global = this.session.getGlobalInstance();
+		var session = this.session;
+
+		return session.getSessionVariable(abiuuid);
+	}
+
 	putWeb3ContractInstance(contractinstanceuuid, contractinstance) {
-		this.session.pushObject(contractinstance);
+		var global = this.session.getGlobalInstance();
+		var session = this.session;
+
+		global.log("EthereumNode.putWeb3ContractInstance pushing contract for " + contractinstanceuuid + " session " + this.session.session_uuid);
+
+		try {
+			contractinstance.contractinstanceuuid = contractinstanceuuid;
+			session.pushObject(contractinstanceuuid, contractinstance);
+			
+			if (contractinstance) {
+				global.log("EthereumNode.putWeb3ContractInstance saving instance in session variables for " + contractinstanceuuid);
+				
+				var abiuuid = contractinstance.abiuuid;
+				var address = contractinstance.address;
+				
+				//global.log("abiuuid is " + abiuuid);
+				//global.log("address is " + address);
+				
+				var value = {abiuuid: abiuuid, address: address};
+
+				session.setSessionVariable(contractinstanceuuid, value);
+			}
+		}
+		catch(e) {
+			global.log("exception in EthereumNode.putWeb3ContractInstance: " + e);
+		}
+	}
+	
+	_restoreWeb3ContractInstance(contractinstanceuuid) {
+		var global = this.session.getGlobalInstance();
+		var session = this.session;
+		
+		var value = session.getSessionVariable(contractinstanceuuid);
+		
+		if (value) {
+			var abi = this._getAbiFromUUID(abiuuid);
+			var address = value.address;
+			
+			if ((abi) && (address)) {
+				var contractintance = this.web3_contract_load_at(abi, address);
+				
+				return contractintance;
+			}
+		}
 	}
 	
 	getWeb3ContractInstance(contractinstanceuuid) {
-		this.session.getObject(contractinstanceuuid);
+		var global = this.session.getGlobalInstance();
+		var session = this.session;
+
+		var contractinstance = this.session.getObject(contractinstanceuuid);
+		
+		if (!contractinstance)  {
+			global.log("EthereumNode.putTruffleContractInstance looking instance in session variables for " + contractinstanceuuid);
+			
+			var value = session.getSessionVariable(contractinstanceuuid);
+
+			if (value) {
+				var contractinstance = this._restoreWeb3ContractInstance(contractinstanceuuid);
+				
+				if (contractinstance)
+					this.putTruffleContractInstance(contractinstanceuuid, contractinstance);
+			}
+		}
+		
+		return contractinstance;
 	}
 	
 	web3_contract_dynamicMethodCall(instance, abidef, params) {
@@ -370,30 +465,43 @@ class EthereumNode {
 		var result = null;
 		
 		// Web3 < 1.0
-		if (instance[methodname])
+		var funcname = instance[methodname];
 		// Web3 > 1.0
-		//if (!instance.methods[signature])
+		//var funcname = instance.methods[signature];
+			
+		if (!funcname)
 			return result;
 		
 		var finished = false;
 		var promise = new Promise( function(resolve, reject) {
 	
 			// Web3 < 1.0
-			var ret = instance[methodname].call(...params, function (err, res) {
+			var ret = funcname.call(...params, function (err, res) {
 			// Web3 > 1.0
-			//var ret = instance.methods[signature](...params).call(function(err, res) {
-				if (!res) {
+			//var ret = funcname(...params).call(function(err, res) {
+				
+				
+				if (res) {
+					finished = true;
+					result = res;
+					
+					return resolve(res);
+				}
+				else {
 					finished = true;
 					result = null;
 					
+					var error = 'web3_contract_dynamicMethodCall did not retrieve any result';
+					global.log('error: ' + error);
+
 					return reject(null);
 				}
 				
+				
+			})
+			.catch(err => {
 				finished = true;
-				result = res;
-				
-				return resolve(res);
-				
+			    global.log('catched error in EthereumNode.web3_contract_dynamicMethodCall ' + err);
 			});
 		});
 		
@@ -483,7 +591,7 @@ class EthereumNode {
 		var contractartifact = session.getObject(artifactuuid);
 		
 		if (!contractartifact) {
-			global.log("EthereumNode.putTruffleContractArtifact looking for artifact in session variables for " + artifactuuid);
+			global.log("EthereumNode.getTruffleContractArtifact looking for artifact in session variables for " + artifactuuid);
 			
 			var value = session.getSessionVariable(artifactuuid);
 			
@@ -591,6 +699,9 @@ class EthereumNode {
 		
 		var trufflecontract = contract.trufflecontract;
 		
+		if (!trufflecontract)
+			throw 'trufflecontract instance is not defined';
+		
 		var finished = false;
 		var contractinstance = null;
 
@@ -606,7 +717,7 @@ class EthereumNode {
 				});
 		}
 		catch(e) {
-			global.log('error in truffle_contract_at(): ' + e);
+			global.log('error in EthereumNode.truffle_contract_at(): ' + e);
 		}
 		
 		// wait to turn into synchronous call
@@ -647,7 +758,7 @@ class EthereumNode {
 					// log error of transaction
 					self._saveTransactionLog(ethereum_transaction_uuid, methodname, -500, 'transaction failed');
 
-					global.log('truffle_contract_new failed')
+					global.log('EthereumNode.truffle_contract_new failed')
 				}
 
 				finished = true;
@@ -666,7 +777,7 @@ class EthereumNode {
 			// log exception of transaction
 			self._saveTransactionLog(ethereum_transaction_uuid, methodname, -101, e);
 
-			global.log('error in truffle_contract_new(): ' + e);
+			global.log('error in EthereumNode.truffle_contract_new(): ' + e);
 		}
 		
 		// log transaction pending
@@ -695,8 +806,8 @@ class EthereumNode {
 				var contractuuid = contractinstance.contractuuid;
 				var address = contractinstance.address;
 				
-				global.log("contractuuid is " + contractuuid);
-				global.log("address is " + address);
+				//global.log("contractuuid is " + contractuuid);
+				//global.log("address is " + address);
 				
 				var value = {contractuuid: contractuuid, address: address};
 				session.setSessionVariable(contractinstanceuuid, value);
@@ -741,7 +852,7 @@ class EthereumNode {
 		var contractinstance = this.session.getObject(contractinstanceuuid);
 		
 		if (!contractinstance)  {
-			global.log("EthereumNode.putTruffleContractInstance looking instance in session variables for " + contractinstanceuuid);
+			global.log("EthereumNode.getTruffleContractInstance looking instance in session variables for " + contractinstanceuuid);
 			
 			var value = session.getSessionVariable(contractinstanceuuid);
 
@@ -764,7 +875,7 @@ class EthereumNode {
 		var trufflecontractuid = constractinstance.contractuuid;
 		var trufflecontractaddress = constractinstance.address;
 		
-		global.log('truffle_method_call for method ' + methodname + ' contractuuid ' + trufflecontractuid + ' at address ' + trufflecontractaddress + ' with params ' + JSON.stringify(params));
+		global.log('EthereumNode.truffle_method_call for method ' + methodname + ' contractuuid ' + trufflecontractuid + ' at address ' + trufflecontractaddress + ' with params ' + JSON.stringify(params));
 		
 		if (trufflecontractinstance) {
 			var funcname = trufflecontractinstance[methodname];
@@ -772,27 +883,38 @@ class EthereumNode {
 			var finished = false;
 			var result = null;
 			
-			var promise = funcname.call(...params).then(function(res){
+			if (funcname) {
+				var promise = funcname.call(...params).then(function(res){
 
-				if (res) {
-					result = res;
-					
+					if (res) {
+						result = res;
+						global.log('truffle_method_call result  for ' + methodname +' is ' + res);
+						
+						finished = true;
+					} else {
+						result = null;
+						
+						var error = 'truffle_method_call did not retrieve any result';
+						global.log('error: ' + error);
+						
+						finished = true;
+					}
+				}).catch(err => {
 					finished = true;
-				} else {
-					result = null;
-					
-					global.log('error: ' + 'did not retrieve any result');
-					finished = true;
-
-				}
-			}).catch(err => {
-				finished = true;
-			    global.log('catched error in EthereumNode.truffle_method_call ' + err);
-			});
+				    global.log('catched error in EthereumNode.truffle_method_call ' + err);
+				});
+				
+				// wait to turn into synchronous call
+				while(!finished)
+				{require('deasync').runLoopOnce();}
+			}
+			else {
+				global.log('error: EthereumNode.truffle_method_call funcname is null');
+			}
 			
-			// wait to turn into synchronous call
-			while(!finished)
-			{require('deasync').runLoopOnce();}
+		}
+		else {
+			global.log('error: EthereumNode.truffle_method_call trufflecontractinstance is null');
 		}
 		
 
@@ -819,7 +941,7 @@ class EthereumNode {
 		var trufflecontractuid = constractinstance.contractuuid;
 		var trufflecontractaddress = constractinstance.address;
 		
-		global.log('truffle_method_sendTransaction for method ' + methodname + ' contractuuid ' + trufflecontractuid + ' at address ' + trufflecontractaddress + ' with params ' + JSON.stringify(params));
+		global.log('EthereumNode.truffle_method_sendTransaction for method ' + methodname + ' contractuuid ' + trufflecontractuid + ' at address ' + trufflecontractaddress + ' with params ' + JSON.stringify(params));
 		
 		if (trufflecontractinstance) {
 			var funcname = trufflecontractinstance[methodname];
@@ -827,47 +949,56 @@ class EthereumNode {
 			var finished = false;
 			var result = null;
 			
-			var self = this;
-			
-			// log start of transaction
-			var ethereum_transaction_uuid = session.guid();
-			this._saveTransactionLog(ethereum_transaction_uuid, methodname, 1, JSON.stringify(params));
-			
-			var promise = funcname.sendTransaction(...params).then(function(res){
+			if (funcname) {
+				var self = this;
 				
-				if (res) {
-					result = res;
+				// log start of transaction
+				var ethereum_transaction_uuid = session.guid();
+				this._saveTransactionLog(ethereum_transaction_uuid, methodname, 1, JSON.stringify(params));
+				
+				var promise = funcname.sendTransaction(...params).then(function(res){
 					
-					// log success of transaction
-					self._saveTransactionLog(ethereum_transaction_uuid, methodname, 1000, JSON.stringify(res));
+					if (res) {
+						result = res;
+						
+						// log success of transaction
+						self._saveTransactionLog(ethereum_transaction_uuid, methodname, 1000, JSON.stringify(res));
 
+						finished = true;
+					} else {
+						result = null;
+						
+						// log error of transaction
+						self._saveTransactionLog(ethereum_transaction_uuid, methodname, -500, 'transaction failed');
+						
+						global.log('EthereumNode.truffle_method_sendTransaction failed');
+						finished = true;
+
+					}
+				}).catch(err => {
+					
+					// log exception of transaction
+					self._saveTransactionLog(ethereum_transaction_uuid, methodname, -100, err);
+
+					global.log('catched error in EthereumNode.truffle_method_sendTransaction ' + err);
+					
 					finished = true;
-				} else {
-					result = null;
-					
-					// log error of transaction
-					self._saveTransactionLog(ethereum_transaction_uuid, methodname, -500, 'transaction failed');
-					
-					global.log('truffle_method_sendTransaction failed');
-					finished = true;
-
-				}
-			}).catch(err => {
+				});
 				
-				// log exception of transaction
-				self._saveTransactionLog(ethereum_transaction_uuid, methodname, -100, err);
+				// log transaction pending
+				this._saveTransactionLog(ethereum_transaction_uuid, methodname, 500, JSON.stringify(params));
 
-				global.log('catched error in EthereumNode.truffle_method_sendTransaction ' + err);
-				
-				finished = true;
-			});
+				// wait to turn into synchronous call
+				while(!finished)
+				{require('deasync').runLoopOnce();}
+			}
+			else {
+				global.log('error: EthereumNode.truffle_method_sendTransaction funcname is null');
+			}
 			
-			// log transaction pending
-			this._saveTransactionLog(ethereum_transaction_uuid, methodname, 500, JSON.stringify(params));
-
-			// wait to turn into synchronous call
-			while(!finished)
-			{require('deasync').runLoopOnce();}
+		}
+		else {
+			global.log('error: EthereumNode.truffle_method_sendTransaction trufflecontractinstance is null');
 		}
 
 		
