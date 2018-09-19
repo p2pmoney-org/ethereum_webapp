@@ -107,8 +107,9 @@ class EthereumNode {
 		var global = this.session.getGlobalInstance();
 		
 		global.log("EthereumNode.web3_getAccountBalance called for " + address);
+		
 		var web3 = this.getWeb3Instance();
-
+		
 		var balance;
 		
 		var finished = false;
@@ -731,12 +732,13 @@ class EthereumNode {
 		var session = this.session;
 		var global = this.session.getGlobalInstance();
 		
-		global.log("EthereumNode.truffle_contract_new called for contract " + trufflecontract.contract_name);
-		
 		var trufflecontract = contract.trufflecontract;
 
+		global.log("EthereumNode.truffle_contract_new called for contract " + trufflecontract.contract_name);
+		
 		var finished = false;
 		var contractinstance = null;
+		var address = null;
 
 		var self = this;
 		
@@ -751,8 +753,12 @@ class EthereumNode {
 				contractinstance = instance;
 				
 				if (contractinstance) {
+					address = contractinstance.address;
+					
 					// log success of transaction
 					self._saveTransactionLog(ethereum_transaction_uuid, methodname, 1000, JSON.stringify(contractinstance));
+					
+					global.log('EthereumNode.truffle_contract_new contract deployed at address: ' + address);
 				}
 				else {
 					// log error of transaction

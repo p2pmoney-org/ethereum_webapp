@@ -276,7 +276,7 @@ class XtraConfigModule {
 		formdiv.appendChild(span);
 
 		label = document.createElement("Label");
-		label.innerHTML = global.t("Passwordl:");
+		label.innerHTML = global.t("Password:");
 		label.setAttribute('for',"password");
 		
 		span.appendChild(label);
@@ -354,6 +354,7 @@ class XtraConfig {
 	constructor() {
 		console.log("XtraConfig constructor called");
 		
+		// overload of existing config variables
 		this.allow_remote_access = 'enabled';
 		this.rest_server_url = ':rest_server_url';
 		this.rest_server_api_path = ':rest_server_api_path';
@@ -364,6 +365,9 @@ class XtraConfig {
 		this.need_to_unlock_accounts = ':need_to_unlock_accounts';
 		this.wallet_account_challenge = ':wallet_account_challenge';
 		this.wallet_account = ':wallet_account';
+		
+		// additional free variables
+		this.client_xtra_config = JSON.parse(':client_xtra_config'); // json to add freely client settings (e.g. for plugins)
 		
 		this.init();
 	}
@@ -463,12 +467,3 @@ window.Config.XtraConfig = XtraConfig;
 
 GlobalClass.getGlobalObject().registerModuleObject(new XtraConfigModule());
 
-/*if ( typeof window !== 'undefined' && window ) // if we are in browser and not node js (e.g. truffle)
-{
-	window.Config.XtraConfig = XtraConfig;
-	
-	// register xtraconfig module
-	var global = GlobalClass.getGlobalObject();
-	
-	global.registerModuleObject(new XtraConfigModule());
-}*/
