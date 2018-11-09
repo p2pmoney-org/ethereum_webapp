@@ -200,7 +200,7 @@ class Xtra_EthereumNodeAccess {
 						return resolve(version);
 					}
 					else {
-						reject('rest error calling ' + resource);
+						reject('rest error calling ' + resource + ' : ' + err);
 					}
 					
 				});
@@ -238,7 +238,7 @@ class Xtra_EthereumNodeAccess {
 						return resolve(res['issyncing']);
 					}
 					else {
-						reject('rest error calling ' + resource);
+						reject('rest error calling ' + resource + ' : ' + err);
 					}
 					
 				});
@@ -279,7 +279,7 @@ class Xtra_EthereumNodeAccess {
 						return resolve(balance);
 					}
 					else {
-						reject('rest error calling ' + resource);
+						reject('rest error calling ' + resource + ' : ' + err);
 					}
 					
 				});
@@ -310,7 +310,7 @@ class Xtra_EthereumNodeAccess {
 						return resolve(code);
 					}
 					else {
-						reject('rest error calling ' + resource);
+						reject('rest error calling ' + resource + ' : ' + err);
 					}
 					
 				});
@@ -367,7 +367,7 @@ class Xtra_EthereumNodeAccess {
 						return resolve(number);
 					}
 					else {
-						reject('rest error calling ' + resource);
+						reject('rest error calling ' + resource + ' : ' + err);
 					}
 					
 				});
@@ -397,7 +397,7 @@ class Xtra_EthereumNodeAccess {
 						return resolve(res['data']);
 					}
 					else {
-						reject('rest error calling ' + resource);
+						reject('rest error calling ' + resource + ' : ' + err);
 					}
 					
 				});
@@ -428,7 +428,7 @@ class Xtra_EthereumNodeAccess {
 						return resolve(res['data']);
 					}
 					else {
-						reject('rest error calling ' + resource);
+						reject('rest error calling ' + resource + ' : ' + err);
 					}
 					
 				});
@@ -458,7 +458,7 @@ class Xtra_EthereumNodeAccess {
 						return resolve(res['data']);
 					}
 					else {
-						reject('rest error calling ' + resource);
+						reject('rest error calling ' + resource + ' : ' + err);
 					}
 					
 				});
@@ -544,7 +544,7 @@ class Xtra_EthereumNodeAccess {
 					}
 					else {
 						console.log("error during web3_contract_dynamicMethodCall: " + err);
-						reject('rest error calling ' + resource);
+						reject('rest error calling ' + resource + ' : ' + err);
 					}
 					
 				});
@@ -588,7 +588,7 @@ class Xtra_EthereumNodeAccess {
 						return resolve(artifact);
 					}
 					else {
-						reject('rest error calling ' + resource);
+						reject('rest error calling ' + resource + ' : ' + err);
 					}
 					
 				});
@@ -620,7 +620,7 @@ class Xtra_EthereumNodeAccess {
 							return resolve(contractuuid);
 						}
 						else {
-							reject('rest error calling ' + resource);
+							reject('rest error calling ' + resource + ' : ' + err);
 						}
 						
 					});
@@ -673,7 +673,7 @@ class Xtra_EthereumNodeAccess {
 					}
 					else {
 						console.log("error during loading of contract: " + err);
-						reject('rest error calling ' + resource);
+						reject('rest error calling ' + resource + ' : ' + err);
 					}
 					
 				});
@@ -746,7 +746,7 @@ class Xtra_EthereumNodeAccess {
 					}
 					else {
 						console.log("error during new of contract: " + err);
-						reject('rest error calling ' + resource);
+						reject('rest error calling ' + resource + ' : ' + err);
 					}
 					
 				});
@@ -791,7 +791,7 @@ class Xtra_EthereumNodeAccess {
 					}
 					else {
 						console.log("error during truffle_method_call: " + err);
-						reject('rest error calling ' + resource);
+						reject('rest error calling ' + resource + ' : ' + err);
 					}
 					
 				});
@@ -846,7 +846,7 @@ class Xtra_EthereumNodeAccess {
 					}
 					else {
 						console.log("error during truffle_method_sendTransaction: " + err);
-						reject('rest error calling ' + resource);
+						reject('rest error calling ' + resource + ' : ' + err);
 					}
 					
 				});

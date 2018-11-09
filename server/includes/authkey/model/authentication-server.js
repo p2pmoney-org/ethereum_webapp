@@ -33,9 +33,9 @@ class AuthenticationServer {
 		var salt = (userdetails['salt'] ? userdetails['salt'] : null);
 		var pepper = null;
 		
-		var inputpasswordobject = authkeyservice.createPasswordObject(password, salt, pepper, hashmethod);
+		var inputpasswordobject = authkeyservice.createPasswordObjectInstance(password, salt, pepper, hashmethod);
 		
-		var userpasswordobject = authkeyservice.createPasswordObject(userdetails['password'], salt, pepper, hashmethod);
+		var userpasswordobject = authkeyservice.createPasswordObjectInstance(userdetails['password'], salt, pepper, hashmethod);
 	
 		global.log("userdetails password is " + userdetails['password']);
 
@@ -61,15 +61,90 @@ class AuthenticationServer {
 	
 	getUserKeys(session) {
 		var user = session.getUser();
-		var username = user.getUserName();
 		
-		var keys = this.persistor.getUserKeys(username);
+		if (!user)
+			throw 'session is not identified';
+		
+		var useruuid = user.getUserUUID();
+		
+		var keys = this.persistor.getUserKeysFromUserUUID(useruuid);
+
+		// OBSOLETE: unicity of username not enforced!
+		/*var username = user.getUserName();
+		
+		var keys = this.persistor.getUserKeysFromUserName(username);*/
+		
+		// let's compute public keys from private keys
+		var global = this.global;
+		var clientcontainerservice = global.getServiceInstance('client-container');
+		var clientcontainer = clientcontainerservice.getClientContainer(session);
+		var commonmodule = clientcontainer.getModuleObject('common');
+		
+		for (var i = 0; i < keys.length; i++) {
+			var key = keys[i];
+			
+			var privatekey = key['private_key'];
+			
+			var account = commonmodule.createBlankAccountObject();
+			
+			account.setPrivateKey(privatekey);
+			
+			key['public_key'] = account.getPublicKey();
+			key['address'] = account.getAddress();
+		}
 		
 		return keys;
 	}
 	
-	addUserKey(session, useruuid, keyuuid, privatekey) {
-		this.persistor.putUserKey(useruuid, keyuuid, privatekey);
+	getUserCryptoKeys(session) {
+		var userkeys = this.getUserKeys(session);
+		
+		var usercryptokeys = [];
+		
+		for (var i = 0; i < userkeys.length; i++) {
+			var userkey = userkeys[i];
+			
+			if (userkey['type'] == 0) {
+				usercryptokeys.push(userkey);
+			}
+			
+		}
+		
+		return usercryptokeys;
+	}
+	
+	getUserAccountKeys(session) {
+		var userkeys = this.getUserKeys(session);
+		
+		var useracountkeys = [];
+		
+		for (var i = 0; i < userkeys.length; i++) {
+			var userkey = userkeys[i];
+			
+			if (userkey['type'] == 1) {
+				useracountkeys.push(userkey);
+			}
+			
+		}
+		
+		return useracountkeys;
+	}
+	
+	addUserKey(session, useruuid, cryptokey) {
+		var keyuuid = cryptokey.getKeyUUID();
+		
+		var type = cryptokey.getType(); 
+		
+		var privatekey = cryptokey.getPrivateKey();
+		var publickey = cryptokey.getPublicKey();
+		var address = cryptokey.getAddress();
+		var rsapublickey = cryptokey.getRsaPublicKey();
+		
+		// TODO: generate public keys from private key if they have not been filled
+		
+		var description = cryptokey.getDescription(); 
+		
+		this.persistor.putUserKey(useruuid, keyuuid, privatekey, publickey, address, rsapublickey, type, description);
 	}
 
 	removeUserKey(session, useruuid, keyuuid) {
@@ -104,7 +179,23 @@ class AuthenticationServer {
 		return user;
 	}
 	
+	userExistsFromUUID(useruuid) {
+		var global = this.global;
+		var userdetails = this.persistor.getUserArrayFromUUID(useruuid);
+		
+		return (userdetails.useruuid == useruuid);
+	}
+	
 	getUserFromUUID(session, useruuid) {
+		// TODO: check this sessions has the rights to read this user
+		if (!session.isAuthenticated())
+			throw 'Session is not authenticated';
+		
+		var currentuser = session.getUser();
+		
+		if ((currentuser.getUserUUID() != useruuid) && (!currentuser.isSuperAdmin()))
+			throw 'User does not have the rights to read another user';
+			
 		var userdetails = this.persistor.getUserArrayFromUUID(useruuid);
 		
 		var global = this.global;
@@ -124,6 +215,9 @@ class AuthenticationServer {
 		array.useremail = user.getUserEmail();
 		array.username = user.getUserName();
 		array.accountstatus = user.getAccountStatus();
+		
+		array.altloginmethod = (user.altloginmethod ? user.altloginmethod : 'none');
+		global.log('user.altloginmethod is ' + user.altloginmethod);
 		
 		this.persistor.putUserArray(array);
 	}

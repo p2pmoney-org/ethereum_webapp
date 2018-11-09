@@ -484,7 +484,7 @@ class AdminServer {
 		var hashmethod = 0;
 		var salt = '';
 		var pepper = null;
-		var passwordobject = authkeyservice.createPasswordObject(clearpassword, salt, pepper, hashmethod);
+		var passwordobject = authkeyservice.createPasswordObjectInstance(clearpassword, salt, pepper, hashmethod);
 		
 		authserver.saveUserPassword(session, user.getUserUUID(), passwordobject);
 	}
@@ -516,7 +516,7 @@ class AdminServer {
 			var hashmethod = 0;
 			var salt = '';
 			var pepper = null;
-			var passwordobject = authkeyservice.createPasswordObject(clearpassword, salt, pepper, hashmethod);
+			var passwordobject = authkeyservice.createPasswordObjectInstance(clearpassword, salt, pepper, hashmethod);
 			
 			authserver.saveUserPassword(session, user.getUserUUID(), passwordobject);
 		}

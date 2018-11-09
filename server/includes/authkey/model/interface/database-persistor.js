@@ -29,7 +29,7 @@ class DataBasePersistor {
 		var array = [];
 		
 		if (result) {
-			var rows = result['rows'];
+			var rows = (result['rows'] ? result['rows'] : []);
 			
 			for (var i = 0; i < rows.length; i++) {
 				var row = rows[i];
@@ -77,7 +77,7 @@ class DataBasePersistor {
 		var array = {};
 		
 		if (result) {
-			var rows = result['rows'];
+			var rows = (result['rows'] ? result['rows'] : []);
 			
 			if (rows[0]) {
 				var row = rows[0];
@@ -123,7 +123,7 @@ class DataBasePersistor {
 		var array = {};
 		
 		if (result) {
-			var rows = result['rows'];
+			var rows = (result['rows'] ? result['rows'] : []);
 			
 			if (rows[0]) {
 				var row = rows[0];
@@ -156,9 +156,12 @@ class DataBasePersistor {
 		var useruuid = array['useruuid'];
 		var username = array['username'];
 		var useremail = array['useremail'];
+		
 		var hashmethod = array['hashmethod'];
-		var salt = array['salt'];
+		var salt = (array['salt'] ? array['salt'] : this.global.generateUUID(16));
 		var accountstatus = array['accountstatus'];
+
+		var altloginmethod = (array['altloginmethod'] ? array['altloginmethod'] : 'none');
 
 		var mysqlcon = global.getMySqlConnection();
 		
@@ -184,7 +187,6 @@ class DataBasePersistor {
 				WHERE UserId = ` + current.id + `;`;
 		}
 		else {
-			var salt = this.global.generateUUID(16);
 			
 			sql = `INSERT INTO ` +  tablename + ` (
 			  UserUUID,
@@ -199,7 +201,7 @@ class DataBasePersistor {
 			  VALUES (
 			  '` + useruuid + `',
 			  '` + useremail + `',
-			  'none',
+			  '` + altloginmethod + `',
 			  '` + salt + `',
 			  ` + accountstatus + `,
 			  ` + registrationon + `,
@@ -279,7 +281,7 @@ class DataBasePersistor {
 		
 		
 		if (result) {
-			var rows = result['rows'];
+			var rows = (result['rows'] ? result['rows'] : []);
 			
 			for (var i = 0; i < rows.length; i++) {
 				var row = rows[i];
@@ -289,7 +291,13 @@ class DataBasePersistor {
 				key['uuid'] = row['KeyUUID'];
 				key['keyid'] = row['KeyId'];
 				key['keyuuid'] = row['KeyUUID'];
+				key['useruuid'] = row['UserUUID'];
+				key['type'] = row['Type'];
 				key['private_key'] = row['PrivateKey'];
+				key['address'] = row['Address'];
+				key['public_key'] = row['PublicKey'];
+				key['rsa_public_key'] = row['RsaPublicKey'];
+				key['description'] = row['Description'];
 				
 				keys.push(key);
 			}
@@ -305,7 +313,7 @@ class DataBasePersistor {
 		
 	}
 
-	getUserKeys(username) {
+	getUserKeysFromUserName(username) {
 		var global = this.global;
 		
 		var mysqlcon = global.getMySqlConnection();
@@ -329,7 +337,7 @@ class DataBasePersistor {
 		
 		
 		if (result) {
-			var rows = result['rows'];
+			var rows = (result['rows'] ? result['rows'] : []);
 			
 			for (var i = 0; i < rows.length; i++) {
 				var row = rows[i];
@@ -339,7 +347,13 @@ class DataBasePersistor {
 				key['uuid'] = row['KeyUUID'];
 				key['keyid'] = row['KeyId'];
 				key['keyuuid'] = row['KeyUUID'];
+				key['useruuid'] = row['UserUUID'];
+				key['type'] = row['Type'];
 				key['private_key'] = row['PrivateKey'];
+				key['address'] = row['Address'];
+				key['public_key'] = row['PublicKey'];
+				key['rsa_public_key'] = row['RsaPublicKey'];
+				key['description'] = row['Description'];
 				
 				keys.push(key);
 			}
@@ -355,12 +369,12 @@ class DataBasePersistor {
 		
 	}
 	
-	putUserKey(useruuid, keyuuid, privatekey) {
+	putUserKey(useruuid, keyuuid, privatekey, publickey, address, rsapublickey, type, description) {
 		var global = this.global;
 		
 		var userarray = this.getUserArrayFromUUID(useruuid);
 		
-		if (!userarray)
+		if ((!userarray) || (!userarray['id']))
 			throw 'could not find user with uuid ' + useruuid;
 		
 		
@@ -376,12 +390,24 @@ class DataBasePersistor {
 		sql = `INSERT INTO ` +  tablename + ` (
 		  KeyUUID,
 		  UserId,
-		  PrivateKey
+		  UserUUID,
+		  Type,
+		  PrivateKey,
+		  PublicKey,
+		  Address,
+		  RsaPublicKey,
+		  Description
 		  )
 		  VALUES (
 		  '` + keyuuid + `',
 		  ` + userarray['id'] + `,
-		  '` + privatekey + `'
+		  '` + useruuid + `',
+		  ` + type + `,
+		  ` + (privatekey ? `'` + privatekey + `'` : `NULL`) + `,
+		  ` + (publickey ? `'` + publickey + `'` : `NULL`) + `,
+		  ` + (address ? `'` + address + `'` : `NULL`) + `,
+		  ` + (rsapublickey ? `'` + rsapublickey + `'` : `NULL`) + `,
+		  ` + (description ? `'` + description + `'` : `NULL`) + `
 		  );`;
 		
 		

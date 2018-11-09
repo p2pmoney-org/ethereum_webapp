@@ -10,9 +10,9 @@ class EthNodeRoutes {
 		this.app = app;
 		this.global = global;
 		
-		var authkeyservice = global.getServiceInstance('ethnode');
+		var ethnodeservice = global.getServiceInstance('ethnode');
 		
-		authkeyservice.routes = this; // keep this referenced to stay in memory
+		ethnodeservice.routes = this; // keep this referenced to stay in memory
 		
 		var EthNodeControllers = require('../controllers/controllers.js');
 		

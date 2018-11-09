@@ -53,24 +53,35 @@ var AuthKeyInterface = class {
 		.then(function(authenticated) {
 			if (authenticated) {
 				
+				// load crypto keys
 				return authkeyserveraccess.key_session_keys( function(err, res) {
+					
 					if (res && res['keys']) {
 						var keys = res['keys'];
 						
 						for (var i = 0; i < keys.length; i++) {
 							var key = keys[i];
 							
+							var keyuuid = key['key_uuid'];
 							var privatekey = key['private_key'];
+							var publickey = key['public_key'];
+							var address = key['address'];
+							var rsapublickey = key['rsa_public_key'];
+							var description = key['description'];
 							
 							if (privatekey) {
-								var account = commonmodule.createBlankAccountObject();
 								
-								account.setPrivateKey(privatekey);
+								var cryptokey = commonmodule.createBlankCryptoKeyObject();
 								
-								user.addAccountObject(account);
+								cryptokey.setKeyUUID(keyuuid);
+								cryptokey.setDescription(description);
+								
+								cryptokey.setPrivateKey(privatekey);
+								
+								session.addCryptoKeyObject(cryptokey);
 							}
 							else {
-								throw "Could not retrieve private key!";
+								throw "Could not retrieve private key for a crypto key!";
 							}
 						
 						}

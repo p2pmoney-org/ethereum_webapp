@@ -14,8 +14,8 @@ class Xtra_AuthKeyServerAccess {
 		if (this.rest_auth_connection)
 			return this.rest_auth_connection;
 		
-	    var rest_server_url = this.session.getXtraConfigValue('rest_server_url');
-	    var rest_server_api_path = this.session.getXtraConfigValue('rest_server_api_path');
+	    var rest_server_url = this.session.getXtraConfigValue('authkey_server_url');
+	    var rest_server_api_path = this.session.getXtraConfigValue('authkey_server_api_path');
 
 	    this.rest_auth_connection = this.session.createRestConnection(rest_server_url, rest_server_api_path);
 		
@@ -38,8 +38,8 @@ class Xtra_AuthKeyServerAccess {
 		if (this.rest_key_connection)
 			return this.rest_key_connection;
 		
-	    var rest_server_url = this.session.getXtraConfigValue('rest_server_url');
-	    var rest_server_api_path = this.session.getXtraConfigValue('rest_server_api_path');
+	    var rest_server_url = this.session.getXtraConfigValue('authkey_server_url');
+	    var rest_server_api_path = this.session.getXtraConfigValue('authkey_server_api_path');
 
 	    this.rest_key_connection = this.session.createRestConnection(rest_server_url, rest_server_api_path);
 		
@@ -58,7 +58,12 @@ class Xtra_AuthKeyServerAccess {
 		return rest_connection.rest_post(resource, postdata, callback);
 	}
 
-	
+	rest_key_put(resource, postdata, callback) {
+		var rest_connection = this.getRestKeyConnection();
+		
+		return rest_connection.rest_put(resource, postdata, callback);
+	}
+
 	
 
 	//
@@ -248,6 +253,57 @@ class Xtra_AuthKeyServerAccess {
 		
 	}
 
+	key_user_add(user, cryptokey, callback) {
+		console.log("Xtra_AuthKeyServerAccess.key_user_add called");
+		
+		var self = this
+		var session = this.session;
+
+		var promise = new Promise(function (resolve, reject) {
+			
+			try {
+				var resource = "/key/user/add";
+				
+				var useruuid = user.getUserUUID();
+				
+				var privatekey = cryptokey.getPrivateKey();
+				var publickey = cryptokey.getPublicKey();
+				var address = cryptokey.getAddress();
+				var rsapublickey = cryptokey.getRsaPublicKey();
+				
+				var description = cryptokey.getDescription();
+				
+				var postdata = [];
+				
+				postdata = {useruuid: useruuid, private_key: privatekey, public_key: publickey, address: address, rsa_public_key: rsapublickey, description: description};
+				
+				self.rest_key_put(resource, postdata, function (err, res) {
+					if (res) {
+						
+						// set key uuid given by the server
+						var keyuuid = res['key_uuid'];
+						
+						cryptokey.setKeyUUID(keyuuid);
+						
+						if (callback)
+							callback(null, res);
+						
+						return resolve(res);
+					}
+					else {
+						reject('rest error calling ' + resource);
+					}
+					
+				});
+			}
+			catch(e) {
+				reject('rest exception: ' + e);
+			}
+		});
+		
+		return promise;
+		
+	}
 }
 
 console.log("Xtra_AuthKeyServerAccess is loaded");

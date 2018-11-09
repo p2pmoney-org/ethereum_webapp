@@ -49,7 +49,20 @@ class AuthKeyRoutes {
 		// key API
 		//
 		app.route(route_root_path + '/key/session/keys')
-		.get(function(req, res) { controllers.session_getKeys(req, res); });
+		.get(function(req, res) { controllers.session_getCryptoKeys(req, res); });
+		
+		app.route(route_root_path + '/key/user/add')
+		.put(function(req, res) { controllers.user_addKey(req, res); });
+		
+		
+		//
+		// Account API
+		//
+		app.route(route_root_path + '/account/session/keys')
+		.get(function(req, res) { controllers.session_getAccountKeys(req, res); });
+		
+		app.route(route_root_path + '/account/user/add')
+		.put(function(req, res) { controllers.user_addAccount(req, res); });
 		
 	}
 	

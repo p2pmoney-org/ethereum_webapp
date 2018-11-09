@@ -3,6 +3,7 @@
  */
 'use strict';
 
+
 //setting environment variables
 var process = require('process');
 
@@ -19,7 +20,21 @@ if (process.env.ETHEREUM_WEBAPP_EXEC_DIR) {
 }
 
 
+//instantiating global object
 var global = Global.getGlobalInstance();
+
+//force logging
+/*global.releaseConsoleLog();
+global.enable_log = 1;
+global.execution_env = 'dev';*/
+
+
+if (global.execution_env) {
+	// DEBUG
+	Error.stackTraceLimit = Infinity;
+	// DEBUG
+}
+
 
 global.log("*********");
 global.log("Starting server: " + global.service_name);
@@ -28,6 +43,7 @@ global.log("");
 global.log("Base directory: " + global.base_dir);
 global.log("Execution directory: " + global.execution_dir);
 global.log("Configuration file: " + global.config_path);
+global.log("Execution environment: " + global.execution_env);
 global.log("*********");
 global.log("");
 global.log("****Server initialization*****");
@@ -47,7 +63,13 @@ global.registerServiceInstance(new Service());
 Service = require('./includes/authkey/service.js');
 global.registerServiceInstance(new Service());
 
+Service = require('./includes/storage/service.js');
+global.registerServiceInstance(new Service());
+
 Service = require('./includes/ethnode/service.js');
+global.registerServiceInstance(new Service());
+
+Service = require('./includes/cli-cont/service.js');
 global.registerServiceInstance(new Service());
 
 // initialization
@@ -90,6 +112,10 @@ global.log("API root path is " + global.route_root_path);
 global.log("REST server url is " + global.config['rest_server_url']);
 global.log("REST server api path is " + global.config['rest_server_api_path']);
 
+if (global.config['authkey_server_url']) global.log("AUTHKEY server url is " + global.config['authkey_server_url']);
+if (global.config['authkey_server_api_path']) global.log("AUTHKEY server api path is " + global.config['authkey_server_api_path']);
+
+
 global.log("*********");
 
 
@@ -112,4 +138,5 @@ global.getServiceInstance('ethereum_webapp').startMiddleware();
 global.getServiceInstance('admin').startAdminUI(app);
 
 
+global.log("*********");
 

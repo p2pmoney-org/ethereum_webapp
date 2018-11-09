@@ -325,6 +325,13 @@ class Session {
 		return this.user;
 	}
 	
+	// rest calls
+	getRestConnection(rest_server_url, rest_server_api_path) {
+		var RestConnection = require('./restconnection.js');
+		
+		return new RestConnection(this, rest_server_url, rest_server_api_path);
+	}
+	
 	// privileges
 	hasSuperAdminPrivileges() {
 		if (this.isAnonymous())
@@ -411,6 +418,18 @@ class Session {
 				session._init(array);
 			}
 			
+			// invoke hooks to let services interact with the new sessionobject
+			var result = [];
+			
+			var params = [];
+			
+			params.push(session);
+
+			var ret = global.invokeHooks('createSession_hook', result, params);
+			
+			if (ret && result && result.length) {
+				global.log('createSession_hook result is ' + JSON.stringify(result));
+			}
 		}
 		
 		return session;

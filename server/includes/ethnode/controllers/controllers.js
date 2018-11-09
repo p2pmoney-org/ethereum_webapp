@@ -502,7 +502,7 @@ class EthNodeControllers {
 			//var trufflecontract = session.getObject(contractuuid);
 			
 			if (trufflecontract) {
-					var contractinstance = ethnode.truffle_contract_at(trufflecontract, address);
+				var contractinstance = ethnode.truffle_contract_at(trufflecontract, address);
 				
 				var jsonresult;
 				

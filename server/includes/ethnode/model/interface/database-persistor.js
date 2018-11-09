@@ -29,7 +29,7 @@ class DataBasePersistor {
 		var array = {};
 		
 		if (result) {
-			var rows = result['rows'];
+			var rows = (result['rows'] ? result['rows'] : []);
 			
 			if (rows[0]) {
 				var row = rows[0];

@@ -14,6 +14,7 @@ class XtraConfigModule {
 		
 		this.ethereum_node_access_path = './js/src/xtra/interface/ethereum-node-access.js';
 		this.authkey_server_access_path = './js/src/xtra/interface/authkey-server-access.js';
+		this.storage_access_path = './js/src/xtra/interface/storage-access.js';
 		
 		this.registerAdditionalModules();
 	}
@@ -85,6 +86,9 @@ class XtraConfigModule {
 
 		// node access facade
 		global.registerHook('getEthereumNodeAccessInstance_hook', 'xtraconfig', this.getEthereumNodeAccessInstance_hook);
+
+		// storage access facade
+		global.registerHook('getStorageAccessInstance_hook', 'xtraconfig', this.getStorageAccessInstance_hook);
 	}
 	
 	//
@@ -116,6 +120,17 @@ class XtraConfigModule {
 		global.pushFinalInitializationPromise(authkeyaccesspromise);
 
 				
+		// storage access
+		var storage_access_path = this.storage_access_path;
+		
+		var storageaccesspromise = ScriptLoader.createScriptLoadPromise(storage_access_path, function() {
+			console.log('XtraStorageAccess loaded')
+		})
+		
+		global.pushFinalInitializationPromise(storageaccesspromise);
+		
+		
+		
 		result.push({module: 'xtraconfig', handled: true});
 		
 		return true;
@@ -129,6 +144,9 @@ class XtraConfigModule {
 
 		// overload EthereumNodeAccess class
 		this.EthereumNodeAccess = window.Xtra_EthereumNodeAccess;
+		
+		// overload StorageAccess class
+		this.StorageAccess = window.Xtra_StorageAccess;
 		
 		// reset ethereum instance if already instantiated
 		var session = commonmodule.getSessionObject();
@@ -178,7 +196,22 @@ class XtraConfigModule {
 				
 				if (authenticated) {
 					
-					app.refreshDisplay();
+					// authenticated (and crypto-keys have been loaded)
+					// we get list of accounts (that could be encrypted)
+					var storagemodule = global.getModuleObject('storage-access');
+					var storageaccess = storagemodule.getStorageAccessInstance(session);
+					var user = session.getSessionUserObject();
+					
+					return storageaccess.account_session_keys( function(err, res) {
+						
+						if (res && res['keys']) {
+							var keys = res['keys'];
+							
+							session.readSessionAccountFromKeys(keys);
+						}
+				
+						app.refreshDisplay();
+					});
 					
 				}
 				else {
@@ -338,6 +371,22 @@ class XtraConfigModule {
 		return true;
 	}
 	
+	// storage access facade
+	getStorageAccessInstance_hook(result, params) {
+		console.log('xtraconfig getStorageAccessInstance_hook called');
+		
+		var global = XtraConfig.getGlobalObject();
+		var xtraconfigmodule = global.getModuleObject('xtraconfig');
+		
+		var session = params[0];
+		
+		result[0] = new this.StorageAccess(session);
+		
+		return true;
+	}
+	
+	
+	
 	getFormValue(formelementname) {
 		var value = document.getElementsByName(formelementname)[0].value;
 		
@@ -356,9 +405,16 @@ class XtraConfig {
 		
 		// overload of existing config variables
 		this.allow_remote_access = 'enabled';
+		
+		// webapp rest access
 		this.rest_server_url = ':rest_server_url';
 		this.rest_server_api_path = ':rest_server_api_path';
 		
+		// authentication rest access
+		this.authkey_server_url = ':authkey_server_url';
+		this.authkey_server_api_path = ':authkey_server_api_path';
+		
+		// ethereum transactions parameters
 		this.defaultgaslimit = ':defaultgaslimit';
 		this.defaultgasprice = ':defaultgasprice';
 		
@@ -366,8 +422,13 @@ class XtraConfig {
 		this.wallet_account_challenge = ':wallet_account_challenge';
 		this.wallet_account = ':wallet_account';
 		
+		// execution environment (prod or dev)
+		this.client_env = ':client_env';
+		
 		// additional free variables
-		this.client_xtra_config = JSON.parse(':client_xtra_config'); // json to add freely client settings (e.g. for plugins)
+		var jsonstring = ':client_xtra_config'; // json to add freely client settings (e.g. for plugins)
+		
+		this.client_xtra_config = (jsonstring.substring(1) == 'client_xtra_config' ? {} : JSON.parse(jsonstring));
 		
 		this.init();
 	}
@@ -401,9 +462,18 @@ class XtraConfig {
 	
 	overloadConfig() {
 		console.log("XtraConfig.overloadConfig called");
-
+		
 		if ( typeof window !== 'undefined' && window && window.Config) {
 			
+			// authentication rest access (if value not specified, take default rest server access)
+			if (this.authkey_server_url.substring(1) == 'authkey_server_url')
+				this.authkey_server_url = this.rest_server_url;
+
+			if (this.authkey_server_api_path.substring(1) == 'authkey_server_api_path')
+				this.authkey_server_api_path = this.rest_server_api_path;
+
+
+			// ethereum transactions parameters
 			var overload_gaslimit = (this.defaultgaslimit.substring(1) == 'defaultgaslimit' ? false : true);
 			if (overload_gaslimit)
 				window.Config.defaultGasLimit =  parseInt(this.defaultgaslimit);

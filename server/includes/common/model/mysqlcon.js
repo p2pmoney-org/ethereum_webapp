@@ -58,6 +58,7 @@ class MySqlConnection {
 
 			this.connection = mysql.createConnection({
 			  host: host,
+			  port: port,
 			  database: database,
 			  user: user,
 			  password: password

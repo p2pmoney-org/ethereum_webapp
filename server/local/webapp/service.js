@@ -13,6 +13,8 @@ class Service {
 		this.app = null;
 		this.server = null;
 		this.debug = null;
+		
+		this.port = null;
 
 		this.apikeys = [];
 	}
@@ -33,6 +35,11 @@ class Service {
 		this.copy_dapp_files = (config && (typeof config["copy_dapp_files"] != 'undefined') ? config["copy_dapp_files"] : 0);
 		
 		this.dapp_root_exec_dir = (this.copy_dapp_files == 1 ? path.join(this.webapp_app_dir, '../') : this.dapp_root_base_dir);
+		
+		this.rest_server_url = (config && (typeof config["rest_server_url"] != 'undefined') ? config["rest_server_url"] :"http://localhost:8000");
+		this.rest_server_api_path = (config && (typeof config["rest_server_api_path"] != 'undefined') ? config["rest_server_api_path"] :"/dapp/api");
+
+		this.dapp_index_url = (config && (typeof config["dapp_index_url"] != 'undefined') ? config["dapp_index_url"] : this.rest_server_url + "/dapp/index.html");
 
 		if (this.copy_dapp_files == 1) {
 			global.log("Copying DAPP app directory")
@@ -176,6 +183,10 @@ class Service {
 		}
 	}
 	
+	getServedDappIndexUrl() {
+		return this.dapp_index_url;
+	}
+	
 	startWebApp() {
 		var global = this.global;
 		webapp = this;
@@ -275,7 +286,8 @@ class Service {
 		 * Get port from environment and store in Express.
 		 */
 
-		var port = normalizePort(process.env.PORT || global.server_listening_port);
+		var port = this.normalizePort(process.env.PORT || global.server_listening_port);
+		this.port = port;
 		app.set('port', port);
 
 		/**
@@ -293,17 +305,16 @@ class Service {
 		global.log('Listening on port: ' + port);
 
 		server.listen(port);
-		server.on('error', onError);
-		server.on('listening', onListening);
+		server.on('error', this.onError);
+		server.on('listening', this.onListening);
 
 		return app;
 	}
 	
 	// service functions
-	getContractArtifactContent(artifactpath) {
-		var fs = require('fs');
+	getContractArtifactFullPath(artifactpath) {
 		var path = require('path');
-
+		
 		var global = this.global;
 		
 		var dapp_root_dir = this.dapp_root_exec_dir;
@@ -312,11 +323,20 @@ class Service {
 		
 		var build_dir = path.join(dapp_root_dir, truffle_relative_build_dir);
 		
+		return path.join(build_dir, artifactpath);
+	}
+	
+	getContractArtifactContent(artifactpath) {
+		var fs = require('fs');
+
+		var global = this.global;
+		
+		
 		var jsonPath;
 		var jsonFile;
 
 		try {
-			jsonPath = path.join(build_dir, artifactpath);
+			jsonPath = this.getContractArtifactFullPath(artifactpath);
 
 			global.log("reading artifact " + jsonPath);
 			
@@ -330,66 +350,70 @@ class Service {
 		
 		return jsonFile;
 	}
-}
+	
+	/**
+	 * Normalize a port into a number, string, or false.
+	 */
 
-/**
- * Normalize a port into a number, string, or false.
- */
+	normalizePort(val) {
+	  var port = parseInt(val, 10);
 
-function normalizePort(val) {
-  var port = parseInt(val, 10);
+	  if (isNaN(port)) {
+	    // named pipe
+	    return val;
+	  }
 
-  if (isNaN(port)) {
-    // named pipe
-    return val;
-  }
+	  if (port >= 0) {
+	    // port number
+	    return port;
+	  }
 
-  if (port >= 0) {
-    // port number
-    return port;
-  }
+	  return false;
+	}
 
-  return false;
-}
+	/**
+	 * Event listener for HTTP server "error" event.
+	 */
 
-/**
- * Event listener for HTTP server "error" event.
- */
+	onError(error) {
+	  if (error.syscall !== 'listen') {
+	    throw error;
+	  }
+	  
+	  var port = this.port;
 
-function onError(error) {
-  if (error.syscall !== 'listen') {
-    throw error;
-  }
+	  var bind = typeof port === 'string'
+	    ? 'Pipe ' + port
+	    : 'Port ' + port;
 
-  var bind = typeof port === 'string'
-    ? 'Pipe ' + port
-    : 'Port ' + port;
+	  // handle specific listen errors with friendly messages
+	  switch (error.code) {
+	    case 'EACCES':
+	      console.error(bind + ' requires elevated privileges');
+	      process.exit(1);
+	      break;
+	    case 'EADDRINUSE':
+	      console.error(bind + ' is already in use');
+	      process.exit(1);
+	      break;
+	    default:
+	      throw error;
+	  }
+	}
 
-  // handle specific listen errors with friendly messages
-  switch (error.code) {
-    case 'EACCES':
-      console.error(bind + ' requires elevated privileges');
-      process.exit(1);
-      break;
-    case 'EADDRINUSE':
-      console.error(bind + ' is already in use');
-      process.exit(1);
-      break;
-    default:
-      throw error;
-  }
-}
+	/**
+	 * Event listener for HTTP server "listening" event.
+	 */
 
-/**
- * Event listener for HTTP server "listening" event.
- */
+	onListening() {
+	  var addr = webapp.server.address();
+	  var bind = typeof addr === 'string'
+	    ? 'pipe ' + addr
+	    : 'port ' + addr.port;
+	  webapp.debug('Listening on ' + bind);
+	}
 
-function onListening() {
-  var addr = webapp.server.address();
-  var bind = typeof addr === 'string'
-    ? 'pipe ' + addr
-    : 'port ' + addr.port;
-  webapp.debug('Listening on ' + bind);
+
 }
 
 

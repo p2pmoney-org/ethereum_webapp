@@ -21,6 +21,17 @@ module.exports = function(app, global) {
 
 	
 	var includeroot = '../../server/includes';
+	var localroot = '../../server/local';
+	
+	//
+	// Webapp routes
+	//
+	var WebappRoutes = require( localroot + '/webapp/routes/routes.js');
+		
+	var webapproutes = new WebappRoutes(app, global);
+	
+	webapproutes.registerRoutes();
+
 	
 	//
 	// EthNode routes
@@ -40,6 +51,16 @@ module.exports = function(app, global) {
 	var authkeyroutes = new AuthKeyRoutes(app, global);
 	
 	authkeyroutes.registerRoutes();
+	
+
+	//
+	// Storage routes
+	//
+	var StorageRoutes = require( includeroot + '/storage/routes/routes.js');
+		
+	var storageroutes = new StorageRoutes(app, global);
+	
+	storageroutes.registerRoutes();
 	
 
 };

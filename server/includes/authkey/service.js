@@ -13,6 +13,7 @@ class Service {
 		this.global = null;
 		
 		this.authenticationserverinstance = null;
+		this.remoteauthenticationserverinstance = null;
 		
 		// user database (json file)
 		this.users = {};
@@ -25,25 +26,6 @@ class Service {
 		
 		this.users = global.readJson("users");
 
-		
-		/*var fs = require('fs');
-		var path = require('path');
-
-		var jsonFileName;
-		var jsonPath;
-		var jsonFile;
-		
-		try {
-			jsonFileName = 'users.json';
-			jsonPath = path.join(global.execution_dir, './settings', jsonFileName);
-			jsonFile = fs.readFileSync(jsonPath, 'utf8');
-			this.users = JSON.parse(jsonFile);
-			
-		}
-		catch(e) {
-			global.log('exception reading json file: ' + e.message); 
-		}*/
-		
 	}
 
 	// optional  service functions
@@ -53,6 +35,8 @@ class Service {
 		var global = this.global;
 		
 		global.registerHook('installMysqlTables_hook', this.name, this.installMysqlTables_hook);
+
+		global.registerHook('createSession_hook', this.name, this.createSession_hook);
 	}
 	
 	//
@@ -142,7 +126,13 @@ class Service {
 		sql += ` ( KeyId int(11) NOT NULL AUTO_INCREMENT,
 				  UserId int(11) DEFAULT NULL,
 				  KeyUUID varchar(36) NOT NULL,
-				  PrivateKey varchar(68) DEFAULT NULL,
+				  UserUUID varchar(36) DEFAULT NULL,
+				  Type int(11) NOT NULL,
+				  PrivateKey varchar(192) DEFAULT NULL,
+				  Address varchar(44) DEFAULT NULL,
+				  PublicKey varchar(132) DEFAULT NULL,
+				  RsaPublicKey varchar(132) DEFAULT NULL,
+				  Description varchar(256) DEFAULT NULL,
 				  PRIMARY KEY (KeyId)
 				)`;
 		
@@ -158,7 +148,50 @@ class Service {
 		
 		return true;
 	}
+	
+	createSession_hook(result, params) {
+		var global = this.global;
+		
+		var session = params[0];
+		
+		if (!session)
+			return false;
+		
+		var sessionuuid = session.getSessionUUID();
 
+		global.log('createSession_hook called for ' + this.name + ' on session ' + sessionuuid);
+		
+		if (global.config['authkey_server_url']) {
+			
+			var remoteauthenticationserver = this.getRemoteAuthenticationServerInstance();
+			
+			var user = remoteauthenticationserver.getUser(session);
+			var useruuid = user.getUserUUID();
+			
+			// check if user exists in our database
+			var authenticationserver = this.getAuthenticationServerInstance();
+			
+			if (!authenticationserver.userExistsFromUUID(useruuid)) {
+				global.log('remote user not found in database, inserting user with uuid: ' + useruuid);
+				
+				// save user
+				user.altloginmethod = 'remote-authkey-server';
+				
+				authenticationserver.saveUser(session, user);
+			}
+			else {
+				global.log('remote user found in database with uuid: ' + useruuid);
+			}
+			
+			// attach user to session
+			session.impersonateUser(user);
+
+			result.push({service: this.name, handled: true});
+		}
+		
+		
+		return true;
+	}
 
 	// API
 	getVersion() {
@@ -185,7 +218,18 @@ class Service {
 		return this.authenticationserverinstance;
 	}
 	
-	createPasswordObject(password, salt, pepper, hashmethod) {
+	getRemoteAuthenticationServerInstance() {
+		if (this.remoteauthenticationserverinstance)
+			return this.remoteauthenticationserverinstance;
+			
+		var RemoteAuthenticationServer = require('./model/remote-authentication-server.js');
+		
+		this.remoteauthenticationserverinstance = new RemoteAuthenticationServer(this);
+		
+		return this.remoteauthenticationserverinstance;
+	}
+	
+	createPasswordObjectInstance(password, salt, pepper, hashmethod) {
 		var PasswordObject = require('./model/passwordobject.js');
 		
 		var passwordobject = new PasswordObject();
@@ -204,6 +248,15 @@ class Service {
 		
 		return passwordobject;
 	}
+	
+	createBlankCryptoKeyInstance() {
+		var CryptoKey = require('./model/cryptokey.js');
+		
+		var cryptokey = new CryptoKey();
+		
+		return cryptokey;
+	}
+			
 	
 	// static
 	static getService() {
