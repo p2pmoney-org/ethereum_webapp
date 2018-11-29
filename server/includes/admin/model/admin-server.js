@@ -561,8 +561,15 @@ class AdminServer {
 		var authserver = authkeyservice.getAuthenticationServerInstance();
 		
 		var keyuuid = session.guid();
+		var cryptokey = authkeyservice.createBlankCryptoKeyInstance();
+		var type = 1; // ethereum account
 
-		return authserver.addUserKey(session, useruuid, keyuuid, privatekey);
+		
+		cryptokey.setPrivateKey(privatekey);
+		cryptokey.setKeyUUID(keyuuid);
+		cryptokey.setType(type);
+
+		return authserver.addUserKey(session, useruuid, cryptokey);
 	}
 	
 	deleteUserKey(session, useruuid, keyuuid) {

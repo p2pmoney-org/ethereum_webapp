@@ -504,12 +504,20 @@ class Global {
 	}*/
 	
 	getMySqlConnection() {
+		if (this.mysqlconnection)
+			return this.mysqlconnection;
+		
 		var MySqlConnection = require('./model/mysqlcon.js')
 		
 		var sqlcon = new MySqlConnection(this, this.mysql_host, this.mysql_port, this.mysql_database, this.mysql_username, this.mysql_password);
 		
 		if (this.mysql_table_prefix)
 			sqlcon.setTablePrefix(this.mysql_table_prefix);
+		
+		this.mysqlconnection = sqlcon;
+		
+		// increment to never end connection
+		this.mysqlconnection.open();
 		
 		return sqlcon;
 	}

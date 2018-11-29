@@ -13,6 +13,51 @@ class RemoteAuthenticationServer {
 		this.rest_server_api_path = service.global.config['authkey_server_api_path'];
 	}
 	
+	getSessionStatus(session) {
+		var global = this.global;
+		var sessionuuid = session.getSessionUUID();
+		
+		var rest_server_url = this.rest_server_url;
+		var	rest_server_api_path = this.rest_server_api_path;
+		
+		var restcon = session.getRestConnection(rest_server_url, rest_server_api_path);
+		
+		var sessionstatus = [];
+		var finished = false;
+		
+		sessionstatus['sessionuuid'] = sessionuuid;
+		
+		try {
+			var resource = "/session/" + sessionuuid;
+			
+			restcon.rest_get(resource, function (err, res) {
+				if (res) {
+					global.log('success calling ' + resource + ' result is: ' + JSON.stringify(res));
+					
+					sessionstatus['isauthenticated'] = res['isauthenticated'];
+					sessionstatus['isanonymous'] = res['isanonymous'];
+
+					finished = true;
+				}
+				else {
+					global.log('rest error calling ' + resource);
+					finished = true;
+				}
+				
+			});
+		}
+		catch(e) {
+			global.log('rest exception: ' + e);
+			finished = true;
+		}
+		
+		// wait to turn into synchronous call
+		while(!finished)
+		{require('deasync').runLoopOnce();}
+		
+		return sessionstatus;
+	}
+	
 	getUserDetails(session) {
 		var global = this.global;
 		var sessionuuid = session.getSessionUUID();
@@ -55,7 +100,10 @@ class RemoteAuthenticationServer {
 	}
 	
 	getUser(session) {
-		var userdetails = this.getUserDetails(session)
+		var userdetails = this.getUserDetails(session);
+		
+		if (!userdetails)
+			return;
 		
 		var global = this.global;
 		var commonservice = global.getServiceInstance('common');

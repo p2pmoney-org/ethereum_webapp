@@ -5,7 +5,7 @@
 
 var AuthKeyInterface = class {
 	constructor(module) {
-		this.module = module
+		this.module = module;
 		this.global = module.global;
 	}
 	
@@ -16,37 +16,50 @@ var AuthKeyInterface = class {
 
 	
 	// async
-	authenticate(session, username, password, callback) {
-		console.log('AuthKeyInterface.authenticate called');
+	session_status(session, callback) {
+		console.log('AuthKeyInterface.session_status called');
 		var global = this.global;
-		var promises = [];
 		
 		var authkeyserveraccess = this.module.getAuthKeyServerAccessInstance(session);
 		
-		var versionpromise = authkeyserveraccess.auth_version(function(err, version) {
-			console.log("version is " + version);
-			
-			// could check if version is compatible
-			
-			return version;
+		return authkeyserveraccess.auth_session_status(function(err, res) {
+			if (!err) {
+				var sessionstatus = res;
+				
+				if (callback)
+					callback(null, sessionstatus);
+				
+				return sessionstatus;
+			}
+			else {
+				if (callback)
+					callback('could not obtain session status', null);
+			}
 		});
-		
-		promises.push(versionpromise);
+	}
+	
+	load_user_in_session(session, callback) {
+		console.log('AuthKeyInterface.load_user_in_session called');
+		var global = this.global;
+
+		var authkeyserveraccess = this.module.getAuthKeyServerAccessInstance(session);
 		
 		
 		var commonmodule = global.getModuleObject('common');
 		var user = commonmodule.createBlankUserObject();
 		
-		var authenticationpromise = authkeyserveraccess.auth_session_authenticate(username, password, function(err, res) {
-			var authenticated = (res['status'] == '1' ? true : false);
+		var loaduserpromise = authkeyserveraccess.auth_session_user( function(err, res) {
+			var authenticated = (res && (res['status'] == '1') ? true : false);
 			
 			console.log("authentication is " + authenticated);
 			
-			user.setUserName(res['username']);
-			user.setUserEmail((res['useremail'] ? res['useremail'] : null));
-			user.setUserUUID((res['useruuid'] ? res['useruuid'] : null));
-			
-			session.impersonateUser(user);
+			if (authenticated){
+				user.setUserName(res['username']);
+				user.setUserEmail((res['useremail'] ? res['useremail'] : null));
+				user.setUserUUID((res['useruuid'] ? res['useruuid'] : null));
+				
+				session.impersonateUser(user);
+			}
 			
 			return authenticated;
 		})
@@ -87,11 +100,108 @@ var AuthKeyInterface = class {
 						}
 						
 					}
+					
+					if (callback)
+						callback(null, user);
+
 			
 				});
 				
 			}
 			else {
+				if (callback)
+					callback('could not load user', null);
+				
+				return null;
+			}
+			
+		});
+		
+		return loaduserpromise;
+	}
+
+
+	authenticate(session, username, password, callback) {
+		console.log('AuthKeyInterface.authenticate called');
+		var global = this.global;
+		var promises = [];
+		
+		var authkeyserveraccess = this.module.getAuthKeyServerAccessInstance(session);
+		
+		var versionpromise = authkeyserveraccess.auth_version(function(err, version) {
+			console.log("version is " + version);
+			
+			// could check if version is compatible
+			
+			return version;
+		});
+		
+		promises.push(versionpromise);
+		
+		
+		var commonmodule = global.getModuleObject('common');
+		var user = commonmodule.createBlankUserObject();
+		
+		var authenticationpromise = authkeyserveraccess.auth_session_authenticate(username, password, function(err, res) {
+			var authenticated = (res && (res['status'] == '1') ? true : false);
+			
+			console.log("authentication is " + authenticated);
+			
+			if (authenticated) {
+				user.setUserName(res['username']);
+				user.setUserEmail((res['useremail'] ? res['useremail'] : null));
+				user.setUserUUID((res['useruuid'] ? res['useruuid'] : null));
+				
+				session.impersonateUser(user);
+			}
+			
+			
+			return authenticated;
+		})
+		.then(function(authenticated) {
+			if (authenticated) {
+				
+				// load crypto keys
+				return authkeyserveraccess.key_session_keys( function(err, res) {
+					
+					if (res && res['keys']) {
+						var keys = res['keys'];
+						
+						for (var i = 0; i < keys.length; i++) {
+							var key = keys[i];
+							
+							var keyuuid = key['key_uuid'];
+							var privatekey = key['private_key'];
+							var publickey = key['public_key'];
+							var address = key['address'];
+							var rsapublickey = key['rsa_public_key'];
+							var description = key['description'];
+							
+							if (privatekey) {
+								
+								var cryptokey = commonmodule.createBlankCryptoKeyObject();
+								
+								cryptokey.setKeyUUID(keyuuid);
+								cryptokey.setDescription(description);
+								
+								cryptokey.setPrivateKey(privatekey);
+								
+								session.addCryptoKeyObject(cryptokey);
+							}
+							else {
+								throw "Could not retrieve private key for a crypto key!";
+							}
+						
+						}
+						
+					}
+				});
+				
+			}
+			else {
+				if (callback)
+					callback('could not authenticate user', null);
+				
 				return null;
 			}
 			
@@ -100,6 +210,7 @@ var AuthKeyInterface = class {
 		promises.push(authenticationpromise);
 		
 		return Promise.all(promises).then(function(res) {
+			
 			if (callback)
 				callback(null, res[1]);
 			

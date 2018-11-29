@@ -69,28 +69,24 @@ class AuthenticationServer {
 		
 		var keys = this.persistor.getUserKeysFromUserUUID(useruuid);
 
-		// OBSOLETE: unicity of username not enforced!
-		/*var username = user.getUserName();
-		
-		var keys = this.persistor.getUserKeysFromUserName(username);*/
-		
 		// let's compute public keys from private keys
 		var global = this.global;
-		var clientcontainerservice = global.getServiceInstance('client-container');
-		var clientcontainer = clientcontainerservice.getClientContainer(session);
-		var commonmodule = clientcontainer.getModuleObject('common');
+		
+		var cryptoservice = global.getServiceInstance('crypto');
+		var cryptoserverinstance = cryptoservice.getCryptoServerInstance()
 		
 		for (var i = 0; i < keys.length; i++) {
 			var key = keys[i];
 			
 			var privatekey = key['private_key'];
 			
-			var account = commonmodule.createBlankAccountObject();
+			if (cryptoserverinstance.isValidPrivateKey(session, privatekey)) {
+				var pubkeys = cryptoserverinstance.getPublicKeys(session, privatekey);
+				
+				key['public_key'] = pubkeys['public_key'];
+				key['address'] = pubkeys['address'];
+			}
 			
-			account.setPrivateKey(privatekey);
-			
-			key['public_key'] = account.getPublicKey();
-			key['address'] = account.getAddress();
 		}
 		
 		return keys;

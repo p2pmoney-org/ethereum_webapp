@@ -38,8 +38,12 @@ class AuthKeyRoutes {
 		//
 		
 		// session
+		app.route(route_root_path + '/session')
+		.post(function(req, res) { controllers.session_status(req, res); });
 		app.route(route_root_path + '/session/authenticate')
 		.post(function(req, res) { controllers.session_authenticate(req, res); });
+		app.route(route_root_path + '/session/:id')
+		.get(function(req, res) { controllers.session_status(req, res); });
 		app.route(route_root_path + '/session/:id/user')
 		.get(function(req, res) { controllers.session_getUser(req, res); });
 		app.route(route_root_path + '/session/logout')

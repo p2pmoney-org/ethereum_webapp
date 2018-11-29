@@ -69,7 +69,7 @@ class DataBasePersistor {
 		
 		if (current.key !== undefined) {
 			sql = `UPDATE ` +  tablename + ` SET
-					  Content = '` + contentstring + `',
+					  Content = ` + contentstring + `
 				WHERE ` + tablename + `.UserUUID = '` + current.useruuid + `' AND ` + tablename + `.Key='` + current.key + `';`;
 		}
 		else {
@@ -115,7 +115,7 @@ class DataBasePersistor {
 		// open connection
 		mysqlcon.open();
 		
-		sql = `DELETE FROM ` +  tablename + ` WHERE UserUUID='` + useruuid + `' AND Key='` + key + `';`;
+		sql = `DELETE FROM ` +  tablename + ` WHERE ` + tablename + `.UserUUID='` + useruuid + `' AND ` + tablename + `.Key='` + key + `';`;
 		
 		// execute query
 		var result = mysqlcon.execute(sql);

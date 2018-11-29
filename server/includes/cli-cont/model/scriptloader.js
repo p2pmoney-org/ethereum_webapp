@@ -70,6 +70,22 @@ class ScriptLoader {
 		
 		var clientcontainer = this.clientcontainer;
 		
+		if (!clientcontainer.ScriptLoader) {
+			var scopeid = (clientcontainer.getClientScopeId ? clientcontainer.getClientScopeId() : 'unknown');
+			var containertype = clientcontainer.constructor.name;
+			
+			var error = 'client container with scope id ' + scopeid + ' is not ready!'
+			error += ' - type of clientcontainer is ' + containertype;
+			
+			try {
+		        throw new Error();
+		    } catch(e) {
+		    	error += e.stack;
+		    }
+		    
+			throw error;
+		}
+		
 		if (clientcontainer.ScriptLoader.findScriptLoader(loadername))
 			throw 'script loader ' + loadername + ' exists already, create under another name or use findScriptLoader to retrieve it';
 		

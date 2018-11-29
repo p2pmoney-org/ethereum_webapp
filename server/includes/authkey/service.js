@@ -37,6 +37,8 @@ class Service {
 		global.registerHook('installMysqlTables_hook', this.name, this.installMysqlTables_hook);
 
 		global.registerHook('createSession_hook', this.name, this.createSession_hook);
+		global.registerHook('isSessionAnonymous_hook', this.name, this.isSessionAnonymous_hook);
+		global.registerHook('isSessionAuthenticated_hook', this.name, this.isSessionAuthenticated_hook);
 	}
 	
 	//
@@ -166,25 +168,147 @@ class Service {
 			var remoteauthenticationserver = this.getRemoteAuthenticationServerInstance();
 			
 			var user = remoteauthenticationserver.getUser(session);
-			var useruuid = user.getUserUUID();
 			
-			// check if user exists in our database
-			var authenticationserver = this.getAuthenticationServerInstance();
+			if (user) {
+				var useruuid = user.getUserUUID();
+				
+				// check if user exists in our database
+				var authenticationserver = this.getAuthenticationServerInstance();
+				
+				if (!authenticationserver.userExistsFromUUID(useruuid)) {
+					global.log('remote user not found in database, inserting user with uuid: ' + useruuid);
+					
+					// save user
+					user.altloginmethod = 'remote-authkey-server';
+					
+					authenticationserver.saveUser(session, user);
+				}
+				else {
+					global.log('remote user found in database with uuid: ' + useruuid);
+				}
+				
+				// attach user to session
+				session.impersonateUser(user);
+				
+			}
+
+			result.push({service: this.name, handled: true});
+		}
+		
+		
+		return true;
+	}
+
+	isSessionAnonymous_hook(result, params) {
+		var global = this.global;
+		
+		var session = params[0];
+		
+		if (!session)
+			return false;
+		
+		var sessionuuid = session.getSessionUUID();
+
+		global.log('isSessionAnonymous_hook called for ' + this.name + ' on session ' + sessionuuid);
+		
+		if (global.config['authkey_server_url']) {
 			
-			if (!authenticationserver.userExistsFromUUID(useruuid)) {
-				global.log('remote user not found in database, inserting user with uuid: ' + useruuid);
+			if (!session[this.name]) session[this.name] = {};
+			var sessioncontext = session[this.name];
+			
+			var now = Date.now();
+			
+			if (sessioncontext.anonymousupdate && ((now - sessioncontext.anonymousupdate) < 5000)) {
+				// update only every 5s
+				result.push({service: this.name, handled: true});
+				return true;
+			}
+			
+			sessioncontext.anonymousupdate = now;
+			
+			global.log('checking remote user details');
+			var remoteauthenticationserver = this.getRemoteAuthenticationServerInstance();
+			
+			var user = remoteauthenticationserver.getUser(session);
+			
+			if (user) {
+				var useruuid = user.getUserUUID();
 				
-				// save user
-				user.altloginmethod = 'remote-authkey-server';
+				// check if user exists in our session
+				if (session.getUserUUID() != useruuid) {
+					global.log('remote user not found in session, inserting user with uuid: ' + useruuid);
+					
+					// impersonate user
+					session.impersonateUser(user);
+				}
 				
-				authenticationserver.saveUser(session, user);
 			}
 			else {
-				global.log('remote user found in database with uuid: ' + useruuid);
+				if (session.isanonymous === false) {
+					global.log('remote session became anonymous, set local session accordingly');
+					session.disconnectUser();
+				}
+			}
+
+			result.push({service: this.name, handled: true});
+		}
+		
+		
+		return true;
+	}
+
+	isSessionAuthenticated_hook(result, params) {
+		var global = this.global;
+		
+		var session = params[0];
+		
+		if (!session)
+			return false;
+		
+		var sessionuuid = session.getSessionUUID();
+
+		global.log('isSessionAuthenticated_hook called for ' + this.name + ' on session ' + sessionuuid);
+		
+		if (global.config['authkey_server_url']) {
+			
+			if (!session[this.name]) session[this.name] = {};
+			var sessioncontext = session[this.name];
+			
+			var now = Date.now();
+			
+			if (sessioncontext.authenticatedupdate && ((now - sessioncontext.authenticatedupdate) < 5000)) {
+				// update only every 5s
+				result.push({service: this.name, handled: true});
+				return true;
 			}
 			
-			// attach user to session
-			session.impersonateUser(user);
+			sessioncontext.authenticatedupdate = now;
+			
+			global.log('checking remote session details');
+			var remoteauthenticationserver = this.getRemoteAuthenticationServerInstance();
+			
+			var sessionstatus = remoteauthenticationserver.getSessionStatus(session);
+			
+			if (sessionstatus) {
+				var isauthenticated = sessionstatus['isauthenticated'];
+				
+				// check if authentication flags match
+				if (session.isauthenticated != isauthenticated) {
+					global.log('remote user authentication different from session, remote is: ' + isauthenticated);
+					
+					// set session flag
+					session.isauthenticated = isauthenticated;
+				}
+				
+			}
+			else {
+				global.log('remote session not found ' + sessionuuid);
+				
+				if (session.isanonymous === false) {
+					global.log('remote session does not exist and local session thinks is is not anonymous');
+					session.disconnectUser();
+				}
+			}
 
 			result.push({service: this.name, handled: true});
 		}

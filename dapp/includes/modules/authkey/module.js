@@ -63,6 +63,7 @@ var Module = class {
 		var global = this.global;
 		
 		global.registerHook('preFinalizeGlobalScopeInit_hook', 'authkey', this.preFinalizeGlobalScopeInit_hook);
+		global.registerHook('isSessionAnonymous_hook', 'authkey', this.isSessionAnonymous_hook);
 	}
 	
 	//
@@ -72,6 +73,88 @@ var Module = class {
 		console.log('preFinalizeGlobalScopeInit_hook called for ' + this.name);
 		
 		var global = this.global;
+
+		result.push({module: 'authkey', handled: true});
+		
+		return true;
+	}
+	
+	isSessionAnonymous_hook(result, params) {
+		console.log('isSessionAnonymous_hook called for ' + this.name);
+		
+		var global = this.global;
+		
+		var session = params[0];
+		
+		if (!session[this.name]) session[this.name] = {};
+		var sessioncontext = session[this.name];
+		
+		var now = Date.now();
+		
+		if (sessioncontext.authenticatedupdate && ((now - sessioncontext.authenticatedupdate) < 5000)) {
+			// update only every 5s
+			result.push({module: 'authkey', handled: true});
+			
+			return true;
+		}
+		
+		sessioncontext.authenticatedupdate = now;
+
+		var authkeyinterface = this.getAuthKeyInterface();
+		var currentanonymousflag = (session.user == null);
+		
+		console.log('checking session status on server for ' + session.getSessionUUID());
+		console.log('currentanonymousflag is ' + currentanonymousflag);
+		
+		authkeyinterface.session_status(session, function(err, sessionstatus) {
+			if (sessionstatus) {
+				if (sessionstatus['isauthenticated'] == false) {
+					console.log('session ' + session.getSessionUUID() + ' is not authenticated on the server');
+					
+					if (currentanonymousflag === false) {
+						console.log('disconnecting user');
+						
+						session.disconnectUser();
+						
+						alert(global.t('your session has expired'));
+		
+						// go to login page
+						var mvcmodule = global.getModuleObject('mvc');
+						
+						var mvccontroller = mvcmodule.getControllersObject();
+						
+						mvccontroller.gotoLoginPage();
+					}
+				}
+				else {
+					console.log('session ' + session.getSessionUUID() + ' is authenticated on the server');
+
+					if (currentanonymousflag === true) {
+						// session bootstrapped from external call
+						console.log('connecting user');
+
+						authkeyinterface.load_user_in_session(session, function(err, sessionstatus) {
+							if (!err) {
+								console.log('user loaded from server');
+								
+								// go to home page
+								var mvcmodule = global.getModuleObject('mvc');
+								
+								var mvccontroller = mvcmodule.getControllersObject();
+								
+								mvccontroller.refreshPage();
+							}
+							else {
+								console.log('error while loading user from server: ' + err);
+							}
+						});
+					}
+					
+				}
+				
+			}
+
+		});
 
 		result.push({module: 'authkey', handled: true});
 		

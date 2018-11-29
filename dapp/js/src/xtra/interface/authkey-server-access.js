@@ -104,6 +104,46 @@ class Xtra_AuthKeyServerAccess {
 		
 	}
 	
+	auth_session_status(callback) {
+		
+		var self = this
+		var session = this.session;
+		var sessionuuid = session.getSessionUUID();
+		
+		console.log("Xtra_AuthKeyServerAccess.auth_session_status called for " + sessionuuid);
+
+		var promise = new Promise(function (resolve, reject) {
+			
+			try {
+				var resource = "/session";
+				
+				var postdata = [];
+				
+				postdata = {sessionuuid: sessionuuid};
+				
+				self.rest_auth_post(resource, postdata, function (err, res) {
+					if (res) {
+						
+						if (callback)
+							callback(null, res);
+						
+						return resolve(res);
+					}
+					else {
+						reject('rest error calling ' + resource);
+					}
+					
+				});
+			}
+			catch(e) {
+				reject('rest exception: ' + e);
+			}
+		});
+		
+		return promise;
+		
+	}
+	
 	
 	auth_session_authenticate(username, password, callback) {
 		console.log("Xtra_AuthKeyServerAccess.auth_session_authenticate called");
@@ -142,6 +182,42 @@ class Xtra_AuthKeyServerAccess {
 		return promise;
 		
 	}
+	
+	auth_session_user(callback) {
+		console.log("Xtra_AuthKeyServerAccess.auth_session_user called");
+		
+		var self = this
+		var session = this.session;
+		var sessionuuid = session.getSessionUUID();
+
+		var promise = new Promise(function (resolve, reject) {
+			
+			try {
+				var resource = "/session/" + sessionuuid + "/user";
+				
+				self.rest_auth_get(resource, function (err, res) {
+					if (res) {
+						
+						if (callback)
+							callback(null, res);
+						
+						return resolve(res);
+					}
+					else {
+						reject('rest error calling ' + resource);
+					}
+					
+				});
+			}
+			catch(e) {
+				reject('rest exception: ' + e);
+			}
+		});
+		
+		return promise;
+		
+	}
+	
 	
 	auth_session_logout(useruuid, callback) {
 		console.log("Xtra_AuthKeyServerAccess.auth_session_logout called");

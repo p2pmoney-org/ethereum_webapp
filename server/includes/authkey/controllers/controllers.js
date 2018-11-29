@@ -24,6 +24,59 @@ class AuthKeyControllers {
 	  	res.json(jsonresult);
 	}
 	
+	session_status(req, res) {
+		// POST or GET
+		var global = this.global;
+		var sessionuuid = req.get("sessiontoken"); // in the sessiontoken header
+		
+		var sessionid =  req.params.id;
+
+		
+		if (!sessionid) {
+			// not a get, look in the body
+			sessionid = req.body.sessionuuid;
+		}
+		
+		
+		if (!sessionuuid) {
+			// nothing in the session, we use the parameter
+			sessionuuid = sessionid;
+		}
+		
+		global.log("session_status called for sessiontoken " + sessionuuid);
+		
+		var authkeyservice = global.getServiceInstance('authkey');
+		var authenticationserver = authkeyservice.getAuthenticationServerInstance();
+
+		var jsonresult;
+		
+		try {
+			var commonservice = global.getServiceInstance('common');
+			var Session = commonservice.Session;
+
+			var session = Session.getSession(global, sessionuuid);
+
+			if (session) {
+				var isanonymous = session.isAnonymous();
+				var isauthenticated = session.isAuthenticated();
+				
+				// return user details
+				jsonresult = {status: 1, sessionuuid: sessionuuid, isanonymous: isanonymous, isauthenticated: isauthenticated};
+			}
+			else {
+				jsonresult = {status: 0, error: "session not found " + sessionuuid};
+			}
+		}
+		catch(e) {
+			global.log("exception in session_logout for sessiontoken " + sessionuuid + ": " + e);
+			jsonresult = {status: 0, error: "exception could not authenticate session"};
+		}
+
+		global.log("session_status response is " + JSON.stringify(jsonresult));
+	  	
+	  	res.json(jsonresult);
+	}
+
 	
 	session_authenticate(req, res) {
 		// POST

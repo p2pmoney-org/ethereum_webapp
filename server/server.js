@@ -69,7 +69,10 @@ global.registerServiceInstance(new Service());
 Service = require('./includes/ethnode/service.js');
 global.registerServiceInstance(new Service());
 
-Service = require('./includes/cli-cont/service.js');
+//Service = require('./includes/cli-cont/service.js');
+//global.registerServiceInstance(new Service());
+
+Service = require('./includes/crypto/service.js');
 global.registerServiceInstance(new Service());
 
 // initialization

@@ -107,6 +107,7 @@ class Session {
 		this.creation_date = Date.now();
 		this.last_ping_date = Date.now();
 		
+		this.isready = false;
 		this.isauthenticated = false;
 		
 		// object map
@@ -170,9 +171,13 @@ class Session {
 			this.isauthenticated = array['isauthenticated'];
 		
 		if (array['sessionvariables'] !== undefined) {
-			var jsonstring = array['sessionvariables'].toString('utf8');
-			this.sessionvar = JSON.parse(jsonstring);
-			
+			try {
+				var jsonstring = array['sessionvariables'].toString('utf8');
+				this.sessionvar = JSON.parse(jsonstring);
+			}
+			catch(e) {
+				
+			}
 		}
 		
 		//this.global.log('read sessionvar is ' + JSON.stringify(this.sessionvar));
@@ -247,14 +252,64 @@ class Session {
 	
 	// ientification and authentication
 	isAnonymous() {
+		var global = this.global;
+		
+		// invoke hooks to let services interact with the session object
+		var orguseruuid = this.useruuid;
+			
+		var result = [];
+		
+		var params = [];
+		
+		params.push(this);
+
+		var ret = global.invokeHooks('isSessionAnonymous_hook', result, params);
+		
+		if (ret && result && result.length) {
+			global.log('isSessionAnonymous_hook result is ' + JSON.stringify(result));
+		}
+		
+		var newuseruuid = this.useruuid;
+		
+		if (orguseruuid != newuseruuid) {
+			// a hook changed the useruuid
+			this.save();
+		}
+
+		// current check
 		var user = this.getUser();
 		return (user === null);
 	}
 	
 	isAuthenticated() {
+		var global = this.global;
+		
 		if (this.isAnonymous())
 			return false;
 		
+		// invoke hooks to let services interact with the session object
+		var orgisauthenticated = this.isauthenticated;
+		
+		var result = [];
+		
+		var params = [];
+		
+		params.push(this);
+
+		var ret = global.invokeHooks('isSessionAuthenticated_hook', result, params);
+		
+		if (ret && result && result.length) {
+			global.log('isSessionAuthenticated_hook result is ' + JSON.stringify(result));
+		}
+		
+		var newisauthenticated  = this.useruuid;
+		
+		if (orgisauthenticated != newisauthenticated) {
+			// a hook changed the authentication flag
+			this.save();
+		}
+
+		// current check
 		var now = Date.now();
 		
 		if ((now - this.last_ping_date) < 2*60*60*1000) {
@@ -325,6 +380,17 @@ class Session {
 		return this.user;
 	}
 	
+	getUserUUID() {
+		return this.useruuid;
+	}
+	
+	// mysql calls
+	getMySqlConnection() {
+		var global = this.global;
+		
+		return global.getMySqlConnection();
+	}
+	
 	// rest calls
 	getRestConnection(rest_server_url, rest_server_api_path) {
 		var RestConnection = require('./restconnection.js');
@@ -386,6 +452,25 @@ class Session {
 		return array;
 	}
 	
+	static _waitSessionReady(session, delay, callback) {
+		var self = this;
+		
+		if (typeof session.waitloopnum === "undefined")
+			session.waitloopnum = 0;
+		else
+			session.waitloopnum++;
+		
+		console.log('session ready wait loop number ' + session.waitloopnum);
+
+		if (!session.isready) {
+			if (session.waitloopnum < 200)
+			setTimeout(function() {
+	        	Session._waitSessionReady(session, delay, callback);
+	        }, delay);
+			
+		}
+	}
+	
 	static getSession(global, sessionuuid) {
 		var session;
 		
@@ -399,6 +484,27 @@ class Session {
 		if (mapvalue !== undefined) {
 			// is already in map
 			session = mapvalue;
+			
+			if (!session.isready) {
+				global.log('session ' + sessionuuid + ' is not ready, going into a lock');
+				
+				var finished = false;
+				
+				Session._waitSessionReady(session, 100, function() {
+					global.log('finished waiting session is ready');
+					finished = true;
+				})
+
+				// pseudo lock for this critical section
+				while(!finished)
+				{require('deasync').runLoopOnce();}
+				
+				if (!session.isready)
+					global.log('session ' + sessionuuid + ' was not ready, going out of lock');
+				else
+					global.log('session ' + sessionuuid + ' is ready, going successfully out of lock');
+
+			}
 		}
 		else {
 			// create a new session object
@@ -418,7 +524,7 @@ class Session {
 				session._init(array);
 			}
 			
-			// invoke hooks to let services interact with the new sessionobject
+			// invoke hooks to let services interact with the new session object
 			var result = [];
 			
 			var params = [];
@@ -430,6 +536,9 @@ class Session {
 			if (ret && result && result.length) {
 				global.log('createSession_hook result is ' + JSON.stringify(result));
 			}
+			
+			global.log('session ' + sessionuuid + ' is now ready!');
+			session.isready = true; // end of pseudo lock on session initialization
 		}
 		
 		return session;

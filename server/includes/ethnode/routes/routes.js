@@ -51,24 +51,40 @@ class EthNodeRoutes {
 		app.route(route_root_path + '/web3/tx/:id/receipt')
 		.get(function(req, res) { controllers.web3_transaction_receipt(req, res); });
 		
+		app.route(route_root_path + '/web3/findtx')
+		.post(function(req, res) { controllers.web3_find_transaction(req, res); });
+		app.route(route_root_path + '/web3/usertx')
+		.post(function(req, res) { controllers.web3_user_transactions(req, res); });
+		app.route(route_root_path + '/web3/sendtx')
+		.post(function(req, res) { controllers.web3_sendtransaction(req, res); });
+		
+
+		app.route(route_root_path + '/web3/artifact/load')
+		.post(function(req, res) { controllers.web3_artifact_load(req, res); });
 		app.route(route_root_path + '/web3/contract/load')
 		.post(function(req, res) { controllers.web3_contract_load(req, res); });
+		app.route(route_root_path + '/web3/contract/at')
+		.post(function(req, res) { controllers.web3_contract_at(req, res); });
+		app.route(route_root_path + '/web3/contract/new')
+		.post(function(req, res) { controllers.web3_contract_new(req, res); });
 		app.route(route_root_path + '/web3/contract/:id/call')
 		.post(function(req, res) { controllers.web3_contract_call(req, res); });
+		app.route(route_root_path + '/web3/contract/:id/send')
+		.post(function(req, res) { controllers.web3_contract_send(req, res); });
 
-		// truffle
+		// truffle (obsolete)
 		app.route(route_root_path + '/truffle/artifact/load')
-		.post(function(req, res) { controllers.truffle_loadartifact(req, res); });
+		.post(function(req, res) { controllers.web3_artifact_load(req, res); });
 		app.route(route_root_path + '/truffle/contract/load')
-		.post(function(req, res) { controllers.truffle_loadContract(req, res); });
+		.post(function(req, res) { controllers.web3_contract_load(req, res); });
 		app.route(route_root_path + '/truffle/contract/at')
-		.post(function(req, res) { controllers.truffle_contract_at(req, res); });
+		.post(function(req, res) { controllers.web3_contract_at(req, res); });
 		app.route(route_root_path + '/truffle/contract/new')
-		.post(function(req, res) { controllers.truffle_contract_new(req, res); });
+		.post(function(req, res) { controllers.web3_contract_new(req, res); });
 		app.route(route_root_path + '/truffle/contract/:id/call')
-		.post(function(req, res) { controllers.truffle_method_call(req, res); });
+		.post(function(req, res) { controllers.web3_contract_call(req, res); });
 		app.route(route_root_path + '/truffle/contract/:id/send')
-		.post(function(req, res) { controllers.truffle_method_sendTransaction(req, res); });
+		.post(function(req, res) { controllers.web3_contract_send(req, res); });
 }
 	
 	

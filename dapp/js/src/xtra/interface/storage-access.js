@@ -44,30 +44,32 @@ class Xtra_StorageAccess {
 	}
 	
 	
+	// client side
+	readClientSideJson(keys) {
+		var session = this.session;
+		var global = session.getGlobalObject();
+		var storagemodule = global.getModuleObject('storage-access');
+		
+		var jsonleaf = storagemodule.readClientSideJson(session, keys);
+		
+		return jsonleaf;
+	}
+	
+	saveClientSideJson(keys, json) {
+		var session = this.session;
+		var global = session.getGlobalObject();
+		var storagemodule = global.getModuleObject('storage-access');
+		
+		storagemodule.saveClientSideJson(session, keys, json);
+	}
+	
 
 	//
 	// rest Storage API
 	//
 	
-	// json storage
-	readLocalJson(keys) {
-		var session = this.session;
-		var global = session.getGlobalObject();
-		var commonmodule = global.getModuleObject('common');
-		
-		var jsonleaf = commonmodule.readLocalJson(session, keys);
-		
-		return jsonleaf;
-	}
 	
-	saveLocalJson(keys, json) {
-		var session = this.session;
-		var global = session.getGlobalObject();
-		var commonmodule = global.getModuleObject('common');
-		
-		commonmodule.saveLocalJson(session, keys, json);
-	}
-	
+	// user
 	_keystostring(keys) {
 		var key = '';
 		
@@ -79,7 +81,6 @@ class Xtra_StorageAccess {
 	}
 	
 
-	
 	readUserJson(keys, callback) {
 		var key = this._keystostring(keys);
 		
@@ -144,11 +145,12 @@ class Xtra_StorageAccess {
 				
 				self.rest_put(resource, postdata, function (err, res) {
 					if (res) {
+						var content = res['content'];
 						
 						if (callback)
-							callback(null, res);
+							callback(null, content);
 						
-						return resolve(res);
+						return resolve(content);
 					}
 					else {
 						reject('rest error calling ' + resource + ' : ' + err, res);

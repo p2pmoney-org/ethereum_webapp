@@ -1,17 +1,6 @@
 'use strict';
 
-class ContractInstanceProxy {
-	constructor(address, contractinstanceuuid) {
-		this.address = address;
-		this.contractinstanceuuid = contractinstanceuuid;
-	}
-	
-	getAddress() {
-		return this.address;
-	}
-}
-
-class CredentialsStorage {
+var CredentialsStorage = class {
 	constructor() {
 		this.map = Object.create(null); // use a simple object to implement the map
 	}
@@ -63,7 +52,16 @@ class Xtra_EthereumNodeAccess {
 		this.credentials_storage = new CredentialsStorage();
 		
 		this.rest_connection = null;
-	}
+
+		var global = session.getGlobalObject();
+		var ethereumnodeaccessmodule = global.getModuleObject('ethereum-node-access');
+		
+		if (!ethereumnodeaccessmodule)
+			throw 'ethereum-node-access module is no loaded';
+		
+		this.ethereumnodeaccessmodule = ethereumnodeaccessmodule;
+		this.web3_version = ethereumnodeaccessmodule.web3_version;
+}
 	
 	getRestConnection() {
 		if (this.rest_connection)
@@ -200,12 +198,18 @@ class Xtra_EthereumNodeAccess {
 						return resolve(version);
 					}
 					else {
+						if (callback)
+							callback('error', null);
+						
 						reject('rest error calling ' + resource + ' : ' + err);
 					}
 					
 				});
 			}
 			catch(e) {
+				if (callback)
+					callback('exception: ' + e, null);
+				
 				reject('rest exception: ' + e);
 			}
 		});
@@ -217,6 +221,27 @@ class Xtra_EthereumNodeAccess {
 	//
 	// Web3
 	//
+	
+	// local instance
+	_getWeb3Class() {
+		return this.ethereumnodeaccessmodule.getWeb3Class(this.session);
+	}
+	
+	_getWeb3Provider() {
+		return  this.ethereumnodeaccessmodule.getWeb3Provider(this.session);
+	}
+	
+	_getWeb3Instance() {
+		if (this.web3instance)
+			return this.web3instance;
+		
+		this.web3instance = this.ethereumnodeaccessmodule.getWeb3Instance(this.session);		
+		
+		console.log("web3 instance created in EthereumNodeAccess");
+		
+		return this.web3instance;
+	}
+	
 
 	// node
 	web3_isSyncing(callback) {
@@ -238,12 +263,18 @@ class Xtra_EthereumNodeAccess {
 						return resolve(res['issyncing']);
 					}
 					else {
+						if (callback)
+							callback('error', null);
+						
 						reject('rest error calling ' + resource + ' : ' + err);
 					}
 					
 				});
 			}
 			catch(e) {
+				if (callback)
+					callback('exception: ' + e, null);
+				
 				reject('rest exception: ' + e);
 			}
 		});
@@ -279,12 +310,18 @@ class Xtra_EthereumNodeAccess {
 						return resolve(balance);
 					}
 					else {
+						if (callback)
+							callback('error', null);
+						
 						reject('rest error calling ' + resource + ' : ' + err);
 					}
 					
 				});
 			}
 			catch(e) {
+				if (callback)
+					callback('exception: ' + e, null);
+				
 				reject('rest exception: ' + e);
 			}
 		});
@@ -310,12 +347,18 @@ class Xtra_EthereumNodeAccess {
 						return resolve(code);
 					}
 					else {
+						if (callback)
+							callback('error', null);
+						
 						reject('rest error calling ' + resource + ' : ' + err);
 					}
 					
 				});
 			}
 			catch(e) {
+				if (callback)
+					callback('exception: ' + e, null);
+				
 				reject('web3 exception: ' + e);
 			}
 			
@@ -324,28 +367,67 @@ class Xtra_EthereumNodeAccess {
 		return promise;
 	}
 	
-	web3_unlockAccount(account, password, duration) {
-		// we store the credentials and will use it later on
-		// to keep it a sync call
+	web3_unlockAccount(account, password, duration, callback) {
+		var self = this;
 		var address = account.getAddress();
 		console.log("Xtra_EthereumNodeAccess.web3_unlockAccount called for " + address);
-
-		this.credentials_storage.store(account.getAddress(), password, duration);
 		
-		// we can not know if password is correct
-		// and return true by default
-		return true; 
+		var promise = new Promise(function (resolve, reject) {
+			try {
+				// we store the credentials and will use it later on
+				self.credentials_storage.store(account.getAddress(), password, duration);
+				
+				if (callback)
+					callback(null, true);
+				
+				// we can not know if password is correct
+				// and return true by default
+				return resolve(true); 
+			}
+			catch(e) {
+				var err = 'exception in web3_unlockAccount: ' + e;
+				
+				if (callback)
+					callback(err, null);
+
+				reject(err);
+			}
+			
+		});
+
+		return promise;
 		
 	}
 	
-	web3_lockAccount(account) {
+	web3_lockAccount(account, callback) {
+		var self = this;
 		var address = account.getAddress();
 		
 		console.log("Xtra_EthereumNodeAccess.web3_lockAccount called for " + address);
 
-		this.credentials_storage.remove(address);
-		
-		// TODO: make a rest call to lock on the server
+		var promise = new Promise(function (resolve, reject) {
+			try {
+				self.credentials_storage.remove(address);
+				
+				// TODO: make a rest call to lock on the server
+
+				if (callback)
+					callback(null, true);
+				
+				return resolve(true); 
+			}
+			catch(e) {
+				var err = 'exception in web3_lockAccount: ' + e;
+				
+				if (callback)
+					callback(err, null);
+
+				reject(err);
+			}
+			
+		});
+
+		return promise;
 	}
 
 	// blocks
@@ -367,12 +449,18 @@ class Xtra_EthereumNodeAccess {
 						return resolve(number);
 					}
 					else {
+						if (callback)
+							callback('error', null);
+						
 						reject('rest error calling ' + resource + ' : ' + err);
 					}
 					
 				});
 			}
 			catch(e) {
+				if (callback)
+					callback('exception: ' + e, null);
+				
 				reject('web3 exception: ' + e);
 			}
 			
@@ -397,12 +485,18 @@ class Xtra_EthereumNodeAccess {
 						return resolve(res['data']);
 					}
 					else {
+						if (callback)
+							callback('error', null);
+						
 						reject('rest error calling ' + resource + ' : ' + err);
 					}
 					
 				});
 			}
 			catch(e) {
+				if (callback)
+					callback('exception: ' + e, null);
+				
 				reject('web3 exception: ' + e);
 			}
 			
@@ -412,6 +506,111 @@ class Xtra_EthereumNodeAccess {
 	}
 	
 	// transactions
+	web3_findTransaction(transactionuuid, callback) {
+		var self = this
+		var session = this.session;
+
+		var promise = new Promise(function (resolve, reject) {
+			try {
+				var resource = "/web3/findtx";
+				
+				var postdata = [];
+				
+				postdata = {transactionuuid: transactionuuid};
+
+				var promise2 = self.rest_post(resource, postdata, function (err, res) {
+					if (res) {
+						if (callback)
+							callback(null, res['data']);
+						
+						return resolve(res['data']);
+					}
+					else {
+						if (callback)
+							callback('error', null);
+						
+						reject('rest error calling ' + resource + ' : ' + err);
+					}
+					
+				});
+			}
+			catch(e) {
+				if (callback)
+					callback('exception: ' + e, null);
+				
+				reject('web3 exception: ' + e);
+			}
+			
+		});
+		
+		return promise;
+	}
+
+	web3_getTransactionList(callback) {
+		var self = this
+		var session = this.session;
+		var global = session.getGlobalObject();
+		
+		var user = session.getSessionUserObject();
+		var useruuid = (user ? user.getUserUUID() : null);
+
+		var promise = new Promise(function (resolve, reject) {
+			try {
+				var resource = "/web3/usertx";
+				
+				var postdata = [];
+				
+				postdata = {useruuid: useruuid};
+
+				var promise2 = self.rest_post(resource, postdata, function (err, res) {
+					if (res) {
+						var txarray = res['data'];
+						var transactionarray = [];
+						
+						for (var i = 0; i < txarray.length; i++) {
+							var tx = txarray[i];
+							
+							var transactionuuid = tx['transactionuuid'];
+							var creationdate = global.parseDate(tx['creationdate']);
+							
+							var transaction = session.getTransactionObject(transactionuuid);
+							
+							transaction.setTransactionHash(tx['transactionhash']);
+							transaction.setFrom(tx['from']);
+							transaction.setTo(tx['to']);
+							transaction.setValue(tx['value']);
+							transaction.setCreationDate(creationdate);
+							transaction.setStatus(tx['status']);
+						
+							transactionarray.push(transaction);
+						}
+						
+						if (callback)
+							callback(null, transactionarray);
+						
+						return resolve(transactionarray);
+					}
+					else {
+						if (callback)
+							callback('rest error calling ' + resource + ' : ' + err, null);
+
+						reject('rest error calling ' + resource + ' : ' + err);
+					}
+					
+				});
+			}
+			catch(e) {
+				if (callback)
+					callback('exception: ' + e, null);
+				
+				reject('web3 exception: ' + e);
+			}
+			
+		});
+		
+		return promise;
+	}
+
 	web3_getTransaction(hash, callback) {
 		var self = this
 		var session = this.session;
@@ -428,12 +627,18 @@ class Xtra_EthereumNodeAccess {
 						return resolve(res['data']);
 					}
 					else {
+						if (callback)
+							callback('error', null);
+						
 						reject('rest error calling ' + resource + ' : ' + err);
 					}
 					
 				});
 			}
 			catch(e) {
+				if (callback)
+					callback('exception: ' + e, null);
+				
 				reject('web3 exception: ' + e);
 			}
 			
@@ -458,12 +663,18 @@ class Xtra_EthereumNodeAccess {
 						return resolve(res['data']);
 					}
 					else {
+						if (callback)
+							callback('error', null);
+						
 						reject('rest error calling ' + resource + ' : ' + err);
 					}
 					
 				});
 			}
 			catch(e) {
+				if (callback)
+					callback('exception: ' + e, null);
+				
 				reject('web3 exception: ' + e);
 			}
 			
@@ -472,18 +683,561 @@ class Xtra_EthereumNodeAccess {
 		return promise
 	}
 	
+	web3_sendEthTransaction(ethtransaction, callback) {
+		console.log('EthereumNodeAccess.web3_sendEthTransaction called');
+		
+		if (!ethtransaction)
+			throw 'no transaction defined';
+		
+		var self = this
+		var session = this.session;
+		
+		if (ethtransaction.getTransactionUUID() === null)
+			ethtransaction.setTransactionUUID(session.guid());
+		
+		var transactionuuid = ethtransaction.getTransactionUUID();
+		
+		
+		var promise = new Promise( function(resolve, reject) {
+			
+			try {
+				var web3 = self._getWeb3Instance();
+				
+			    
+			    var txjson = ethtransaction.getTxJson();
+			    
+				// common callback function
+				var __transactioncallback = function(err, res) {
+					var transactionHash = res;
+					console.log('EthereumNodeAccess.web3_sendTransaction transactionHash is ' + transactionHash);
+			         
+					if (!err) {
+						if (callback)
+							callback(null, transactionHash);
+						
+						ethtransaction.setTransactionHash(transactionHash);
+
+						return resolve(transactionHash);
+					}
+					else {
+						if (callback)
+							callback('web3 error: ' + err, null);
+						
+						reject('web3 error: ' + err);
+					}
+				};
+				
+				var __sendTransaction = function(postdata, callback) {
+					try {
+						var resource = "/web3/sendtx";
+						
+						var promise2 = self.rest_post(resource, postdata, function (err, res) {
+							if (res) {
+								var transactionhash = res['transactionhash'];
+								
+								if (callback)
+									callback(null, transactionhash);
+								
+								return transactionhash;
+							}
+							else {
+								console.log("error sending transaction: " + err);
+								
+								if (callback)
+									callback('rest error calling ' + resource + ' : ' + err, null);
+							}
+							
+						});
+						
+						return promise2;
+					}
+					catch(e) {
+						reject('rest exception: ' + e);
+					}
+					
+				};
+				
+				// sending unsigned or signed
+				if (ethtransaction.canSignTransaction()) {
+					// signing the transaction
+					
+				    return ethtransaction.getRawData(function(err, raw) {
+				    	if (!err) {
+							var postdata = [];
+							
+							postdata = {transactionuuid: transactionuuid, 
+									raw: raw,
+									
+									from: ethtransaction.getFromAddress(),
+									to: ethtransaction.getToAddress(),
+									
+									value: ethtransaction.getValue(),
+
+									gas: ethtransaction.getGas(),
+									gasPrice: ethtransaction.getGasPrice(),
+
+									data: ethtransaction.getData(),
+									nonce: ethtransaction.getNonce()
+									};
+							
+							return __sendTransaction(postdata, __transactioncallback);
+				    	}
+				    	else {
+				    		__transactioncallback(err, null);
+				    	}
+				    });
+
+				}
+				else {
+					// unsigned send (node will sign thanks to the unlocking of account)
+					var postdata = [];
+					
+					postdata = {transactionuuid: transactionuuid, 
+					
+					from: ethtransaction.getFromAddress(),
+					to: ethtransaction.getToAddress(),
+					
+					value: ethtransaction.getValue(),
+
+					gas: ethtransaction.getGas(),
+					gasPrice: ethtransaction.getGasPrice(),
+
+					data: ethtransaction.getData(),
+					nonce: ethtransaction.getNonce()
+					};
+					
+					return __sendTransaction(postdata, __transactioncallback);
+				}
+				
+			}
+			catch(e) {
+				if (callback)
+					callback('exception: ' + e, null);
+				
+				reject('web3 exception: ' + e);
+			}
+		
+		});
+		
+		return promise
+	}
+	
+	web3_sendTransaction(fromaccount, toaccount, amount, gas, gasPrice, txdata, nonce, callback) {
+		console.log('Xtra_EthereumNodeAccess.web3_sendTransaction called');
+		
+		var self = this
+		var session = this.session;
+		
+		if (!fromaccount)
+			throw 'no sender specified for transaction';
+		
+		if ( (amount > 0) && !toaccount)
+			throw 'no recipient specified for transaction. Use burn if you want to destroy ethers.';
+		
+		var fromaddress = fromaccount.getAddress();
+		var toaddress = (toaccount ? toaccount.getAddress() : null);
+		
+		console.log('Xtra_EthereumNodeAccess.web3_sendTransaction called from ' + fromaddress + ' to ' + toaddress + ' amount ' + amount + ' transaction uuid ' + transactionuuid);
+
+	    var ethtransaction = self.ethereumnodeaccessmodule.getEthereumTransactionObject(session, fromaccount);
+	    
+	    ethtransaction.setToAddress(toaddress);
+	    ethtransaction.setValue(amount);
+	    ethtransaction.setGas(gas);
+	    ethtransaction.setGasPrice(gasPrice);
+	    ethtransaction.setData(txdata);
+	    ethtransaction.setNonce(nonce);
+	    
+		var transactionuuid = session.guid(); // maybe we could read it from txdata
+		
+		ethtransaction.setTransactionUUID(transactionuuid);
+
+	    return this.web3_sendEthTransaction(ethtransaction, callback);
+	}
+	
 	// contracts
-	web3_contract_load_at(abi, address, callback) {
+	
+	web3_loadArtifact(artifactpath, callback) {
+		console.log('Xtra_EthereumNodeAccess.web3_loadArtifact called');
+		
+		var self = this
+		var session = this.session;
+		var ethereumnodeaccessmodule = this.ethereumnodeaccessmodule;
+
+		var promise = new Promise(function (resolve, reject) {
+			
+			try {
+				var resource = "/web3/artifact/load";
+				
+				var postdata = [];
+				
+				postdata = {artifactpath: artifactpath};
+				
+				self.rest_post(resource, postdata, function (err, res) {
+					if (res) {
+						var artifactuuid = res['artifactuuid'];
+						var contractname = res['contractname'];
+						var artifactpath = res['artifactpath'];
+						var abi = res['abi'];
+						var bytecode = res['bytecode'];
+						
+						var artifact = ethereumnodeaccessmodule.getArtifactProxyObject(artifactuuid, contractname, artifactpath, abi, bytecode);
+						
+						console.log("post_truffle_loadArtifact resolved with " + artifactuuid);
+						
+						return resolve(artifact);
+					}
+					else {
+						if (callback)
+							callback('error', null);
+						
+						reject('rest error calling ' + resource + ' : ' + err);
+					}
+					
+				});
+			}
+			catch(e) {
+				if (callback)
+					callback('exception: ' + e, null);
+				
+				reject('rest exception: ' + e);
+			}
+		})
+		.then(function (artifact) {
+			// we chain the instantiation now because caller of
+			// web3_loadContract does not expect a promise
+			return new Promise(function (resolve, reject) {
+				try {
+					var resource = "/web3/contract/load";
+					
+					var postdata = [];
+					
+					postdata = {artifactuuid: artifact.artifactuuid};
+					
+					self.rest_post(resource, postdata, function (err, res) {
+						if (res) {
+							var contractuuid = res['contractuuid'];
+							
+							console.log("post_truffle_loadContract resolved with " + contractuuid);
+							
+							var contractproxy = ethereumnodeaccessmodule.getContractProxyObject(contractuuid, artifact);
+							
+							if (callback)
+								callback(contractproxy);
+							
+							return resolve(contractproxy);
+						}
+						else {
+							if (callback)
+								callback('error', null);
+							
+							reject('rest error calling ' + resource + ' : ' + err);
+						}
+						
+					});
+				}
+				catch(e) {
+					console.log("error during loading of artifact: " + err);
+
+					if (callback)
+						callback('exception: ' + e, null);
+					
+					reject('rest exception: ' + e);
+				}
+			});
+			
+		}).then(function (prom) {
+			return prom;
+		}); 
+		
+		return promise;
+	}
+	
+	web3_loadContract(artifact) {
+		console.log('Xtra_EthereumNodeAccess.web3_loadContract called');
+		
+		// we actually receive a contractproxy because of the chaining above
+		return artifact;
+	}
+	
+	_mustBeSigned(params) {
+		var session = this.session;
+		
+		let txjson = params[params.length - 1];
+		let args = params.slice(0,-1);
+
+		if (txjson instanceof EthereumTransaction) {
+			var ethereumtransaction = params[params.length - 1];
+			var fromaccount = ethereumtransaction.getFromAccount();
+		}
+		else {
+			let fromaddress = txjson.from;
+			var fromaccount = session.getAccountObject(fromaddress);
+		}
+		
+		return fromaccount.canSignTransactions();
+	}
+	
+	_waitTransactionReceipt(transactionHash, delay, callback) {
+		var self = this;
+		
+		if (!this.loopnum)
+			this.loopnum = [];
+		
+		if (typeof this.loopnum[transactionHash] === "undefined") 
+			this.loopnum[transactionHash] = 0;
+		else
+			this.loopnum[transactionHash]++;
+		
+		console.log('loop number ' + this.loopnum[transactionHash]);
+
+		self.web3_getTransactionReceipt(transactionHash, function(err, result) {
+		    if(err) {
+		        if (callback)
+		        	callback('error executing getTransactionReceipt:  ' + err, null)
+		    }
+		    else {
+		        if(result === null) {
+		        	
+		        	if (this.loopnum[transactionHash] < 200)
+		            setTimeout(function() {
+		            	self._waitTransactionReceipt(transactionHash, delay, callback);
+		            }, delay);
+		        }
+		        else {
+					//console.log('Xtra_EthereumNodeAccess._getPendingTransactionReceipt receipt is ' + JSON.stringify(result));
+
+					if (callback)
+			        	callback(null, result);
+			        
+			        return result;
+		        }
+		    }
+		})
+		.catch(err => {
+        	if (this.loopnum[transactionHash] < 200)
+			setTimeout(function() {
+            	self._waitTransactionReceipt(transactionHash, delay, callback);
+            }, delay);
+		});
+	}
+	
+	_getPendingTransactionReceipt(transactionHash, callback) {
+		var self = this;
+
+		return new Promise(function (resolve, reject) {
+			try {
+				self._waitTransactionReceipt(transactionHash, 500, function(err, res) {
+					console.log('Xtra_EthereumNodeAccess._getPendingTransactionReceipt callback called for ' + transactionHash);
+					
+					if (!err) {
+						
+						if (callback)
+							callback(null, res);
+						
+						return resolve(res);
+					}
+					else {
+						console.log('Xtra_EthereumNodeAccess._getPendingTransactionReceipt error ' + JSON.stringify(err));
+
+						if (callback)
+							callback('web3 error: ' + err, null);
+						
+						reject('web3 error: ' + err);
+					}
+				
+				});
+			}
+			catch(e) {
+				if (callback)
+					callback('exception: ' + e, null);
+				
+				reject('web3 exception: ' + e);
+			}
+			
+		});		
+	}
+	
+	web3_contract_new(web3contract, params, callback) {
+		console.log('Xtra_EthereumNodeAccess.web3_contract_new called for contract ' + web3contract.getUUID());
+		
+		if (!web3contract) {
+			throw "contract is not defined";
+		}
+		
+		var self = this
+		var session = this.session;
+		var ethereumnodeaccessmodule = this.ethereumnodeaccessmodule;
+		
+		var web3_contract_instance = ethereumnodeaccessmodule.getContractInstanceProxyObject(session.guid(), null, web3contract);
+		
+		var ethereumtransaction = ethereumnodeaccessmodule.unstackEthereumTransactionObject(session, params);
+		let args = params.slice(0,-1);
+
+		if (ethereumtransaction.getTransactionUUID() === null)
+			ethereumtransaction.setTransactionUUID(session.guid());
+		
+		var transactionuuid = ethereumtransaction.getTransactionUUID();
+
+		
+		if (ethereumtransaction.canSignTransaction()) {
+			// create a deploy transaction that will be signed on client's side
+			var abi = web3contract.getAbi();
+			var bytecode = web3contract.getByteCode();
+			
+			web3_contract_instance['contract'] = web3contract;
+			
+			if (!bytecode)
+				throw 'no byte code, can not deploy contract';
+			
+			
+			// then create a deploy transaction data
+			let soliditycontract = ethereumnodeaccessmodule.getSolidityContractObject(session, abi);
+			let deploy = soliditycontract.getDeployData(bytecode, args);
+			
+			ethereumtransaction.setData(deploy);
+			
+			// sending deploy transaction
+			try {
+				return this.web3_sendEthTransaction(ethereumtransaction, function(err, res) {
+					if (!err) {
+						var transactionHash = res;
+						console.log('EthereumNodeAcces.web3_contract_new transaction hash is: ' + transactionHash);
+						
+						if (callback)
+							callback(null, transactionHash);
+						
+						return transactionHash;
+					}
+					else {
+						var error = 'error deploying contract: ' + err;
+						console.log('EthereumNodeAcces.web3_contract_new error:' + error);
+						
+						if (callback)
+							callback(error, null);
+					}
+					
+				})
+				.then(function(transactionHash) {
+					return self._getPendingTransactionReceipt(transactionHash, function(err, res) {
+						if (err) {
+							console.log('contract deployment transaction is invalid: ' + transactionHash);
+							
+							if (callback)
+								callback('contract deployment transaction is invalid: ' + transactionHash, null);
+						}
+						else {
+							//console.log('contract deployment transaction receipt is: ' + JSON.stringify(res));
+							return res;
+						}
+						
+					});
+				})
+				.then(function(receipt) {
+					if (receipt) {
+						var address = receipt['contractAddress'];
+						console.log('contract deployment address is ' + address);
+						
+						web3_contract_instance['address'] = address;
+						
+						return web3_contract_instance;
+					}
+				});
+			}
+			catch(e) {
+				console.log('exception: ' + e);
+			}
+		}
+		else {
+			// unsigned, call server rest api to deploy with unlocked account
+			var promise = new Promise(function (resolve, reject) {
+				
+				
+				try {
+					var contractuuid = web3contract.contractuuid;
+					
+					var resource = "/web3/contract/new";
+					
+					var postdata = [];
+					
+					let txjson = ethereumtransaction.getTxJson();
+					
+					var credentials = self.getTransactionCredentials(params);
+					var walletaddress = (credentials['address'] ? credentials['address'] : null);
+					var password = (credentials['password'] ? credentials['password'] : null);
+					var time = (credentials['from'] ? credentials['from'] : null);
+					var duration = (credentials['during'] ? credentials['during'] : null);
+					
+					postdata = {contractuuid: contractuuid, 
+								walletaddress: walletaddress,
+								password: password,
+								time: time,
+								duration: duration,
+								args: JSON.stringify(args),
+								txjson: JSON.stringify(txjson),
+								transactionuuid: transactionuuid};
+					
+					var promise2 = self.rest_post(resource, postdata, function (err, res) {
+						if (res) {
+							
+							web3_contract_instance.address = res['address'];
+							web3_contract_instance.contractinstanceuuid = res['contractinstanceuuid'];
+							
+							return resolve(web3_contract_instance);
+						}
+						else {
+							console.log("error during new of contract: " + err);
+							reject('rest error calling ' + resource + ' : ' + err);
+						}
+						
+					});
+				}
+				catch(e) {
+					reject('rest exception: ' + e);
+				}
+			});
+			
+			return promise;
+		}
+	}
+
+
+	getTransactionCredentials(params) {
+		var session = this.session;
+		var ethereumnodeaccessmodule = this.ethereumnodeaccessmodule;
+		
+		var ethereumtransaction = ethereumnodeaccessmodule.unstackEthereumTransactionObject(session, params);
+		let args = params.slice(0,-1);
+		
+		var payeraddress = ethereumtransaction.getPayerAddress();
+		
+		
+		if (payeraddress) {
+			var credentials = this.credentials_storage.retrieve(payeraddress);
+			
+			if (!credentials)
+				console.log('no credentials found for ' + payeraddress);
+			
+			return credentials;
+		}
+		else {
+			console.log('no payer found for transaction');
+		}
+	}
+	
+
+	web3_abi_load_at(abi, address, callback) {
 
 		var abijsonstring = JSON.stringify(abi);
 		
 		var self = this
 		var session = this.session;
+		var ethereumnodeaccessmodule = this.ethereumnodeaccessmodule;
 		
 		var promise = new Promise(function (resolve, reject) {
 			
 			try {
-				var resource = "/web3/contract/load";
+				var resource = "/web3/contract/at";
 				
 				var postdata = [];
 				
@@ -491,7 +1245,11 @@ class Xtra_EthereumNodeAccess {
 				
 				self.rest_post(resource, postdata, function (err, res) {
 					var contractinstanceuuid = res['contractinstanceuuid'];
-					var constractinstanceproxy = new ContractInstanceProxy(address, contractinstanceuuid);
+					
+					var artifact = ethereumnodeaccessmodule.getArtifactProxyObject(session.guid(), null, abi.contractName, abi, null);
+					var contract = ethereumnodeaccessmodule.getContractProxyObject(session.guid(), artifact);
+					
+					var constractinstanceproxy = ethereumnodeaccessmodule.getContractInstanceProxyObject(contractinstanceuuid, address, contract);
 					
 					if (callback)
 						callback(null, constractinstanceproxy);
@@ -511,8 +1269,54 @@ class Xtra_EthereumNodeAccess {
 
 	}
 	
-	web3_contract_dynamicMethodCall(web3_contract, abidef, params, callback) {
-		console.log("Xtra_EthereumNodeAccess.web3_contract_dynamicMethodCall called for contractinstanceuuid " + web3_contract.contractinstanceuuid + " and method " + abidef.name);
+	web3_contract_at(web3contract, address, callback) {
+		console.log('Xtra_EthereumNodeAccess.web3_contract_at called');
+		
+		var self = this
+		var session = this.session;
+		var ethereumnodeaccessmodule = this.ethereumnodeaccessmodule;
+		
+		var contractuuid = web3contract.contractuuid;
+
+		var promise = new Promise(function (resolve, reject) {
+			
+			try {
+				var resource = "/web3/contract/at";
+				
+				var postdata = [];
+				
+				postdata = {contractuuid: contractuuid, address: address};
+				
+				var promise2 = self.rest_post(resource, postdata, function (err, res) {
+					if (res) {
+						var contractinstanceuuid = res['contractinstanceuuid'];
+						
+						console.log("loading of contract successful, contractinstanceuuid is " + contractinstanceuuid);
+						
+						var constractinstanceproxy = ethereumnodeaccessmodule.getContractInstanceProxyObject(contractinstanceuuid, address, web3contract);
+						
+						resolve(constractinstanceproxy);
+						
+						return Promise.resolve(constractinstanceproxy);
+					}
+					else {
+						console.log("error during loading of contract: " + err);
+						reject('rest error calling ' + resource + ' : ' + err);
+					}
+					
+				});
+			}
+			catch(e) {
+				reject('rest exception: ' + e);
+			}
+		});
+		
+		return promise;
+	}
+
+	
+	_web3_contract_dynamicMethodCall(web3_contract, abidef, params, callback) {
+		console.log("Xtra_EthereumNodeAccess._web3_contract_dynamicMethodCall called for contractinstanceuuid " + web3_contract.contractinstanceuuid + " and method " + abidef.name);
 		
 		if (!web3_contract) {
 			throw "contract instance is not defined";
@@ -557,37 +1361,38 @@ class Xtra_EthereumNodeAccess {
 		return promise;
 	}
 	
-	
-	//
-	// Truffle
-	//
-	truffle_loadArtifact(artifactpath, callback) {
-		console.log("Xtra_EthereumNodeAccess.truffle_loadArtifact called for " + artifactpath);
-
+	web3_method_call(web3_contract_instance, methodname, params, callback) {
+		console.log('Xtra_EthereumNodeAccess.web3_method_call called for method ' + methodname+ ' and contractinstanceuuid ' + web3_contract_instance.getUUID() );
+		
+		if (!web3_contract_instance) {
+			throw "contract instance is not defined";
+		}
+		
 		var self = this
 		var session = this.session;
 
 		var promise = new Promise(function (resolve, reject) {
 			
 			try {
-				var resource = "/truffle/artifact/load";
+				var address = web3_contract_instance.getAddress();
+				var contractinstanceuuid = web3_contract_instance.contractinstanceuuid;
+				
+				var resource = "/web3/contract/" + address + "/call";
 				
 				var postdata = [];
 				
-				postdata = {artifactpath: artifactpath};
+				postdata = {contractinstanceuuid: contractinstanceuuid, 
+							methodname: methodname, 
+							params: JSON.stringify(params)};
 				
-				self.rest_post(resource, postdata, function (err, res) {
+				var promise2 = self.rest_post(resource, postdata, function (err, res) {
 					if (res) {
-						var artifact = res['artifact'];
+						var result = res['result'];
 						
-						/*if (callback)
-							callback(artifact);*/
-						
-						console.log("post_truffle_loadArtifact resolved with " + artifact);
-						
-						return resolve(artifact);
+						return resolve(result);
 					}
 					else {
+						console.log("error during web3_method_call: " + err);
 						reject('rest error calling ' + resource + ' : ' + err);
 					}
 					
@@ -596,267 +1401,170 @@ class Xtra_EthereumNodeAccess {
 			catch(e) {
 				reject('rest exception: ' + e);
 			}
-		})
-		.then(function (artifact) {
-			// we chain the instantiation now because caller of
-			// truffle_loadContract does not expect a promise
-			return new Promise(function (resolve, reject) {
+		});
+		
+		return promise;
+	}
+	
+	web3_method_sendTransaction(web3_contract_instance, methodname, params, callback) {
+		console.log('Xtra_EthereumNodeAccess.web3_method_sendTransaction called for method ' + methodname+ ' and contractinstanceuuid ' + web3_contract_instance.getUUID() );
+		
+		if (!web3_contract_instance) {
+			throw "contract instance is not defined";
+		}
+		
+		var self = this
+		var session = this.session;
+		var ethereumnodeaccessmodule = this.ethereumnodeaccessmodule;
+		
+		var ethereumtransaction = ethereumnodeaccessmodule.unstackEthereumTransactionObject(session, params);
+		let args = params.slice(0,-1);
+
+		if (ethereumtransaction.getTransactionUUID() === null)
+			ethereumtransaction.setTransactionUUID(session.guid());
+		
+		var transactionuuid = ethereumtransaction.getTransactionUUID();
+
+		
+		if (ethereumtransaction.canSignTransaction()) {
+			var abi = web3_contract_instance.getAbi()
+			var contractaddress = web3_contract_instance.getAddress();
+
+			// create a call transaction data
+			let soliditycontract = ethereumnodeaccessmodule.getSolidityContractObject(session, abi);
+			let abidef = soliditycontract.getMethodAbiDefinition(methodname);
+			let calldata = soliditycontract.getCallData(contractaddress, abidef, args);
+			
+			ethereumtransaction.setData(calldata);
+			ethereumtransaction.setToAddress(contractaddress);
+			
+			// sending method transaction
+			try {
+				return this.web3_sendEthTransaction(ethereumtransaction, function(err, res) {
+					if (!err) {
+						var transactionHash = res;
+						console.log('Xtra_EthereumNodeAccess._web3_contract_dynamicSendTransaction transaction hash is ' + transactionHash);
+						
+						if (callback)
+							callback(null, transactionHash);
+						
+						return transactionHash;
+					}
+					else {
+						console.log('Xtra_EthereumNodeAccess._web3_contract_dynamicSendTransaction error: ' + err);
+						
+						if (callback)
+							callback('Xtra_EthereumNodeAccess._web3_contract_dynamicSendTransaction error: ' + err, null);
+					}
+					
+				});
+			}
+			catch(e) {
+				console.log('exception: ' + e);
+			}
+		}
+		else {
+
+			var promise = new Promise(function (resolve, reject) {
+				
 				try {
-					var resource = "/truffle/contract/load";
+					var address = web3_contract_instance.getAddress();
+					var contractinstanceuuid = web3_contract_instance.contractinstanceuuid;
+					
+					var resource = "/web3/contract/" + address + "/send";
 					
 					var postdata = [];
 					
-					postdata = {artifact: artifact};
+					let txjson = ethereumtransaction.getTxJson();
 					
-					self.rest_post(resource, postdata, function (err, res) {
+					var credentials = self.getTransactionCredentials(params);
+					var walletaddress = (credentials['address'] ? credentials['address'] : null);
+					var password = (credentials['password'] ? credentials['password'] : null);
+					var time = (credentials['from'] ? credentials['from'] : null);
+					var duration = (credentials['during'] ? credentials['during'] : null);
+					
+					postdata = {contractinstanceuuid: contractinstanceuuid, 
+								walletaddress: walletaddress,
+								password: password,
+								time: time,
+								duration: duration,
+								methodname: methodname, 
+								args: JSON.stringify(args),
+								txjson: JSON.stringify(txjson),
+								transactionuuid: transactionuuid};
+					
+					var promise2 = self.rest_post(resource, postdata, function (err, res) {
 						if (res) {
-							var contractuuid = res['contractuuid'];
+							var transactionHash = res['transactionhash'];
 							
-							console.log("post_truffle_loadContract resolved with " + contractuuid);
-							
+							ethtransaction.setTransactionHash(transactionHash);
+
 							if (callback)
-								callback(contractuuid);
+								callback(null, transactionHash);
 							
-							return resolve(contractuuid);
+							return resolve(transactionHash);
 						}
 						else {
+							console.log("error during web3_method_sendTransaction: " + err);
+							
+							
+							if (callback)
+								callback('Xtra_EthereumNodeAccess._web3_contract_dynamicSendTransaction error: ' + err, null);
+							
 							reject('rest error calling ' + resource + ' : ' + err);
 						}
 						
 					});
 				}
 				catch(e) {
-					console.log("error during loading of artifact: " + err);
 					reject('rest exception: ' + e);
 				}
 			});
 			
-		}).then(function (prom) {
-			return prom;
-		}); 
+			return promise;
+		}
+	}
+
 		
-		return promise;
+	//
+	// Truffle
+	//
+	truffle_loadArtifact(artifactpath, callback) {
+		console.log("Xtra_EthereumNodeAccess.truffle_loadArtifact called for " + artifactpath);
+		
+		return this.web3_loadArtifact(artifactpath, callback);
 	}
 	
 	truffle_loadContract(artifact) {
-		console.log("Xtra_EthereumNodeAccess.truffle_loadContract called " + artifact);
+		console.log('artifact is ' + JSON.stringify(artifact));
+		console.log("Xtra_EthereumNodeAccess.truffle_loadContract called for artifact " + (artifact.getUUID ? artifact.getUUID() : null));
 		
-		return artifact;
+		return this.web3_loadContract(artifact) ;
 	}
 	
 	truffle_contract_at(trufflecontract, address) {
-		console.log("Xtra_EthereumNodeAccess.truffle_contract_at called for contractuuid " + trufflecontract + " and blockchain address " + address);
+		console.log("Xtra_EthereumNodeAccess.truffle_contract_at called for contractuuid " + (trufflecontract.getUUID ? trufflecontract.getUUID() : null) + " and blockchain address " + address);
 		
-		var self = this
-		var session = this.session;
-
-		var promise = new Promise(function (resolve, reject) {
-			
-			try {
-				var resource = "/truffle/contract/at";
-				
-				var postdata = [];
-				
-				postdata = {contractuuid: trufflecontract, address: address};
-				
-				var promise2 = self.rest_post(resource, postdata, function (err, res) {
-					if (res) {
-						var contractinstanceuuid = res['contractinstanceuuid'];
-						
-						console.log("loading of contract successful, contractinstanceuuid is " + contractinstanceuuid);
-						
-						var constractinstanceproxy = new ContractInstanceProxy(address, contractinstanceuuid);
-						
-						resolve(constractinstanceproxy);
-						
-						return Promise.resolve(constractinstanceproxy);
-					}
-					else {
-						console.log("error during loading of contract: " + err);
-						reject('rest error calling ' + resource + ' : ' + err);
-					}
-					
-				});
-			}
-			catch(e) {
-				reject('rest exception: ' + e);
-			}
-		});
-		
-		return promise;
+		return this.web3_contract_at(trufflecontract, address)
 	}
 
-	getTransactionCredentials(params) {
-		// last param contains json for transaction
-		var json = params[params.length - 1];
-		
-		if (json['from']) {
-			var payeraddress = json['from'];
-			
-			var credentials = this.credentials_storage.retrieve(payeraddress);
-			
-			if (!credentials)
-				console.log('no credentials found for ' + payeraddress);
-			
-			return credentials;
-		}
-		else {
-			console.log('no from field found in json');
-		}
-	}
-	
 	
 	truffle_contract_new(trufflecontract, params) {
-		console.log("Xtra_EthereumNodeAccess.truffle_contract_new called for contractuuid " + trufflecontract);
+		console.log("Xtra_EthereumNodeAccess.truffle_contract_new called for contractuuid " + trufflecontract.contractuuid);
 		
-		if (!trufflecontract) {
-			throw "contract is not defined";
-		}
-		
-		var self = this
-		var session = this.session;
-
-		var promise = new Promise(function (resolve, reject) {
-			
-			try {
-				var contractuuid = trufflecontract;
-				
-				var resource = "/truffle/contract/new";
-				
-				var postdata = [];
-				
-				var credentials = self.getTransactionCredentials(params);
-				var walletaddress = (credentials['address'] ? credentials['address'] : null);
-				var password = (credentials['password'] ? credentials['password'] : null);
-				var time = (credentials['from'] ? credentials['from'] : null);
-				var duration = (credentials['during'] ? credentials['during'] : null);
-				
-				postdata = {contractuuid: contractuuid, 
-							walletaddress: walletaddress,
-							password: password,
-							time: time,
-							duration: duration,
-							params: JSON.stringify(params)};
-				
-				var promise2 = self.rest_post(resource, postdata, function (err, res) {
-					if (res) {
-						var constractinstanceproxy = new ContractInstanceProxy(res['address'], res['contractinstanceuuid']);
-						
-						return resolve(constractinstanceproxy);
-					}
-					else {
-						console.log("error during new of contract: " + err);
-						reject('rest error calling ' + resource + ' : ' + err);
-					}
-					
-				});
-			}
-			catch(e) {
-				reject('rest exception: ' + e);
-			}
-		});
-		
-		return promise;
+		return this.web3_contract_new(trufflecontract, params);
 	}
 
 	truffle_method_call(constractinstance, methodname, params) {
 		console.log("Xtra_EthereumNodeAccess.truffle_method_call called for contractinstanceuuid " + constractinstance.contractinstanceuuid + " and method " + methodname);
 		
-		if (!constractinstance) {
-			throw "contract instance is not defined";
-		}
-		
-		var self = this
-		var session = this.session;
-
-		var promise = new Promise(function (resolve, reject) {
-			
-			try {
-				var address = constractinstance.getAddress();
-				var contractinstanceuuid = constractinstance.contractinstanceuuid;
-				
-				var resource = "/truffle/contract/" + address + "/call";
-				
-				var postdata = [];
-				
-				postdata = {contractinstanceuuid: contractinstanceuuid, 
-							methodname: methodname, 
-							params: JSON.stringify(params)};
-				
-				var promise2 = self.rest_post(resource, postdata, function (err, res) {
-					if (res) {
-						var result = res['result'];
-						
-						return resolve(result);
-					}
-					else {
-						console.log("error during truffle_method_call: " + err);
-						reject('rest error calling ' + resource + ' : ' + err);
-					}
-					
-				});
-			}
-			catch(e) {
-				reject('rest exception: ' + e);
-			}
-		});
-		
-		return promise;
+		return this.web3_method_call(constractinstance, methodname, params)
 	}
 	
 	truffle_method_sendTransaction(constractinstance, methodname, params) {
-		console.log("Xtra_EthereumNodeAccess.truffle_method_sendTransaction called for contractinstanceuuid " + constractinstance.contractinstanceuuid + " and method " + methodname);
+		console.log("Xtra_EthereumNodeAccess.truffle_method_sendTransaction called for contractinstanceuuid " + constractinstance.getUUID() + " and method " + methodname);
 		
-		if (!constractinstance) {
-			throw "contract instance is not defined";
-		}
-		
-		var self = this
-		var session = this.session;
-
-		var promise = new Promise(function (resolve, reject) {
-			
-			try {
-				var address = constractinstance.getAddress();
-				var contractinstanceuuid = constractinstance.contractinstanceuuid;
-				
-				var resource = "/truffle/contract/" + address + "/send";
-				
-				var postdata = [];
-				
-				var credentials = self.getTransactionCredentials(params);
-				var walletaddress = (credentials['address'] ? credentials['address'] : null);
-				var password = (credentials['password'] ? credentials['password'] : null);
-				var time = (credentials['from'] ? credentials['from'] : null);
-				var duration = (credentials['during'] ? credentials['during'] : null);
-				
-				postdata = {contractinstanceuuid: contractinstanceuuid, 
-							walletaddress: walletaddress,
-							password: password,
-							time: time,
-							duration: duration,
-							methodname: methodname, 
-							params: JSON.stringify(params)};
-				
-				var promise2 = self.rest_post(resource, postdata, function (err, res) {
-					if (res) {
-						var result = res['result'];
-						
-						return resolve(result);
-					}
-					else {
-						console.log("error during truffle_method_sendTransaction: " + err);
-						reject('rest error calling ' + resource + ' : ' + err);
-					}
-					
-				});
-			}
-			catch(e) {
-				reject('rest exception: ' + e);
-			}
-		});
-		
-		return promise;
+		return this.web3_method_sendTransaction(constractinstance, methodname, params)
 	}
 	
 	

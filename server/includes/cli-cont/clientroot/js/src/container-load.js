@@ -3,28 +3,35 @@ class ContainerLoad {
 		this.clientglobalscope = clientglobalscope;
 	}
 	
-	load() {
-		var rootscriptloader = this.clientglobalscope.ScriptLoader.getScriptLoader('rootloader');
+	loadScript() {
+		
+		this.script_code = "\n";
+		this.script_code += "/***************/\n";
+		this.script_code += "/*  load script*/\n";
+		this.script_code += "/***************/\n\n\n";
+
+		this.script_code += '\console.log(\'starting load script in scopeid: \' + GlobalClass.scopeid);\n';
+		this.script_code += "var rootscriptloader = GlobalClass.getGlobalObject().ScriptLoader.getScriptLoader('rootloader');\n\n";
 
 
 		//libs
-		var libscriptloader = rootscriptloader.getChildLoader('libloader');
+		this.script_code += "var libscriptloader = rootscriptloader.getChildLoader('libloader');\n\n";
 
 		// interfaces to abstract the previous libs
-		libscriptloader.push_script('./includes/interface/ethereum-node-access.js');
-		libscriptloader.push_script('./includes/interface/account-encryption.js');
-		libscriptloader.push_script('./includes/interface/cryptokey-encryption.js');
-		libscriptloader.push_script('./includes/interface/storage-access.js');
+		this.script_code += "libscriptloader.push_script('./includes/interface/ethereum-node-access.js');\n\n";
+		this.script_code += "libscriptloader.push_script('./includes/interface/account-encryption.js');\n\n";
+		this.script_code += "libscriptloader.push_script('./includes/interface/cryptokey-encryption.js');\n\n";
+		this.script_code += "libscriptloader.push_script('./includes/interface/storage-access.js');\n\n";
 
 
 		//perform load
-		libscriptloader.load_scripts();
+		this.script_code += "libscriptloader.load_scripts();\n\n";
 
 		//modules
-		var modulescriptloader = libscriptloader.getChildLoader('moduleloader');
+		this.script_code += "var modulescriptloader = libscriptloader.getChildLoader('moduleloader');\n\n";
 
 		// common
-		modulescriptloader.push_script('./includes/modules/common/module.js');
+		this.script_code += "modulescriptloader.push_script('./includes/modules/common/module.js');\n\n";
 		
 		//chain reader
 		//modulescriptloader.push_script('./includes/modules/chainreader/module.js');
@@ -33,7 +40,9 @@ class ContainerLoad {
 		//modulescriptloader.push_script('/includes/modules/noticebook/module.js');
 
 		//perform load
-		modulescriptloader.load_scripts();
+		this.script_code += "modulescriptloader.load_scripts();\n\n";
+			
+		return this.script_code;
 
 	}
 }

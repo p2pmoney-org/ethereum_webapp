@@ -13,6 +13,12 @@ class ClientContainerServer {
 		this.app_root_dir = path.join(__dirname, '../../cli-cont-appdir/');
 	}
 	
+	log(string) {
+		var global = this.global;
+		
+		global.log(string);
+	}
+	
 	loadFile(filepath) {
 		var global = this.global;
 		
@@ -89,12 +95,14 @@ class ClientContainerServer {
 		return require(fullpath);
 	}
 	
-	getClientContainer(session) {
-		if (session.clientcontainer)
-			return session.clientcontainer;
+	getClientContainer(serversession) {
+		if (serversession.clientcontainer)
+			return serversession.clientcontainer;
 		
 		// we spawn a new environment from a closure in this function
 		var serverglobal = this.global;
+		
+		serverglobal.log('ClientContainerServer.getClientContainer called for sessionuuid ' + serversession.getSessionUUID());
 		
 		var finished = false;
 		
@@ -124,19 +132,12 @@ class ClientContainerServer {
 		var Config = this.require_js_script('config.js');
 		clientglobalscope.Config = Config;
 		
-		var ScriptLoader = require('./scriptloader.js');
-		clientglobalscope.ScriptLoader = new ScriptLoader(clientcontainer); // static in the browser
-
-		clientcontainer.containerid = clientglobalscope.scopeid;
-
 		// execute container load
-		var ContainerLoad = this.require_js_script('container-load.js');
-		var containerload = new ContainerLoad(clientglobalscope);
-		containerload.load();
+		clientcontainer.load();
 		
 		// initialize inner global object
 		clientglobalscope.finalizeGlobalScopeInit(function(res) {
-			serverglobal.log("finished initialization of client GlobalScope for server session " + session.getSessionUUID());
+			serverglobal.log("finished initialization of client GlobalScope for server session " + serversession.getSessionUUID());
 			
 			finished = true;
 		});
@@ -145,7 +146,11 @@ class ClientContainerServer {
 		while(!finished)
 		{require('deasync').runLoopOnce();}
 
+		// run
 		clientcontainer.run();
+		
+		// put the container in the server session
+		serversession.clientcontainer = clientcontainer;
 		
 
 		return clientcontainer;

@@ -12,8 +12,9 @@ class DataBasePersistor {
 	
 	_getUserArrayFromUUID(useruuid) {
 		var global = this.global;
+		var session = this.session;
 		
-		var mysqlcon = global.getMySqlConnection();
+		var mysqlcon = session.getMySqlConnection();
 		
 		var tablename = mysqlcon.getTableName('users');
 		
@@ -56,7 +57,111 @@ class DataBasePersistor {
 		return array;
 	}
 	
-	putTransactionLog(ethereum_transaction_uuid, method, action, log) {
+	getTansactionLogs(ethereum_transaction_uuid) {
+		var global = this.global;
+		var session = this.session;
+		
+		var mysqlcon = session.getMySqlConnection();
+		
+		var tablename = mysqlcon.getTableName('ethereum_transactions_logs');
+		
+		var sql = "SELECT * FROM " + tablename + " WHERE "+ tablename + ".transaction_uuid = '" + ethereum_transaction_uuid + "';";
+		
+		// open connection
+		mysqlcon.open();
+		
+		// execute query
+		var result = mysqlcon.execute(sql);
+		
+		
+		var lines = [];
+		
+		
+		if (result) {
+			var rows = (result['rows'] ? result['rows'] : []);
+			
+			for (var i = 0; i < rows.length; i++) {
+				var row = rows[i];
+				var line = [];
+				
+				line['transactionuuid'] = row['transaction_uuid'];
+				line['userid'] = row['UserId'];
+				line['method'] = row['method'];
+				line['action'] = row['action'];
+				line['creationdate'] = row['CreationDate'];
+				line['log'] = row['log'];
+				line['transactionhash'] = row['transactionHash'];
+				
+				lines.push(key);
+			}
+			
+		}
+		
+		
+		// close connection
+		mysqlcon.close();
+			
+			
+		return lines;
+		
+	}
+	
+	getUserTansactionLogs(useruuid) {
+		var global = this.global;
+		var session = this.session;
+		
+		var userarray = ( useruuid ? this._getUserArrayFromUUID(useruuid) : {id: -1});
+		var userid = userarray['id'];
+		
+		if (userid == -1)
+			return [];
+
+		var mysqlcon = session.getMySqlConnection();
+		
+		var tablename = mysqlcon.getTableName('ethereum_transactions_logs');
+		
+		var sql = "SELECT * FROM " + tablename + " WHERE "+ tablename + ".UserId = " + userid + ";";
+		
+		// open connection
+		mysqlcon.open();
+		
+		// execute query
+		var result = mysqlcon.execute(sql);
+		
+		
+		var lines = [];
+		
+		
+		if (result) {
+			var rows = (result['rows'] ? result['rows'] : []);
+			
+			for (var i = 0; i < rows.length; i++) {
+				var row = rows[i];
+				var line = [];
+				
+				line['transactionuuid'] = row['transaction_uuid'];
+				line['userid'] = row['UserId'];
+				line['method'] = row['method'];
+				line['action'] = row['action'];
+				line['creationdate'] = row['CreationDate'];
+				line['log'] = row['log'];
+				line['transactionhash'] = row['transactionHash'];
+				
+				lines.push(line);
+			}
+			
+		}
+		
+		
+		// close connection
+		mysqlcon.close();
+			
+			
+		return lines;
+		
+	}
+
+	putTransactionLog(ethereum_transaction_uuid, method, action, log, transactionHash) {
 		var global = this.global;
 		var session = this.session;
 		
@@ -64,7 +169,7 @@ class DataBasePersistor {
 		var useruuid = (user ? user.getUserUUID() : null);
 		var userarray = ( useruuid ? this._getUserArrayFromUUID(useruuid) : {id: -1});
 		
-		var mysqlcon = global.getMySqlConnection();
+		var mysqlcon = session.getMySqlConnection();
 		
 		var tablename = mysqlcon.getTableName('ethereum_transactions_logs');
 		
@@ -76,12 +181,13 @@ class DataBasePersistor {
 		mysqlcon.open();
 		
 		sql = `INSERT INTO ` +  tablename + ` (
-				ethereum_transaction_uuid,
+				transaction_uuid,
 				UserId,
 				method,
 				action,
 				CreationDate,
-				log
+				log,
+				transactionHash
 		  )
 		  VALUES (
 		  '` + ethereum_transaction_uuid + `',
@@ -89,7 +195,8 @@ class DataBasePersistor {
 		  '` + method + `',
 		  ` + action + `,
 		  ` + CreationDate + `,
-		  '` + log + `'
+		  '` + log + `',
+		  ` + (transactionHash ? `'` + transactionHash + `'` : `NULL`) + `
 		  );`;
 		
 		
@@ -100,6 +207,46 @@ class DataBasePersistor {
 		mysqlcon.close();
 	}
 	
+	getTansactionHash(ethereum_transaction_uuid) {
+		var global = this.global;
+		var session = this.session;
+		
+		var mysqlcon = session.getMySqlConnection();
+		
+		var tablename = mysqlcon.getTableName('ethereum_transactions_logs');
+		
+		var sql = "SELECT * FROM " + tablename + " WHERE "+ tablename + ".transaction_uuid = '" + ethereum_transaction_uuid + "' AND "+ tablename + ".action = 1000;";
+		
+		// open connection
+		mysqlcon.open();
+		
+		// execute query
+		var result = mysqlcon.execute(sql);
+		
+		
+		var transactionHash;
+		
+		
+		if (result) {
+			var rows = (result['rows'] ? result['rows'] : []);
+			
+			if (rows[0]) {
+				var row = rows[0];
+				
+				transactionHash = row['transactionHash'];
+			}
+			
+		}
+		
+		
+		// close connection
+		mysqlcon.close();
+			
+			
+		return transactionHash;
+		
+	}
+
 }
 
 
