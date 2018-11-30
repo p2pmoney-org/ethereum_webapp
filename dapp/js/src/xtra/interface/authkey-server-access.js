@@ -72,7 +72,7 @@ class Xtra_AuthKeyServerAccess {
 	auth_version(callback) {
 		console.log("Xtra_AuthKeyServerAccess.auth_version called");
 		
-		var self = this
+		var self = this;
 		var session = this.session;
 
 		var promise = new Promise(function (resolve, reject) {

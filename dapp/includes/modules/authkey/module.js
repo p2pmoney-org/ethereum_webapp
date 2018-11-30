@@ -147,6 +147,39 @@ var Module = class {
 							else {
 								console.log('error while loading user from server: ' + err);
 							}
+						})
+						.then(function(res) {
+							var authenticated = (res['status'] == '1' ? true : false);
+							
+							console.log("authentication is " + authenticated);
+							
+							if (authenticated) {
+								
+								// authenticated (and crypto-keys have been loaded)
+								// we get list of accounts (that could be encrypted)
+								var storagemodule = global.getModuleObject('storage-access');
+								var storageaccess = storagemodule.getStorageAccessInstance(session);
+								var user = session.getSessionUserObject();
+								
+								return storageaccess.account_session_keys( function(err, res) {
+									
+									if (res && res['keys']) {
+										var keys = res['keys'];
+										
+										session.readSessionAccountFromKeys(keys);
+									}
+							
+									app.refreshDisplay();
+								});
+								
+							}
+							else {
+								alert("Could not authenticate you with these credentials!");
+							}
+							
+						})
+						.catch(function (err) {
+							alert(err);
 						});
 					}
 					
