@@ -737,7 +737,7 @@ class Xtra_EthereumNodeAccess {
 		var promise = new Promise( function(resolve, reject) {
 			
 			try {
-				var web3 = self._getWeb3Instance();
+				//var web3 = self._getWeb3Instance();
 				
 			    
 			    var txjson = ethtransaction.getTxJson();
@@ -849,7 +849,7 @@ class Xtra_EthereumNodeAccess {
 			catch(e) {
 				if (callback)
 					callback('exception: ' + e, null);
-				
+				console.log(e.stack);
 				reject('web3 exception: ' + e);
 			}
 		
