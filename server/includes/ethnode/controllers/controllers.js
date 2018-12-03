@@ -116,7 +116,41 @@ class EthNodeControllers {
 			jsonresult = {status: 1, code: code};
 		}
 		else {
-			jsonresult = {status: 0, error: "could not retrieve balance"};
+			jsonresult = {status: 0, error: "could not retrieve code"};
+		}
+	  	
+	  	res.json(jsonresult);
+	  	
+	}
+	
+	web3_account_transaction_count(req, res) {
+		// GET
+		var sessionuuid = req.get("sessiontoken");
+		var address = req.params.id;
+		
+		var global = this.global;
+		var commonservice = global.getServiceInstance('common');
+		var Session = commonservice.Session;
+
+		global.log("web3_account_transaction_count called for sessiontoken " + sessionuuid);
+		
+		try {
+			var session = Session.getSession(global, sessionuuid);
+			var ethnode = this.getEthereumNode(session);
+			
+			var count = ethnode.web3_getTransactionCount(address);
+		}
+		catch(e) {
+			global.log("exception in web3_account_transaction_count for sessiontoken " + sessionuuid + " and address " + address + ": " + e);
+		}
+
+		var jsonresult;
+		
+		if (count !== null) {
+			jsonresult = {status: 1, count: count};
+		}
+		else {
+			jsonresult = {status: 0, error: "could not retrieve count"};
 		}
 	  	
 	  	res.json(jsonresult);

@@ -604,6 +604,38 @@ class EthereumNode {
 		return txarray;
 	}
 	
+	web3_getTransactionCount(address) {
+		var global = this.session.getGlobalInstance();
+		
+		global.log("EthereumNode.web3_getTransactionCount called for " + address);
+		var web3 = this.getWeb3Instance();
+
+		var count;
+		
+		var finished = false;
+		var promise = web3.eth.getTransactionCount(address, function(error, result) {
+			
+			if (!error) {
+				count = result;
+				
+				finished = true;
+			} else {
+				count = null;
+				
+				global.log('Web3 error: ' + error);
+				finished = true;
+
+			}
+		});
+		
+		// wait to turn into synchronous call
+		while(!finished)
+		{require('deasync').runLoopOnce();}
+
+		
+		return count;
+	}
+	
 	web3_getTransaction(hash) {
 		var self = this
 		var session = this.session;

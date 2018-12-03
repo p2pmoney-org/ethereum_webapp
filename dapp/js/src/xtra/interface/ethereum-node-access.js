@@ -611,6 +611,42 @@ class Xtra_EthereumNodeAccess {
 		return promise;
 	}
 
+	web3_getTransactionCount(fromaddress, callback) {
+		var self = this
+		var session = this.session;
+
+		var promise = new Promise(function (resolve, reject) {
+			try {
+				var resource = "/web3/account/" + fromaddress + '/tx/count';
+				
+				var promise2 = self.rest_get(resource, function (err, res) {
+					if (res) {
+						if (callback)
+							callback(null, res['count']);
+						
+						return resolve(res['count']);
+					}
+					else {
+						if (callback)
+							callback('error', null);
+						
+						reject('rest error calling ' + resource + ' : ' + err);
+					}
+					
+				});
+			}
+			catch(e) {
+				if (callback)
+					callback('exception: ' + e, null);
+				
+				reject('web3 exception: ' + e);
+			}
+			
+		});
+		
+		return promise;
+	}
+	
 	web3_getTransaction(hash, callback) {
 		var self = this
 		var session = this.session;

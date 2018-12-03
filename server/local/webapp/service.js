@@ -221,7 +221,8 @@ class Service {
 			headers += ", sessiontoken, accesstoken, apikey"; // specific fields
 			
 			res.header("Access-Control-Allow-Origin", origin);
-			res.header("Access-Control-Allow-Headers", headers); 
+			res.header("Access-Control-Allow-Headers", headers);
+			res.header('Access-Control-Allow-Methods', 'PUT, POST, GET, DELETE, OPTIONS');
 			
 			next();
 		});
