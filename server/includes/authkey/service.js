@@ -82,7 +82,6 @@ class Service {
 					  LastSessionOn datetime DEFAULT NULL,
 					  PRIMARY KEY (UserId),
 					  UNIQUE KEY UserUUID (UserUUID),
-					  UNIQUE KEY UserEmail (UserEmail),
 					  KEY UserId (UserId)
 				)`;
 		

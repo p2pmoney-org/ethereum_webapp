@@ -38,6 +38,58 @@ var AuthKeyInterface = class {
 		});
 	}
 	
+	read_cryptokeys(session, callback) {
+		console.log('AuthKeyInterface.read_cryptokeys called');
+		var global = this.global;
+
+		var authkeyserveraccess = this.module.getAuthKeyServerAccessInstance(session);
+		
+		
+		var commonmodule = global.getModuleObject('common');
+
+		
+		var cryptokeyarray = [];
+		
+		return authkeyserveraccess.key_session_keys( function(err, res) {
+			
+			if (res && res['keys']) {
+				var keys = res['keys'];
+				
+				for (var i = 0; i < keys.length; i++) {
+					var key = keys[i];
+					
+					var keyuuid = key['key_uuid'];
+					var privatekey = key['private_key'];
+					var publickey = key['public_key'];
+					var address = key['address'];
+					var rsapublickey = key['rsa_public_key'];
+					var description = key['description'];
+					
+					if (privatekey) {
+						
+						var cryptokey = commonmodule.createBlankCryptoKeyObject();
+						
+						cryptokey.setKeyUUID(keyuuid);
+						cryptokey.setDescription(description);
+						
+						cryptokey.setPrivateKey(privatekey);
+						
+						cryptokeyarray.push(cryptokey);
+					}
+					else {
+						throw "Could not retrieve private key for a crypto key!";
+					}
+				
+				}
+				
+			}
+			
+			if (callback)
+				callback(null, cryptokeyarray);
+		});	
+		
+	}
+	
 	load_user_in_session(session, callback) {
 		console.log('AuthKeyInterface.load_user_in_session called');
 		var global = this.global;

@@ -849,7 +849,7 @@ class Xtra_EthereumNodeAccess {
 			catch(e) {
 				if (callback)
 					callback('exception: ' + e, null);
-				console.log(e.stack);
+
 				reject('web3 exception: ' + e);
 			}
 		

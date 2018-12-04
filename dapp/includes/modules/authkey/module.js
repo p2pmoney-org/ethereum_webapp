@@ -64,6 +64,9 @@ var Module = class {
 		
 		global.registerHook('preFinalizeGlobalScopeInit_hook', 'authkey', this.preFinalizeGlobalScopeInit_hook);
 		global.registerHook('isSessionAnonymous_hook', 'authkey', this.isSessionAnonymous_hook);
+
+		global.registerHook('getSessionCryptoKeyObjects_hook', 'authkey', this.getSessionCryptoKeyObjects_hook);
+		global.registerHook('getAccountObjects_hook', 'authkey', this.getAccountObjects_hook);
 	}
 	
 	//
@@ -193,6 +196,85 @@ var Module = class {
 		
 		return true;
 	}
+	
+	getSessionCryptoKeyObjects_hook(result, params) {
+		console.log('getSessionCryptoKeyObjects_hook called for ' + this.name);
+		
+		var global = this.global;
+		var self = this;
+		
+		var authkeyinterface = this.getAuthKeyInterface();
+
+		var session = params[0];
+		
+		var nextget = result.get;
+		result.get = function(err, keyarray) {
+
+			authkeyinterface.read_cryptokeys(session, function(err, mykeyarray) {
+				var newkeyarray = (mykeyarray && (mykeyarray.length > 0) ? keyarray.concat(mykeyarray) : keyarray);
+				
+				if (!err) {
+					if (nextget)
+						nextget(null, newkeyarray);
+				}
+				else {
+					if (nextget)
+						nextget(err, null);
+				}
+			});
+			
+			
+		}; // chaining of get function
+
+		result.push({module: 'authkey', handled: true});
+		
+		return true;
+	}
+	
+	getAccountObjects_hook(result, params) {
+		console.log('getAccountObjects_hook called for ' + this.name);
+
+		var global = this.global;
+		var self = this;
+		
+		var storagemodule = global.getModuleObject('storage-access');
+		var storageaccess = storagemodule.getStorageAccessInstance(session);
+
+		var session = params[0];
+		
+		var nextget = result.get;
+		result.get = function(err, keyarray) {
+
+			storageaccess.account_session_keys(function(err, res) {
+				var mykeyarray;
+				
+				if (res && res['keys']) {
+					var keys = res['keys'];
+					
+					mykeyarray = session.readSessionAccountFromKeys(keys);
+				}
+				
+				var newkeyarray = (mykeyarray && (mykeyarray.length > 0) ? keyarray.concat(mykeyarray) : keyarray);
+				
+				if (!err) {
+					if (nextget)
+						nextget(null, newkeyarray);
+				}
+				else {
+					if (nextget)
+						nextget(err, null);
+				}
+			});
+			
+			
+		}; // chaining of get function
+		
+		result.push({module: 'authkey', handled: true});
+		
+		return true;
+	}
+	
+
 	
 	//
 	// API
