@@ -145,7 +145,7 @@ class Xtra_StorageAccess {
 				
 				self.rest_put(resource, postdata, function (err, res) {
 					if (res) {
-						var content = res['content'];
+						var content = (res['content'] ? JSON.parse(res['content']) : {});
 						
 						if (callback)
 							callback(null, content);
