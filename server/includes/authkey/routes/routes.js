@@ -67,6 +67,8 @@ class AuthKeyRoutes {
 		
 		app.route(route_root_path + '/account/user/add')
 		.put(function(req, res) { controllers.user_addAccount(req, res); });
+		app.route(route_root_path + '/account/user/update')
+		.put(function(req, res) { controllers.user_updateAccount(req, res); });
 		
 	}
 	

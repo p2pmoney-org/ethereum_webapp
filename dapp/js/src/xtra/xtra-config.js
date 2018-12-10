@@ -301,6 +301,7 @@ class XtraConfigModule {
 		textbox.setAttribute('type',"text");
 		textbox.setAttribute('name',"username");
 		textbox.classList.add('form-textbox');
+		textbox.classList.add('form-username-input');
 		
 		span.appendChild(textbox);
 		
@@ -318,6 +319,7 @@ class XtraConfigModule {
 		textbox.setAttribute('type',"password");
 		textbox.setAttribute('name',"password");
 		textbox.classList.add('form-textbox');
+		textbox.classList.add('form-password-input');
 		
 		span.appendChild(textbox);
 		

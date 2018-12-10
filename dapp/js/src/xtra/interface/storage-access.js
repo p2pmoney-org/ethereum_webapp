@@ -266,6 +266,65 @@ class Xtra_StorageAccess {
 		
 	}
 
+	user_update_account(user, account, callback) {
+		console.log("Xtra_StorageAccess.user_update_account called");
+		
+		var self = this;
+		var session = this.session;
+		var global = session.getGlobalObject();
+		var cryptoencryptionmodule = global.getModuleObject('cryptokey-encryption');
+
+		var promise = new Promise(function (resolve, reject) {
+			
+			try {
+				var resource = "/account/user/update";
+				
+				var useruuid = user.getUserUUID();
+				
+				var accountuuid = account.getAccountUUID();
+				var privatekey = account.getPrivateKey();
+				
+				var cryptokey = cryptoencryptionmodule.pickCryptoKeyEncryptionInstance(session);
+				var encryptedprivatekey = cryptoencryptionmodule.encryptPrivateKey(privatekey, cryptokey);
+					
+				var publickey = account.getPublicKey();
+				var address = account.getAddress();
+				var rsapublickey = account.getRsaPublicKey();
+				
+				var description = account.getDescription();
+				
+				var postdata = [];
+				
+				postdata = {useruuid: useruuid, account_uuid: accountuuid, private_key: encryptedprivatekey, public_key: publickey, address: address, rsa_public_key: rsapublickey, description: description};
+				
+				self.rest_put(resource, postdata, function (err, res) {
+					if (res) {
+						
+						// set account uuid given by the server
+						var accountuuid = res['account_uuid'];
+						
+						account.setAccountUUID(accountuuid);
+						
+						if (callback)
+							callback(null, res);
+						
+						return resolve(res);
+					}
+					else {
+						reject('rest error calling ' + resource + ' : ' + err);
+					}
+					
+				});
+			}
+			catch(e) {
+				reject('rest exception: ' + e);
+			}
+		});
+		
+		return promise;
+		
+	}
+
 }
 
 

@@ -382,7 +382,7 @@ class AuthKeyControllers {
 				for (var i = 0; i < userkeys.length; i++) {
 					var userkey = userkeys[i];
 					
-					var json = {uuid: userkey['uuid'],
+					var json = {uuid: userkey['keyuuid'],
 							owner_uuid: userkey['useruuid'], 
 							key_uuid: userkey['keyuuid'], 
 							private_key: userkey['private_key'], 
@@ -466,7 +466,69 @@ class AuthKeyControllers {
 		}
 		catch(e) {
 			global.log("exception in user_addAccount for sessiontoken " + sessionuuid + ": " + e);
-			jsonresult = {status: 0, error: "exception could not retrieve keys"};
+			jsonresult = {status: 0, error: "exception could add account"};
+		}
+
+		
+	  	res.json(jsonresult);
+	}
+
+	user_updateAccount(req, res) {
+		// PUT
+		var global = this.global;
+		var sessionuuid = req.get("sessiontoken");
+		
+		global.log("user_updateAccount called for sessiontoken " + sessionuuid);
+		
+		var useruuid  = req.body.useruuid;
+		
+		var accountuuid  = req.body.account_uuid;
+		var privatekey  = req.body.private_key;
+		var address  = req.body.address;
+		var publickey  = req.body.public_key;
+		var rsapublickey  = req.body.rsa_public_key;
+
+		var description  = req.body.description;
+		
+		var authkeyservice = global.getServiceInstance('authkey');
+		var authenticationserver = authkeyservice.getAuthenticationServerInstance();
+
+		var commonservice = global.getServiceInstance('common');
+		var Session = commonservice.Session;
+
+		var jsonresult;
+		
+		try {
+			var session = Session.getSession(global, sessionuuid);
+			
+			if (!session.isAnonymous()) {
+				var user = authenticationserver.getUserFromUUID(session, useruuid);
+				
+				var cryptokey = authenticationserver.getUserAccountKeyFromUUID(session, accountuuid);
+				
+				if (cryptokey) {
+					// we update only the description
+					cryptokey.setDescription(description);
+					
+					authenticationserver.saveUserKey(session, useruuid, cryptokey);
+					
+					jsonresult = {status: 1, useruuid: useruuid, account_uuid: accountuuid}
+					
+				}
+				else {
+					jsonresult = {status: 0, error: "could not find account " + accountuuid};
+				}
+				
+				
+				//global.log("session_getKeys called for sessiontoken "+ sessionuuid + " jsonresult is " + JSON.stringify(jsonresult));
+			}
+			else {
+				jsonresult = {status: 0, error: "session is anonymous"};
+			}
+		}
+		catch(e) {
+			global.log("exception in user_updateAccount for sessiontoken " + sessionuuid + ": " + e);
+			jsonresult = {status: 0, error: "exception could not update account"};
 		}
 
 		

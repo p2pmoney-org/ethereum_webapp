@@ -8,6 +8,8 @@ class CryptoKey {
 	constructor() {
 		this.keyuuid = null;
 		
+		this.useruuid = null;
+
 		this.type = null;
 		
 		this.address = null;
@@ -24,6 +26,14 @@ class CryptoKey {
 	
 	setKeyUUID(uuid) {
 		this.keyuuid = uuid;
+	}
+	
+	getUserUUID() {
+		return this.useruuid;
+	}
+	
+	setUserUUID(useruuid) {
+		this.useruuid = useruuid;
 	}
 	
 	getType() {

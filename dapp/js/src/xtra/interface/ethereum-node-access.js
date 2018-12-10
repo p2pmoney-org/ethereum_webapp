@@ -180,7 +180,7 @@ class Xtra_EthereumNodeAccess {
 	ethnode_version(callback) {
 		console.log("Xtra_EthereumNodeAccess.ethnode_version called");
 		
-		var self = this
+		var self = this;
 		var session = this.session;
 
 		var promise = new Promise(function (resolve, reject) {
@@ -247,7 +247,7 @@ class Xtra_EthereumNodeAccess {
 	web3_isSyncing(callback) {
 		console.log("Xtra_EthereumNodeAccess.web3_isSyncing called for " + address);
 		
-		var self = this
+		var self = this;
 		var session = this.session;
 
 		var promise = new Promise(function (resolve, reject) {
@@ -292,7 +292,7 @@ class Xtra_EthereumNodeAccess {
 	web3_getBalance(address, callback) {
 		console.log("Xtra_EthereumNodeAccess.web3_getBalance called for " + address);
 		
-		var self = this
+		var self = this;
 		var session = this.session;
 
 		var promise = new Promise(function (resolve, reject) {
@@ -330,7 +330,7 @@ class Xtra_EthereumNodeAccess {
 	}
 
 	web3_getCode(address, callback) {
-		var self = this
+		var self = this;
 		var session = this.session;
 
 		var promise = new Promise(function (resolve, reject) {
@@ -432,7 +432,7 @@ class Xtra_EthereumNodeAccess {
 
 	// blocks
 	web3_getBlockNumber(callback) {
-		var self = this
+		var self = this;
 		var session = this.session;
 
 		var promise = new Promise(function (resolve, reject) {
@@ -470,7 +470,7 @@ class Xtra_EthereumNodeAccess {
 	}
 	
 	web3_getBlock(blockid, bWithTransactions, callback) {
-		var self = this
+		var self = this;
 		var session = this.session;
 
 		var promise = new Promise(function (resolve, reject) {
@@ -507,7 +507,7 @@ class Xtra_EthereumNodeAccess {
 	
 	// transactions
 	web3_findTransaction(transactionuuid, callback) {
-		var self = this
+		var self = this;
 		var session = this.session;
 
 		var promise = new Promise(function (resolve, reject) {
@@ -547,7 +547,7 @@ class Xtra_EthereumNodeAccess {
 	}
 
 	web3_getTransactionList(callback) {
-		var self = this
+		var self = this;
 		var session = this.session;
 		var global = session.getGlobalObject();
 		
@@ -612,7 +612,7 @@ class Xtra_EthereumNodeAccess {
 	}
 
 	web3_getTransactionCount(fromaddress, callback) {
-		var self = this
+		var self = this;
 		var session = this.session;
 
 		var promise = new Promise(function (resolve, reject) {
@@ -648,7 +648,7 @@ class Xtra_EthereumNodeAccess {
 	}
 	
 	web3_getTransaction(hash, callback) {
-		var self = this
+		var self = this;
 		var session = this.session;
 
 		var promise = new Promise(function (resolve, reject) {
@@ -684,7 +684,7 @@ class Xtra_EthereumNodeAccess {
 	}
 	
 	web3_getTransactionReceipt(hash, callback) {
-		var self = this
+		var self = this;
 		var session = this.session;
 
 		var promise = new Promise(function (resolve, reject) {
@@ -725,7 +725,7 @@ class Xtra_EthereumNodeAccess {
 		if (!ethtransaction)
 			throw 'no transaction defined';
 		
-		var self = this
+		var self = this;
 		var session = this.session;
 		
 		if (ethtransaction.getTransactionUUID() === null)
@@ -861,7 +861,7 @@ class Xtra_EthereumNodeAccess {
 	web3_sendTransaction(fromaccount, toaccount, amount, gas, gasPrice, txdata, nonce, callback) {
 		console.log('Xtra_EthereumNodeAccess.web3_sendTransaction called');
 		
-		var self = this
+		var self = this;
 		var session = this.session;
 		
 		if (!fromaccount)
@@ -896,7 +896,7 @@ class Xtra_EthereumNodeAccess {
 	web3_loadArtifact(artifactpath, callback) {
 		console.log('Xtra_EthereumNodeAccess.web3_loadArtifact called');
 		
-		var self = this
+		var self = this;
 		var session = this.session;
 		var ethereumnodeaccessmodule = this.ethereumnodeaccessmodule;
 
@@ -1101,7 +1101,7 @@ class Xtra_EthereumNodeAccess {
 			throw "contract is not defined";
 		}
 		
-		var self = this
+		var self = this;
 		var session = this.session;
 		var ethereumnodeaccessmodule = this.ethereumnodeaccessmodule;
 		
@@ -1266,7 +1266,7 @@ class Xtra_EthereumNodeAccess {
 
 		var abijsonstring = JSON.stringify(abi);
 		
-		var self = this
+		var self = this;
 		var session = this.session;
 		var ethereumnodeaccessmodule = this.ethereumnodeaccessmodule;
 		
@@ -1308,7 +1308,7 @@ class Xtra_EthereumNodeAccess {
 	web3_contract_at(web3contract, address, callback) {
 		console.log('Xtra_EthereumNodeAccess.web3_contract_at called');
 		
-		var self = this
+		var self = this;
 		var session = this.session;
 		var ethereumnodeaccessmodule = this.ethereumnodeaccessmodule;
 		
@@ -1358,7 +1358,7 @@ class Xtra_EthereumNodeAccess {
 			throw "contract instance is not defined";
 		}
 		
-		var self = this
+		var self = this;
 		var session = this.session;
 
 		var promise = new Promise(function (resolve, reject) {
@@ -1404,7 +1404,7 @@ class Xtra_EthereumNodeAccess {
 			throw "contract instance is not defined";
 		}
 		
-		var self = this
+		var self = this;
 		var session = this.session;
 
 		var promise = new Promise(function (resolve, reject) {
@@ -1449,7 +1449,7 @@ class Xtra_EthereumNodeAccess {
 			throw "contract instance is not defined";
 		}
 		
-		var self = this
+		var self = this;
 		var session = this.session;
 		var ethereumnodeaccessmodule = this.ethereumnodeaccessmodule;
 		

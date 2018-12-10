@@ -418,6 +418,36 @@ class DataBasePersistor {
 		mysqlcon.close();
 	}
 	
+	updateUserKey(useruuid, keyuuid, description) {
+		var global = this.global;
+		
+		var userarray = this.getUserArrayFromUUID(useruuid);
+		
+		if ((!userarray) || (!userarray['id']))
+			throw 'could not find user with uuid ' + useruuid;
+		
+		
+		var mysqlcon = global.getMySqlConnection();
+		
+		var tablename = mysqlcon.getTableName('keys');
+		
+		var sql;
+		
+		// open connection
+		mysqlcon.open();
+		
+		sql = `UPDATE ` +  tablename + ` SET
+		  Description = '` + description + `'
+				WHERE UserId = ` + userarray['id'] + ` AND ` + tablename + `.KeyUUID = '` + keyuuid + `';`;;
+		
+		
+		// execute query
+		var result = mysqlcon.execute(sql);
+		
+		// close connection
+		mysqlcon.close();
+	}
+	
 	removeUserKey(useruuid, keyuuid) {
 		var global = this.global;
 		

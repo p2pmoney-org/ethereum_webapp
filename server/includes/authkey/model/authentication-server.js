@@ -68,6 +68,11 @@ class AuthenticationServer {
 		var useruuid = user.getUserUUID();
 		
 		var keys = this.persistor.getUserKeysFromUserUUID(useruuid);
+		
+		// create array of cryptokey objects
+		var cryptokeys = [];
+		
+		var authkeyservice = this.service;
 
 		// let's compute public keys from private keys
 		var global = this.global;
@@ -87,9 +92,24 @@ class AuthenticationServer {
 				key['address'] = pubkeys['address'];
 			}
 			
+			var cryptokey = authkeyservice.createBlankCryptoKeyInstance();
+
+			cryptokey.setKeyUUID(key['keyuuid']);
+			
+			cryptokey.setUserUUID(key['useruuid']);
+			cryptokey.setType(key['type']);
+			
+			cryptokey.setAddress(key['address']);
+			cryptokey.setPublicKey(key['public_key']);
+			cryptokey.setRsaPublicKey(key['rsa_public_key']);
+			cryptokey.setPrivateKey(key['private_key']);
+			
+			cryptokey.setDescription(key['description']);
+
+			cryptokeys.push(cryptokey);
 		}
 		
-		return keys;
+		return cryptokeys;
 	}
 	
 	getUserCryptoKeys(session) {
@@ -109,6 +129,19 @@ class AuthenticationServer {
 		return usercryptokeys;
 	}
 	
+	getUserCryptoKeyFromUUID(session, keyuuid) {
+		var userkeys = this.getUserCryptoKeys(session);
+		
+		for (var i = 0; i < userkeys.length; i++) {
+			var userkey = userkeys[i];
+			
+			if (userkey['keyuuid'] == keyuuid) {
+				return userkey;
+			}
+			
+		}
+	}
+	
 	getUserAccountKeys(session) {
 		var userkeys = this.getUserKeys(session);
 		
@@ -124,6 +157,19 @@ class AuthenticationServer {
 		}
 		
 		return useracountkeys;
+	}
+	
+	getUserAccountKeyFromUUID(session, keyuuid) {
+		var userkeys = this.getUserAccountKeys(session);
+		
+		for (var i = 0; i < userkeys.length; i++) {
+			var userkey = userkeys[i];
+			
+			if (userkey['keyuuid'] == keyuuid) {
+				return userkey;
+			}
+			
+		}
 	}
 	
 	addUserKey(session, useruuid, cryptokey) {
@@ -143,8 +189,20 @@ class AuthenticationServer {
 		this.persistor.putUserKey(useruuid, keyuuid, privatekey, publickey, address, rsapublickey, type, description);
 	}
 
+	saveUserKey(session, useruuid, cryptokey) {
+		var keyuuid = cryptokey.getKeyUUID();
+		
+		// update only description for existing key
+		var description = cryptokey.getDescription(); 
+		
+		this.persistor.updateUserKey(useruuid, keyuuid, description);
+	}
+
 	removeUserKey(session, useruuid, keyuuid) {
-		this.persistor.removeUserKey(useruuid, keyuuid);
+		// TODO: we should not delete a key, we should just put a flag telling is has been deleted
+		// we could use the Type and set it to -1
+		throw 'can not delete a key';
+		//this.persistor.removeUserKey(useruuid, keyuuid);
 	}
 
 	
