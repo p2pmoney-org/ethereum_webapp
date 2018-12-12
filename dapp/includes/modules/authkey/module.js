@@ -85,6 +85,9 @@ var Module = class {
 	isSessionAnonymous_hook(result, params) {
 		console.log('isSessionAnonymous_hook called for ' + this.name);
 		
+		if (this.isready === false)
+			return false;
+		
 		var global = this.global;
 		
 		var session = params[0];
