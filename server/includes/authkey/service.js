@@ -150,6 +150,34 @@ class Service {
 		return true;
 	}
 	
+	_getUserFromRemoteAuthenticationServer(session) {
+		var global = this.global;
+		var remoteauthenticationserver = this.getRemoteAuthenticationServerInstance();
+		
+		var user = remoteauthenticationserver.getUser(session);
+		
+		if (user) {
+			var useruuid = user.getUserUUID();
+			
+			// check if user exists in our database
+			var authenticationserver = this.getAuthenticationServerInstance();
+			
+			if (!authenticationserver.userExistsFromUUID(useruuid)) {
+				global.log('remote user not found in database, inserting user with uuid: ' + useruuid);
+				
+				// save user
+				user.altloginmethod = 'remote-authkey-server';
+				
+				authenticationserver.saveUser(session, user);
+			}
+			else {
+				global.log('remote user found in database with uuid: ' + useruuid);
+			}
+		}
+		
+		return user;
+	}
+	
 	createSession_hook(result, params) {
 		var global = this.global;
 		
@@ -164,12 +192,14 @@ class Service {
 		
 		if (global.config['authkey_server_url']) {
 			
-			var remoteauthenticationserver = this.getRemoteAuthenticationServerInstance();
+			/*var remoteauthenticationserver = this.getRemoteAuthenticationServerInstance();
 			
-			var user = remoteauthenticationserver.getUser(session);
+			var user = remoteauthenticationserver.getUser(session);*/
+			
+			var user = this._getUserFromRemoteAuthenticationServer(session);
 			
 			if (user) {
-				var useruuid = user.getUserUUID();
+				/*var useruuid = user.getUserUUID();
 				
 				// check if user exists in our database
 				var authenticationserver = this.getAuthenticationServerInstance();
@@ -184,7 +214,7 @@ class Service {
 				}
 				else {
 					global.log('remote user found in database with uuid: ' + useruuid);
-				}
+				}*/
 				
 				// attach user to session
 				session.impersonateUser(user);
@@ -239,9 +269,13 @@ class Service {
 			sessioncontext.anonymousupdate = now;
 			
 			global.log('checking remote user details');
-			var remoteauthenticationserver = this.getRemoteAuthenticationServerInstance();
 			
-			var user = remoteauthenticationserver.getUser(session);
+			/*var remoteauthenticationserver = this.getRemoteAuthenticationServerInstance();
+			
+			var user = remoteauthenticationserver.getUser(session);*/
+			
+			var user = this._getUserFromRemoteAuthenticationServer(session);
+
 			
 			if (user) {
 				var useruuid = user.getUserUUID();
