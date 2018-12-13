@@ -197,6 +197,16 @@ class Service {
 		
 		return true;
 	}
+	
+	_isRootSession(session) {
+		if (!session)
+			return false;
+		
+		if (session.getUser() === null)
+			return false;
+		
+		return session.getUser().isSuperAdmin();
+	}
 
 	isSessionAnonymous_hook(result, params) {
 		var global = this.global;
@@ -205,6 +215,9 @@ class Service {
 		
 		if (!session)
 			return false;
+		
+		if (this._isRootSession(session))
+			return false; // we do not handle (local) root user
 		
 		var sessionuuid = session.getSessionUUID();
 
@@ -263,6 +276,9 @@ class Service {
 		
 		if (!session)
 			return false;
+		
+		if (this._isRootSession(session))
+			return false; // we do not handle (local) root user
 		
 		var sessionuuid = session.getSessionUUID();
 
