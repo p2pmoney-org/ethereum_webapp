@@ -79,7 +79,7 @@ class Service {
 		var session = params[0];
 		var config = params[1];
 		
-		config.dapp_root_dir="/home/appuser/usr/local/ethereum_dapp";
+		config.dapp_root_dir="/home/root/usr/local/ethereum_dapp";
 		config.overload_dapp_files=1;
 		config.copy_dapp_files=1;
 		config.webapp_app_dir="/home/appuser/var/lib/ethereum_webapp/app";
