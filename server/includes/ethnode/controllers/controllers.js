@@ -31,6 +31,11 @@ class EthNodeControllers {
 		var global = this.global;
 		var commonservice = global.getServiceInstance('common');
 		var Session = commonservice.Session;
+		
+		if (!sessionuuid) {
+			// we allow calls without a session
+			sessionuuid = global.guid(); // give a one-time sessionuuid
+		}
 
 		global.log("web3_node called for sessiontoken " + sessionuuid);
 		

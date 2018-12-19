@@ -49,34 +49,35 @@ global.log("");
 global.log("****Server initialization*****");
 
 
-// register services
-var Service;
-
-// local services
-Service = require('./local/webapp/service.js');
-global.registerServiceInstance(new Service());
-
-// standard services
-Service = require('./includes/admin/service.js');
-global.registerServiceInstance(new Service());
-
-Service = require('./includes/authkey/service.js');
-global.registerServiceInstance(new Service());
-
-Service = require('./includes/storage/service.js');
-global.registerServiceInstance(new Service());
-
-Service = require('./includes/ethnode/service.js');
-global.registerServiceInstance(new Service());
-
-//Service = require('./includes/cli-cont/service.js');
-//global.registerServiceInstance(new Service());
-
-Service = require('./includes/crypto/service.js');
-global.registerServiceInstance(new Service());
-
-// initialization
 try {
+
+	// register services
+	var Service;
+	
+	// local services
+	Service = require('./local/webapp/service.js');
+	global.registerServiceInstance(new Service());
+	
+	// standard services
+	Service = require('./includes/admin/service.js');
+	global.registerServiceInstance(new Service());
+	
+	Service = require('./includes/authkey/service.js');
+	global.registerServiceInstance(new Service());
+	
+	Service = require('./includes/storage/service.js');
+	global.registerServiceInstance(new Service());
+	
+	Service = require('./includes/ethnode/service.js');
+	global.registerServiceInstance(new Service());
+	
+	//Service = require('./includes/cli-cont/service.js');
+	//global.registerServiceInstance(new Service());
+	
+	Service = require('./includes/crypto/service.js');
+	global.registerServiceInstance(new Service());
+	
+	// initialization
 	global.initServer();
 }
 catch(e) {
@@ -130,15 +131,21 @@ global.log("");
 
 global.log("****Loading express*****");
 
-// starting express
-var app = global.getServiceInstance('ethereum_webapp').startWebApp();
-
-// express middleware
-global.getServiceInstance('ethereum_webapp').startMiddleware();
-
-//admin ui
-// (should be after middleware because of bodyParser)
-global.getServiceInstance('admin').startAdminUI(app);
+try {
+	// starting express
+	var app = global.getServiceInstance('ethereum_webapp').startWebApp();
+	
+	// express middleware
+	global.getServiceInstance('ethereum_webapp').startMiddleware();
+	
+	//admin ui
+	// (should be after middleware because of bodyParser)
+	global.getServiceInstance('admin').startAdminUI(app);
+}
+catch(e) {
+	global.log("ERROR during express load: " + e);
+	global.log(e.stack);
+}
 
 
 global.log("*********");
