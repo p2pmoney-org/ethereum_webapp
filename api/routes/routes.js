@@ -21,6 +21,8 @@ module.exports = function(app, global) {
 	.get(Controller.config);
 	app.route(route_root_path + '/version')
 	.get(Controller.version);
+	app.route(route_root_path + '/version/support')
+	.get(Controller.version_support);
 
 	app.route(route_root_path + '/logs/server/tail')
 	.get(Controller.get_logs_server_tail);

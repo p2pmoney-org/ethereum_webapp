@@ -42,12 +42,30 @@ exports.version = function(req, res) {
 	// GET
 	var now = new Date();
 	var nowstring = global.formatDate(now, 'YYYY-mm-dd HH:MM:SS');
+	//var version = global.getConstant('CURRENT_VERSION');
+	var version = global.current_version;
 	
-	var jsonresult = {status: 1, version:  global.getConstant('CURRENT_VERSION'), servertime: nowstring};
+	var jsonresult = {status: 1, version:  version, servertime: nowstring};
   	
   	res.json(jsonresult);
   	
 }
+
+exports.version_support = function(req, res) {
+	var version_support = global.version_support;
+	
+	var jsonlist = [];
+
+	for (var i = 0; i < version_support.length; i++) {
+		jsonlist.push({version:  version_support[i]});
+	}
+	
+	var jsonresult = {status: 1
+			, data: jsonlist};
+	
+	res.json(jsonresult);
+}
+
 
 exports.get_logs_server_tail = function(req, res) {
 	// GET

@@ -92,8 +92,8 @@ class Service {
 		var session = params[0];
 		var config = params[1];
 		
-		config.defaultgaslimit="8850000";
-		config.defaultgasprice="20000000000";
+		config.defaultgaslimit="4850000";
+		config.defaultgasprice="10000000000";
 
 		config.need_to_unlock_accounts=1, 
 		config.wallet_account_challenge=1, 
@@ -127,7 +127,10 @@ class Service {
 			
 			// add built-in contracts at the beginning
 			try {
-				var jsonarray = (usercontent ? JSON.parse(usercontent) : []);
+				var jsonarray = (usercontent && (usercontent != '{}') ? JSON.parse(usercontent) : []);
+				
+				if (jsonarray.constructor !== Array)
+					jsonarray = [];
 				
 				var contracts = this.contracts;
 				
@@ -135,6 +138,7 @@ class Service {
 					jsonarray.unshift(contracts[i]);
 				}
 				
+				if (jsonarray.length)
 				result.content = JSON.stringify(jsonarray);
 			}
 			catch(e) {
@@ -177,7 +181,10 @@ class Service {
 			
 			// we remove built-in contracts, based on their uuid
 			try {
-				var jsonarray = (usercontent ? JSON.parse(usercontent) : []);
+				var jsonarray = (usercontent && (usercontent != '{}') ? JSON.parse(usercontent) : []);
+
+				if (jsonarray.constructor !== Array)
+					jsonarray = [];
 				
 				var contractmap = this._getBuiltInContractMap() ;
 				
@@ -189,6 +196,7 @@ class Service {
 					}
 				}
 				
+				if (jsonarray.length)
 				result.content = JSON.stringify(jsonarray);
 			}
 			catch(e) {
