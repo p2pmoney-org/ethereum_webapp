@@ -61,7 +61,7 @@ class Service {
 	
 		sql += tablename;
 		sql += ` (  id INT NOT NULL AUTO_INCREMENT,
-				  ethereum_transaction_uuid VARCHAR(36) NOT NULL,
+				  transaction_uuid VARCHAR(36) NOT NULL,
 				  transactionHash varchar(68) DEFAULT NULL,
   				  UserId INT NOT NULL,
 				  method VARCHAR(64) NOT NULL,
