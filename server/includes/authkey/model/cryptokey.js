@@ -84,8 +84,15 @@ class CryptoKey {
 		this.description = description;
 	}
 	
-	generatePrivateKey() {
-		this.private_key = "0xae6ae8e5ccbfb04590405997ee2d52d2b330726137b875053c36d94e974d162f";
+	generatePrivateKey(session) {
+		if (!session)
+			throw "no session passed in argument";
+
+		var global = session.getGlobalInstance();
+		var cryptoservice = global.getServiceInstance('crypto');
+		var cryptoserverinstance = cryptoservice.getCryptoServerInstance();
+		
+		this.private_key = cryptoserverinstance.generatePrivateKey(session);
 	}
 
 }

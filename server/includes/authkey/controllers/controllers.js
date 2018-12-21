@@ -246,7 +246,7 @@ class AuthKeyControllers {
 					cryptokey.setKeyUUID(keyuuid);
 					cryptokey.setType(type);
 					
-					cryptokey.generatePrivateKey();
+					cryptokey.generatePrivateKey(session);
 					
 					cryptokey.setDescription('generated on first call');
 					
@@ -261,12 +261,12 @@ class AuthKeyControllers {
 				for (var i = 0; i < userkeys.length; i++) {
 					var userkey = userkeys[i];
 					
-					var json = {key_uuid: userkey['uuid'], 
-							private_key: userkey['private_key'], 
-							public_key: userkey['public_key'], 
-							rsa_public_key: userkey['rsa_public_key'], 
-							address: userkey['address'],
-							description: userkey['description']};
+					var json = {key_uuid: userkey.getKeyUUID(), 
+							private_key: userkey.getPrivateKey(), 
+							public_key: userkey.getPublicKey(), 
+							rsa_public_key: userkey.getRsaPublicKey(), 
+							address: userkey.getAddress(),
+							description: userkey.getDescription()};
 					
 					keysjson.push(json);
 					
@@ -382,14 +382,14 @@ class AuthKeyControllers {
 				for (var i = 0; i < userkeys.length; i++) {
 					var userkey = userkeys[i];
 					
-					var json = {uuid: userkey['keyuuid'],
-							owner_uuid: userkey['useruuid'], 
-							key_uuid: userkey['keyuuid'], 
-							private_key: userkey['private_key'], 
-							public_key: userkey['public_key'], 
-							rsa_public_key: userkey['rsa_public_key'], 
-							address: userkey['address'],
-							description: userkey['description']};
+					var json = {uuid: userkey.getKeyUUID(), 
+							owner_uuid: userkey.getUserUUID(),  
+							key_uuid: userkey.getKeyUUID(),
+							private_key: userkey.getPrivateKey(), 
+							public_key: userkey.getPublicKey(), 
+							rsa_public_key: userkey.getRsaPublicKey(), 
+							address: userkey.getAddress(),
+							description: userkey.getDescription()};
 					
 					keysjson.push(json);
 				}

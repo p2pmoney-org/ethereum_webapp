@@ -11,6 +11,7 @@ class CryptoServer {
 	}
 	
 	_test_generatePrivateKey(session) {
+		// test calling common module in session's client-container
 		var global = this.global;
 		
 		if (!session)
@@ -46,6 +47,7 @@ class CryptoServer {
 	}
 	
 	_test_getPublicKeys(session, privatekey) {
+		// test calling common module in session's client-container
 		var global = this.global;
 		
 		if (!session)
