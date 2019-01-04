@@ -197,7 +197,7 @@ class AdminServer {
 		var global = this.global;
 		
 		// code version
-		variables['Code version'] = global.getConstant('CURRENT_VERSION');
+		variables['Code version'] = global.getCurrentVersion();
 		
 		var commonservice = global.getServiceInstance('common');
 		
@@ -430,7 +430,7 @@ class AdminServer {
 	installFinal() {
 		var global = this.global;
 		
-		var currentversion = global.getConstant('CURRENT_VERSION');
+		var currentversion = global.getCurrentVersion();
 		var now = new Date()
 		
 		var nowstring = global.formatDate(now, 'YYYY-mm-dd HH:MM:SS');

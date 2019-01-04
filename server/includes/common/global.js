@@ -685,6 +685,15 @@ class Global {
 		return val;
 	}
 	
+	getCurrentVersion() {
+		//return this.getConstant('CURRENT_VERSION');
+		return (this.current_version ? this.current_version : "undefined");
+	}
+	
+	getVersionSupported() {
+		return (this.version_support ? this.version_support : [this.getCurrentVersion()]);
+	}
+	
 	// services
 	getServiceInstance(servicename) {
 		if (!servicename)

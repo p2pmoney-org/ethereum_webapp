@@ -43,7 +43,7 @@ exports.version = function(req, res) {
 	var now = new Date();
 	var nowstring = global.formatDate(now, 'YYYY-mm-dd HH:MM:SS');
 	//var version = global.getConstant('CURRENT_VERSION');
-	var version = global.current_version;
+	var version = global.getCurrentVersion();
 	
 	var jsonresult = {status: 1, version:  version, servertime: nowstring};
   	
@@ -52,7 +52,7 @@ exports.version = function(req, res) {
 }
 
 exports.version_support = function(req, res) {
-	var version_support = global.version_support;
+	var version_support = global.getVersionSupported();
 	
 	var jsonlist = [];
 
