@@ -1,7 +1,7 @@
 h3 Add user
 
 // add user form
-form(method='POST' action='/admin')
+form(method='POST' action='?action=users')
 	input#action.form-control(type='hidden' name='action' value='users')
 	input#session.form-control(type='hidden' name='sessionuuid' value=session.sessionuuid)
 

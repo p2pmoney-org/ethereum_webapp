@@ -1,7 +1,7 @@
 h3 Modify user
 
 // modify user form
-form(method='POST' action='/admin')
+form(method='POST' action='?action=modify')
 	input#action.form-control(type='hidden' name='action' value='users')
 	input#session.form-control(type='hidden' name='sessionuuid' value=session.sessionuuid)
 	input#session.form-control(type='hidden' name='useruuid' value=selecteduser.useruuid)
@@ -27,7 +27,7 @@ hr
 
 h3 Add key
 
-form(method='POST' action='/admin')
+form(method='POST' action='?action=addkey')
 	input#action.form-control(type='hidden' name='action' value='users')
 	input#session.form-control(type='hidden' name='sessionuuid' value=session.sessionuuid)
 	input#session.form-control(type='hidden' name='useruuid' value=selecteduser.useruuid)
