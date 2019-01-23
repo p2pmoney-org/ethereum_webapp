@@ -39,14 +39,19 @@ class EthNodeControllers {
 
 		global.log("web3_node called for sessiontoken " + sessionuuid);
 		
-		var session = Session.getSession(global, sessionuuid);
-		var ethnode = this.getEthereumNode(session);
-		
-		var nodeinfo = ethnode.web3_getNodeInfo();
-
+		try {
+			var session = Session.getSession(global, sessionuuid);
+			var ethnode = this.getEthereumNode(session);
+			
+			var nodeinfo = ethnode.web3_getNodeInfo();
+	
+		}
+		catch(e) {
+			global.log("exception in web3_node for sessiontoken " + sessionuuid + ": " + e);
+		}
 		var jsonresult;
 		
-		if (balance !== null) {
+		if (nodeinfo !== null) {
 			jsonresult = {status: 1, data: nodeinfo};
 		}
 		else {

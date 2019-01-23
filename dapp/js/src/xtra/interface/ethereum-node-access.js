@@ -245,7 +245,7 @@ class Xtra_EthereumNodeAccess {
 
 	// node
 	web3_isSyncing(callback) {
-		console.log("Xtra_EthereumNodeAccess.web3_isSyncing called for " + address);
+		console.log("Xtra_EthereumNodeAccess.web3_isSyncing called");
 		
 		var self = this;
 		var session = this.session;
@@ -253,14 +253,172 @@ class Xtra_EthereumNodeAccess {
 		var promise = new Promise(function (resolve, reject) {
 			
 			try {
-				var resource = "/node";
+				var resource = "/web3/node";
 				
 				var promise2 = self.rest_get(resource, function (err, res) {
-					if (res) {
+					var data = res['data'];
+					if (data) {
 						if (callback)
-							callback(null, res['issyncing']);
+							callback(null, data['issyncing']);
 						
-						return resolve(res['issyncing']);
+						return resolve(data['issyncing']);
+					}
+					else {
+						if (callback)
+							callback('error', null);
+						
+						reject('rest error calling ' + resource + ' : ' + err);
+					}
+					
+				});
+			}
+			catch(e) {
+				if (callback)
+					callback('exception: ' + e, null);
+				
+				reject('rest exception: ' + e);
+			}
+		});
+		
+		return promise;
+	}
+	
+	
+	web3_isListening(callback) {
+		console.log("Xtra_EthereumNodeAccess.web3_isListening called");
+		
+		var self = this;
+		var session = this.session;
+
+		var promise = new Promise(function (resolve, reject) {
+			
+			try {
+				var resource = "/web3/node";
+				
+				var promise2 = self.rest_get(resource, function (err, res) {
+					var data = res['data'];
+					if (data) {
+						if (callback)
+							callback(null, data['islistening']);
+						
+						return resolve(data['islistening']);
+					}
+					else {
+						if (callback)
+							callback('error', null);
+						
+						reject('rest error calling ' + resource + ' : ' + err);
+					}
+					
+				});
+			}
+			catch(e) {
+				if (callback)
+					callback('exception: ' + e, null);
+				
+				reject('rest exception: ' + e);
+			}
+		});
+		
+		return promise;
+	}
+	
+	web3_getNetworkId(callback) {
+		console.log("Xtra_EthereumNodeAccess.web3_getNetworkId called");
+		
+		var self = this;
+		var session = this.session;
+
+		var promise = new Promise(function (resolve, reject) {
+			
+			try {
+				var resource = "/web3/node";
+				
+				var promise2 = self.rest_get(resource, function (err, res) {
+					var data = res['data'];
+					if (data) {
+						if (callback)
+							callback(null, data['networkid']);
+						
+						return resolve(data['networkid']);
+					}
+					else {
+						if (callback)
+							callback('error', null);
+						
+						reject('rest error calling ' + resource + ' : ' + err);
+					}
+					
+				});
+			}
+			catch(e) {
+				if (callback)
+					callback('exception: ' + e, null);
+				
+				reject('rest exception: ' + e);
+			}
+		});
+		
+		return promise;
+	}
+	
+	web3_getPeerCount(callback) {
+		console.log("Xtra_EthereumNodeAccess.web3_getPeerCount called");
+		
+		var self = this;
+		var session = this.session;
+
+		var promise = new Promise(function (resolve, reject) {
+			
+			try {
+				var resource = "/web3/node";
+				
+				var promise2 = self.rest_get(resource, function (err, res) {
+					var data = res['data'];
+					if (data) {
+						if (callback)
+							callback(null, data['peercount']);
+						
+						return resolve(data['peercount']);
+					}
+					else {
+						if (callback)
+							callback('error', null);
+						
+						reject('rest error calling ' + resource + ' : ' + err);
+					}
+					
+				});
+			}
+			catch(e) {
+				if (callback)
+					callback('exception: ' + e, null);
+				
+				reject('rest exception: ' + e);
+			}
+		});
+		
+		return promise;
+	}
+	
+	web3_getNodeInfo(callback) {
+		console.log("Xtra_EthereumNodeAccess.web3_getNodeInfo called");
+		
+		var self = this;
+		var session = this.session;
+
+		var promise = new Promise(function (resolve, reject) {
+			
+			try {
+				var resource = "/web3/node";
+				
+				var promise2 = self.rest_get(resource, function (err, res) {
+					var data = res['data'];
+					if (data) {
+						if (callback)
+							callback(null, data);
+						
+						return resolve(data);
 					}
 					else {
 						if (callback)

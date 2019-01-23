@@ -189,13 +189,17 @@ class EthereumNode {
 	// node
 	web3_getNodeInfo() {
 		var global = this.session.getGlobalInstance();
+		var self = this;
 		
 		global.log("EthereumNode.web3_getNodeInfo called");
 		var web3 = this.getWeb3Instance();
 
 		var islistening;
+		var networkid;
 		var peercount;
 		var issyncing;
+		var currentblock = false;
+		var highestblock = false;
 
 		var promises = [];
 		var promise;
@@ -217,6 +221,17 @@ class EthereumNode {
 		});
 		promises.push(promise);
 		
+		// networkid
+		promise =  web3.eth.net.getId(function(error, netId){
+			if (!error) {
+				networkid = netId;
+			}
+			
+			return netId;
+		});
+		promises.push(promise);
+
+		
 		// peercount
 		var promise =  web3.eth.net.getPeerCount(function(error, result) {
 			if (!error) {
@@ -225,31 +240,54 @@ class EthereumNode {
 			else {
 				peercount = -1;
 			}
+			
+			return peercount;
 		});
 		promises.push(promise);
 
 		// issyncing
 		promise = web3.eth.isSyncing(function(error, result) {
+			var syncingobj;
+			
 			if (!error) {
 				if(result !== false) {
 					issyncing = true;
+					
+					var arr = [];
+
+					for(var key in result){
+					  arr[key] = result[key];
+					}
+					
+					syncingobj = arr;
+					
+					currentblock = ((syncingobj !== false) && (syncingobj) && (syncingobj['currentBlock']) ? syncingobj['currentBlock'] : -1);
+					highestblock = ((syncingobj !== false) && (syncingobj) && (syncingobj['highestBlock']) ? syncingobj['highestBlock'] : false);
 				}
 				else {
 					issyncing = false;
+					
+					syncingobj = false;
+					
+					currentblock = self.web3_getHighestBlockNumber();
+					highestblock = currentblock;
+
 				}
 			}
 			else {
-				issyncing = null;
+				issyncing = error;
 			}
 			return result;
 		});
 		promises.push(promise);
 		
 		
+		
+		
 		// all promises
 		var finished = false;
 		
-		Promise.all(promises, function(res) {
+		Promise.all(promises).then( function(res) {
 			finished = true;
 		});
 		
@@ -258,7 +296,12 @@ class EthereumNode {
 		while(!finished)
 		{require('deasync').runLoopOnce();}
 		
-		return {islistening: islistening, peercount: peercount, issyncing: issyncing};
+		return {islistening: islistening, 
+			networkid: networkid, 
+			peercount: peercount, 
+			issyncing: issyncing,
+			currentblock: currentblock,
+			highestblock: highestblock};
 	}
 	
 	
