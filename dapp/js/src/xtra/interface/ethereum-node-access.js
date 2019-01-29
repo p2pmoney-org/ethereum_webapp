@@ -413,7 +413,7 @@ class Xtra_EthereumNodeAccess {
 				var resource = "/web3/node";
 				
 				var promise2 = self.rest_get(resource, function (err, res) {
-					var data = res['data'];
+					var data = (res ? res['data'] : null);
 					if (data) {
 						if (callback)
 							callback(null, data);
