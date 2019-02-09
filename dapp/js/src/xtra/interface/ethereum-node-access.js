@@ -61,7 +61,7 @@ class Xtra_EthereumNodeAccess {
 		
 		this.ethereumnodeaccessmodule = ethereumnodeaccessmodule;
 		this.web3_version = ethereumnodeaccessmodule.web3_version;
-}
+	}
 	
 	getRestConnection() {
 		if (this.rest_connection)
@@ -424,7 +424,7 @@ class Xtra_EthereumNodeAccess {
 						if (callback)
 							callback('error', null);
 						
-						reject('rest error calling ' + resource + ' : ' + err);
+						reject('rest error calling ' + resource + ' : ' + (err ? err : 'no data'));
 					}
 					
 				});
@@ -1730,7 +1730,7 @@ class Xtra_EthereumNodeAccess {
 	}
 	
 	truffle_loadContract(artifact) {
-		console.log('artifact is ' + JSON.stringify(artifact));
+		//console.log('artifact is ' + JSON.stringify(artifact));
 		console.log("Xtra_EthereumNodeAccess.truffle_loadContract called for artifact " + (artifact.getUUID ? artifact.getUUID() : null));
 		
 		return this.web3_loadContract(artifact) ;

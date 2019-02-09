@@ -187,121 +187,231 @@ class EthereumNode {
 	}
 	
 	// node
-	web3_getNodeInfo() {
+	web3_isListening() {
 		var global = this.session.getGlobalInstance();
 		var self = this;
+
+		global.log("EthereumNode.web3_isListening called");
 		
-		global.log("EthereumNode.web3_getNodeInfo called");
 		var web3 = this.getWeb3Instance();
 
-		var islistening;
-		var networkid;
-		var peercount;
-		var issyncing;
-		var currentblock = false;
-		var highestblock = false;
+		if (this.web3_version == "1.0.x") {
+			// Web3 > 1.0
+			var funcname = web3.eth.net.isListening;
+		}
+		else {
+			// Web3 == 0.20.x
+			var funcname = web3.net.getListening;
+		}
 
-		var promises = [];
-		var promise;
+		var listening = null;
 		
-		// islistening
-		promise = web3.eth.net.isListening(function(error, result) {
+		var finished = false;
+
+		var promise =  funcname(function(error, result) {
+			
 			if (!error) {
+				
 				if(result !== false) {
-					islistening = true;
+					listening = result;
+					 
+				    global.log("node is listening");
 				}
 				else {
-					islistening = false;
-				}
-			}
-			else {
-				islistening = null;
-			}
-			return result;
-		});
-		promises.push(promise);
-		
-		// networkid
-		promise =  web3.eth.net.getId(function(error, netId){
-			if (!error) {
-				networkid = netId;
-			}
-			
-			return netId;
-		});
-		promises.push(promise);
-
-		
-		// peercount
-		var promise =  web3.eth.net.getPeerCount(function(error, result) {
-			if (!error) {
-				peercount = result
-			}
-			else {
-				peercount = -1;
-			}
-			
-			return peercount;
-		});
-		promises.push(promise);
-
-		// issyncing
-		promise = web3.eth.isSyncing(function(error, result) {
-			var syncingobj;
-			
-			if (!error) {
-				if(result !== false) {
-					issyncing = true;
+					listening = false;
 					
+				    global.log("node is NOT listening");
+				}
+				
+				finished = true;
+			  } else {
+				  listening = null;
+					
+				  global.log('Web3 error: ' + error);
+				  finished = true;
+			  }
+			});
+
+		// wait to turn into synchronous call
+		while(finished === false)
+		{require('deasync').runLoopOnce();}
+		
+		return listening;
+	}
+	
+	_getSyncingArray() {
+		var global = this.session.getGlobalInstance();
+		var self = this;
+
+		var web3 = this.getWeb3Instance();
+
+		if (this.web3_version == "1.0.x") {
+			// Web3 > 1.0
+			var funcname = web3.eth.isSyncing;
+		}
+		else {
+			// Web3 == 0.20.x
+			var funcname = web3.eth.getSyncing;
+		}
+
+		var syncing = null;
+		
+		var finished = false;
+		var promise =  funcname(function(error, result) {
+			
+			if (!error) {
+				
+				if(result !== false) {
+					syncing = true;
+					 
 					var arr = [];
 
 					for(var key in result){
 					  arr[key] = result[key];
 					}
 					
-					syncingobj = arr;
+					syncing = arr;
 					
-					currentblock = ((syncingobj !== false) && (syncingobj) && (syncingobj['currentBlock']) ? syncingobj['currentBlock'] : -1);
-					highestblock = ((syncingobj !== false) && (syncingobj) && (syncingobj['highestBlock']) ? syncingobj['highestBlock'] : false);
+				    global.log("node is syncing");
 				}
 				else {
-					issyncing = false;
+					syncing = false;
 					
-					syncingobj = false;
-					
-					currentblock = self.web3_getHighestBlockNumber();
-					highestblock = currentblock;
-
+				    global.log("node is NOT syncing");
 				}
-			}
-			else {
-				issyncing = error;
-			}
-			return result;
-		});
-		promises.push(promise);
+				
+				finished = true;
+			  } else {
+				  syncing = null;
+					
+				  global.log('Web3 error: ' + error);
+				  finished = true;
+			  }
+			});
+
+		// wait to turn into synchronous call
+		while(finished === false)
+		{require('deasync').runLoopOnce();}
 		
+		return syncing;
+	}
+	
+	web3_isSyncing() {
+		var global = this.session.getGlobalInstance();
+		var self = this;
+
+		global.log("EthereumNode.web3_isSyncing called");
 		
+		var issyncing = this._getSyncingArray();
 		
+		issyncing = (issyncing === false ? false : true);
 		
-		// all promises
+		return issyncing;
+	}
+	
+	web3_getNetworkId() {
+		var global = this.session.getGlobalInstance();
+		var self = this;
+
+		global.log("EthereumNode.web3_getNetworkId called");
+		
+		var web3 = this.getWeb3Instance();
+
+		if (self.web3_version == "1.0.x") {
+			// Web3 > 1.0
+			var funcname = web3.eth.net.getId;
+		}
+		else {
+			// Web3 == 0.20.x
+			var funcname = web3.version.getNetwork;
+		}
+
+		var networkid = null;
+		
 		var finished = false;
 		
-		Promise.all(promises).then( function(res) {
+		var promise =  funcname(function(error, netId){
+			if (!error) {
+				networkid = netId;
+			}
+			
 			finished = true;
 		});
 		
-		
 		// wait to turn into synchronous call
-		while(!finished)
+		while(finished === false)
 		{require('deasync').runLoopOnce();}
 		
-		return {islistening: islistening, 
-			networkid: networkid, 
-			peercount: peercount, 
-			issyncing: issyncing,
-			currentblock: currentblock,
-			highestblock: highestblock};
+		return networkid;
+	}
+	
+	web3_getPeerCount() {
+		var global = this.session.getGlobalInstance();
+		var self = this;
+
+		global.log("EthereumNode.web3_getPeerCount called");
+		
+		var web3 = this.getWeb3Instance();
+		
+		if (this.web3_version == "1.0.x") {
+			// Web3 > 1.0
+			var funcname = web3.eth.net.getPeerCount;
+		}
+		else {
+			// Web3 == 0.20.x
+			var funcname = web3.net.getPeerCount;
+		}
+
+		var peercount = null;
+		
+		var finished = false;
+		var promise =  funcname(function(error, result) {
+			
+			if (!error) {
+				
+				peercount = result;
+				
+				finished = true;
+			  } else {
+				  peercount = null;
+					
+				  global.log('Web3 error: ' + error);
+				  finished = true;
+			  }
+		});
+
+		// wait to turn into synchronous call
+		while(finished === false)
+		{require('deasync').runLoopOnce();}
+		
+		return peercount;
+	}
+	
+
+	web3_getNodeInfo() {
+		var global = this.session.getGlobalInstance();
+		var self = this;
+		
+		global.log("EthereumNode.web3_getNodeInfo called");
+		
+		var islistening = this.web3_isListening();
+		var networkid = this.web3_getNetworkId();
+		var peercount = this.web3_getPeerCount();
+		var issyncing = this.web3_isSyncing();
+		var currentblock = this.web3_getCurrentBlockNumber();
+		var highestblock = this.web3_getHighestBlockNumber();
+		
+		global.log("EthereumNode.web3_getNodeInfo finished");
+
+		return {
+				networkid: networkid,
+				islistening: islistening,
+				peercount: peercount,
+				issyncing: issyncing,
+				currentblock: currentblock,
+				highestblock: highestblock
+		};
+		
 	}
 	
 	
@@ -482,7 +592,68 @@ class EthereumNode {
 	}
 	
 	// blocks
+	web3_getBlockNumber() {
+		var global = this.session.getGlobalInstance();
+
+	    global.log("EthereumNode.web3_getBlockNumber called");
+		var blocknumber;
+		
+		var web3 = this.getWeb3Instance();
+
+		var promise =  web3.eth.getBlockNumber(function(error, result) {
+			
+			if (!error) {
+				blocknumber = result;
+			  } else {
+				  blocknumber = -1;
+				  
+				  global.log('Web3 error: ' + error);
+			  }
+		});
+
+		// wait to turn into synchronous call
+		while(blocknumber === undefined)
+		{require('deasync').runLoopOnce();}
+		
+	    global.log("blocknumber is " + blocknumber);
+		return blocknumber;
+	}
+	
+	web3_getCurrentBlockNumber() {
+		var global = this.session.getGlobalInstance();
+
+	    global.log("EthereumNode.web3_getCurrentBlockNumber called");
+		var blocknumber;
+		
+		var syncingobj = this._getSyncingArray();
+		
+		blocknumber = ((syncingobj !== false) && (syncingobj) && (syncingobj['currentBlock']) ? syncingobj['currentBlock'] : false);
+		
+		if (blocknumber === false)
+			blocknumber = this.web3_getBlockNumber();
+		
+	    global.log("currentblocknumber is " + blocknumber);
+		return blocknumber;
+	}
+	
 	web3_getHighestBlockNumber() {
+		var global = this.session.getGlobalInstance();
+
+	    global.log("EthereumNode.web3_getHighestBlockNumber called");
+		var blocknumber;
+		
+		var syncingobj = this._getSyncingArray();
+		
+		blocknumber = ((syncingobj !== false) && (syncingobj) && (syncingobj['highestBlock']) ? syncingobj['highestBlock'] : false);
+		
+		if (blocknumber === false)
+			blocknumber = this.web3_getBlockNumber();
+		
+	    global.log("highestblocknumber is " + blocknumber);
+		return blocknumber;
+	}
+	
+	/*web3_getHighestBlockNumber() {
 		var self = this;
 		var session = this.session;
 		var global = this.session.getGlobalInstance();
@@ -522,7 +693,7 @@ class EthereumNode {
 		{require('deasync').runLoopOnce();}
 		
 		return blocknumber;
-	}
+	}*/
 	
 	
 	web3_getBlock(blockid, bWithTransactions) {

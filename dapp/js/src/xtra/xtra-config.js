@@ -448,18 +448,6 @@ class XtraConfig {
 	initHooks() {
 		// OBSOLETE: should use module mechanism now
 		console.log("XtraConfig initializing hooks");
-		
-		var global = XtraConfig.getGlobalObject();
-		var mvcmodule = global.getModuleObject('mvc');
-		var controllers = mvcmodule.getControllersObject();
-
-		//
-		// violent javascript overloading when not hooks exists
-		//
-		
-		// overload handleDisplayIdentificationBox
-		controllers.handleDisplayIdentificationBox = this.handleDisplayIdentificationBox;
-		
 	}
 	
 	overloadConfig() {
