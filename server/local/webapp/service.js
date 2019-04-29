@@ -68,7 +68,14 @@ class Service {
 		var global = this.global;
 		
 		global.registerHook('installWebappConfig_hook', this.name, this.installWebappConfig_hook);
+		
+		global.registerHook('registerRoutes_hook', this.name, this.registerRoutes_hook);
+
 	}
+	
+	//
+	// hooks
+	//
 	
 	installWebappConfig_hook(result, params) {
 		var global = this.global;
@@ -87,10 +94,27 @@ class Service {
 		result.push({service: this.name, handled: true});
 	}
 	
-	//
-	// hooks
-	//
-	
+	registerRoutes_hook(result, params) {
+		var global = this.global;
+
+		global.log('registerRoutes_hook called for ' + this.name);
+		
+		var app = params[0];
+		var global = params[1];
+		
+		//
+		// Webapp routes
+		//
+		var WebappRoutes = require( './routes/routes.js');
+			
+		var webapproutes = new WebappRoutes(app, global);
+		
+		webapproutes.registerRoutes();
+		
+		result.push({service: this.name, handled: true});
+	}
+
+
 	// functions
 	getApiKeys() {
 		return this.apikeys;

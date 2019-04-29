@@ -31,6 +31,9 @@ class Service {
 		var global = this.global;
 		
 		global.registerHook('installMysqlTables_hook', this.name, this.installMysqlTables_hook);
+		
+		global.registerHook('registerRoutes_hook', this.name, this.registerRoutes_hook);
+
 	}
 	
 	//
@@ -76,6 +79,26 @@ class Service {
 		return true;
 	}
 	
+
+	registerRoutes_hook(result, params) {
+		var global = this.global;
+
+		global.log('registerRoutes_hook called for ' + this.name);
+		
+		var app = params[0];
+		var global = params[1];
+		
+		//
+		// Storage routes
+		//
+		var StorageRoutes = require( './routes/routes.js');
+			
+		var storageroutes = new StorageRoutes(app, global);
+		
+		storageroutes.registerRoutes();
+		
+		result.push({service: this.name, handled: true});
+	}
 
 	// API
 	

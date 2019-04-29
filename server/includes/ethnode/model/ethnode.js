@@ -1869,12 +1869,12 @@ class EthereumNode {
 					// Web3 == 0.20.x
 					// using spread operator
 					var ret = funcname.call(...params, __funcback)
-					.catch(err => {
+					/*.catch(err => {
 					    global.log('catched error in EthereumNodeAccess.web3_method_call ' + err);
 						
 						result = null;
 						finished = true;
-					});
+					})*/;
 					
 				}
 			}

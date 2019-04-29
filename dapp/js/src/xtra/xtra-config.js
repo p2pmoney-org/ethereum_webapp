@@ -20,6 +20,8 @@ class XtraConfigModule {
 	}
 	
 	registerAdditionalModules() {
+		console.log('registerAdditionalModules called for ' + this.name);
+		
 		// load and register additional modules
 		var modulescriptloader = ScriptLoader.findScriptLoader('moduleloader')
 		var xtramodulescriptloader = modulescriptloader.getChildLoader('xtramoduleloader')
@@ -175,11 +177,17 @@ class XtraConfigModule {
 
 		this._authenticate(username, password);
 	}
+	
+	_getAppObject() {
+		var global = this.global;
+		if (global.getAppObject)
+			return global.getAppObject();
+	}
 
 	_authenticate(username, password) {
 		var global = this.global;
 		
-		var app = global.getAppObject();
+		var app = this._getAppObject();
 		
 		var commonmodule = global.getModuleObject('common');
 		var session = commonmodule.getSessionObject();
@@ -210,7 +218,7 @@ class XtraConfigModule {
 							session.readSessionAccountFromKeys(keys);
 						}
 				
-						app.refreshDisplay();
+						if (app) app.refreshDisplay();
 					});
 					
 				}
@@ -231,7 +239,7 @@ class XtraConfigModule {
 	_logout() {
 		var global = this.global;
 		
-		var app = global.getAppObject();
+		var app = this._getAppObject();
 		
 		var commonmodule = global.getModuleObject('common');
 		var session = commonmodule.getSessionObject();
@@ -246,7 +254,7 @@ class XtraConfigModule {
 				
 				if (loggedout) {
 					
-					app.refreshDisplay();
+					if (app) app.refreshDisplay();
 					
 				}
 				else {

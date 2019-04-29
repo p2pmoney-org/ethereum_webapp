@@ -384,7 +384,10 @@ class Xtra_AuthKeyServerAccess {
 
 console.log("Xtra_AuthKeyServerAccess is loaded");
 
-if ( typeof GlobalClass !== 'undefined' && GlobalClass )
-GlobalClass.registerModuleClass('authkey', 'Xtra_AuthKeyServerAccess', Xtra_AuthKeyServerAccess);
+//if ( typeof GlobalClass !== 'undefined' && GlobalClass )
+//GlobalClass.registerModuleClass('authkey', 'Xtra_AuthKeyServerAccess', Xtra_AuthKeyServerAccess);
+// because load sequence of module and interface is not predictable
+if ( typeof window !== 'undefined' && window ) // if we are in browser and not node js (e.g. truffle)
+	window.Xtra_AuthKeyServerAccess = Xtra_AuthKeyServerAccess;
 else
 module.exports = Xtra_AuthKeyServerAccess; // we are in node js

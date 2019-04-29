@@ -32,9 +32,11 @@ class Service {
 		global.registerHook('installMysqlTables_hook', this.name, this.installMysqlTables_hook);
 		global.registerHook('installWebappConfig_hook', this.name, this.installWebappConfig_hook);
 
+		global.registerHook('registerRoutes_hook', this.name, this.registerRoutes_hook);
+
 		global.registerHook('getUserContent_hook', this.name, this.getUserContent_hook);
 		global.registerHook('putUserContent_hook', this.name, this.putUserContent_hook);
-}
+	}
 	
 	//
 	// hooks
@@ -104,6 +106,26 @@ class Service {
 		return true;
 	}
 	
+	registerRoutes_hook(result, params) {
+		var global = this.global;
+
+		global.log('registerRoutes_hook called for ' + this.name);
+		
+		var app = params[0];
+		var global = params[1];
+		
+		//
+		// EthNode routes
+		//
+		var EthNodeRoutes = require( './routes/routes.js');
+			
+		var ethnoderoutes = new EthNodeRoutes(app, global);
+		
+		ethnoderoutes.registerRoutes();
+		
+		result.push({service: this.name, handled: true});
+	}
+
 	_hasBuiltInContracts() {
 		if (!this.contracts)
 			return false;
@@ -214,6 +236,21 @@ class Service {
 			return session.ethereum_node;
 		
 		session.ethereum_node = new this.EthereumNode(session);
+		
+		var global = this.global;
+		
+		// invoke hooks to let services interact with the new ethereum_node object
+		var result = [];
+		
+		var params = [];
+		
+		params.push(session.ethereum_node);
+
+		var ret = global.invokeHooks('createEthereumNodeInstance_hook', result, params);
+		
+		if (ret && result && result.length) {
+			global.log('createEthereumNodeInstance_hook result is ' + JSON.stringify(result));
+		}
 		
 		return session.ethereum_node;
 	}

@@ -82,6 +82,12 @@ var Module = class {
 		return true;
 	}
 	
+	_getAppObject() {
+		var global = this.global;
+		if (global.getAppObject)
+			return global.getAppObject();
+	}
+
 	isSessionAnonymous_hook(result, params) {
 		console.log('isSessionAnonymous_hook called for ' + this.name);
 		
@@ -89,6 +95,7 @@ var Module = class {
 			return false;
 		
 		var global = this.global;
+		var app = this._getAppObject();
 		
 		var session = params[0];
 		
@@ -175,7 +182,7 @@ var Module = class {
 										session.readSessionAccountFromKeys(keys);
 									}
 							
-									app.refreshDisplay();
+									if (app) app.refreshDisplay();
 								});
 								
 							}
@@ -323,7 +330,9 @@ var Module = class {
 			this.authkey_server_access_instance = result[0];
 		}
 		else {
-			this.authkey_server_access_instance = new this.Xtra_AuthKeyServerAccess(session);
+			//this.authkey_server_access_instance = new this.Xtra_AuthKeyServerAccess(session);
+			// because load sequence of module and interface is not predictable
+			this.authkey_server_access_instance = new Xtra_AuthKeyServerAccess(session);
 		}
 
 		

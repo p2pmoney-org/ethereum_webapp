@@ -44,12 +44,42 @@ var CredentialsStorage = class {
 	}
 }
 
+var NodeCache = class {
+	constructor() {
+		this.map = Object.create(null); // use a simple object to implement the map
+	}
+	
+	getValue(key) {
+		if (key in this.map) {
+			return this.map[key];
+		} 
+	}
+	
+	putValue(key, value) {
+		this.map[key] = value;
+	}
+	
+	count() {
+		return Object.keys(this.map).length;
+	}
+	
+	empty() {
+		this.map = Object.create(null);
+	}
+}
+
 
 class Xtra_EthereumNodeAccess {
 	constructor(session) {
 		this.session = session;
 		
 		this.credentials_storage = new CredentialsStorage();
+		
+		this.artifact_cache = new NodeCache();
+		this.artifact_load_promise_cache = new NodeCache();
+		
+		this.contract_cache = new NodeCache();
+		this.contract_load_promise_cache = new NodeCache();
 		
 		this.rest_connection = null;
 
@@ -79,98 +109,12 @@ class Xtra_EthereumNodeAccess {
 		var rest_connection = this.getRestConnection();
 		
 		return rest_connection.rest_get(resource, callback);
-		/*console.log("Xtra_EthereumNodeAccess.rest_get called for resource " + resource);
-		
-		var session = this.session;
-	    
-		var xhttp = new XMLHttpRequest();
-	    
-	    var rest_server_url = this.session.getXtraConfigValue('rest_server_url');
-	    var rest_server_api_path = this.session.getXtraConfigValue('rest_server_api_path');
-	    var resource_url = rest_server_url + rest_server_api_path + resource;
-	    
-	    xhttp.open("GET", resource_url, true);
-	    
-	    xhttp.setRequestHeader("Content-type", "application/json");
-	    xhttp.setRequestHeader("sessiontoken", session.getSessionUUID());
-	    
-	    xhttp.send();
-	    
-	    xhttp.onload = function(e) {
-		    if (xhttp.status == 200) {
-			    //console.log('response text is ' + xhttp.responseText);
-			    
-		    	if (callback) {
-			    	var jsonresponse = JSON.parse(xhttp.responseText);
-			    		    		
-			    	if (jsonresponse['status'] && (jsonresponse['status'] == '1'))
-			    		callback(null, jsonresponse);
-			    	else 
-			    		callback((jsonresponse['error'] ? jsonresponse['error'] : 'unknown error'), null);
-		    	}
-		    }
-		    else {
-		    	if (callback)
-		    		callback(xhttp.statusText, null);	
-			}
-	    	
-	    };
-	    
-	    xhttp.onerror = function (e) {
-	    	console.error('rest error is ' + xhttp.statusText);
-	    	
-	    	if (callback)
-	    		callback(xhttp.statusText, null);	
-	    };*/
-	    
 	}
 	
 	rest_post(resource, postdata, callback) {
 		var rest_connection = this.getRestConnection();
 		
 		return rest_connection.rest_post(resource, postdata, callback);
-		/*console.log("Xtra_EthereumNodeAccess.rest_post called for resource " + resource);
-		
-		var session = this.session;
-	    
-		var xhttp = new XMLHttpRequest();
-	    
-	    var rest_server_url = this.session.getXtraConfigValue('rest_server_url');
-	    var rest_server_api_path = this.session.getXtraConfigValue('rest_server_api_path');
-	    var resource_url = rest_server_url + rest_server_api_path + resource;
-	    
-	    xhttp.open("POST", resource_url, true);
-	    
-	    xhttp.setRequestHeader("Content-type", "application/json");
-	    xhttp.setRequestHeader("sessiontoken", session.getSessionUUID());
-	    
-	    xhttp.send(JSON.stringify(postdata));
-	    
-	    xhttp.onload = function(e) {
-		    if (xhttp.status == 200) {
-		    	if (callback) {
-			    	var jsonresponse = JSON.parse(xhttp.responseText);
-			    		    		
-			    	if (jsonresponse['status'] && (jsonresponse['status'] == '1'))
-			    		callback(null, jsonresponse);
-			    	else 
-			    		callback((jsonresponse['error'] ? jsonresponse['error'] : 'unknown error'), null);
-		    	}
-		    }
-		    else {
-		    	if (callback)
-		    		callback(xhttp.statusText, null);	
-			}
-	    	
-	    };
-	    
-	    xhttp.onerror = function (e) {
-	    	console.error('rest error is ' + xhttp.statusText);
-	    	
-	    	if (callback)
-	    		callback(xhttp.statusText, null);	
-	    };*/
-	    
 	}
 	
 	//
@@ -1058,81 +1002,59 @@ class Xtra_EthereumNodeAccess {
 		var session = this.session;
 		var ethereumnodeaccessmodule = this.ethereumnodeaccessmodule;
 
-		var promise = new Promise(function (resolve, reject) {
-			
-			try {
-				var resource = "/web3/artifact/load";
+		var artifact_load_promise;
+		
+		// look if load promise already in cache
+		artifact_load_promise = self.artifact_load_promise_cache.getValue(artifactpath);
+		
+		if (!artifact_load_promise) {
+			artifact_load_promise = new Promise(function (resolve, reject) {
 				
-				var postdata = [];
-				
-				postdata = {artifactpath: artifactpath};
-				
-				self.rest_post(resource, postdata, function (err, res) {
-					if (res) {
-						var artifactuuid = res['artifactuuid'];
-						var contractname = res['contractname'];
-						var artifactpath = res['artifactpath'];
-						var abi = res['abi'];
-						var bytecode = res['bytecode'];
-						
-						var artifact = ethereumnodeaccessmodule.getArtifactProxyObject(artifactuuid, contractname, artifactpath, abi, bytecode);
-						
-						console.log("post_truffle_loadArtifact resolved with " + artifactuuid);
-						
+				try {
+					var artifact;
+					
+					// look if it is already in cache
+					artifact = self.artifact_cache.getValue(artifactpath);
+					
+					if (artifact) {
 						return resolve(artifact);
 					}
-					else {
-						if (callback)
-							callback('error', null);
-						
-						reject('rest error calling ' + resource + ' : ' + err);
-					}
 					
-				});
-			}
-			catch(e) {
-				if (callback)
-					callback('exception: ' + e, null);
-				
-				reject('rest exception: ' + e);
-			}
-		})
-		.then(function (artifact) {
-			// we chain the instantiation now because caller of
-			// web3_loadContract does not expect a promise
-			return new Promise(function (resolve, reject) {
-				try {
-					var resource = "/web3/contract/load";
+					
+					var resource = "/web3/artifact/load";
 					
 					var postdata = [];
 					
-					postdata = {artifactuuid: artifact.artifactuuid};
+					postdata = {artifactpath: artifactpath};
 					
 					self.rest_post(resource, postdata, function (err, res) {
 						if (res) {
-							var contractuuid = res['contractuuid'];
+							var artifactuuid = res['artifactuuid'];
+							var contractname = res['contractname'];
+							var artifactpath = res['artifactpath'];
+							var abi = res['abi'];
+							var bytecode = res['bytecode'];
 							
-							console.log("post_truffle_loadContract resolved with " + contractuuid);
+							var artifact = ethereumnodeaccessmodule.getArtifactProxyObject(artifactuuid, contractname, artifactpath, abi, bytecode);
 							
-							var contractproxy = ethereumnodeaccessmodule.getContractProxyObject(contractuuid, artifact);
+							console.log("post_web3_loadArtifact /web3/artifact/load post rest call resolved with " + artifactuuid);
 							
-							if (callback)
-								callback(contractproxy);
+							// put in cache
+							self.artifact_cache.putValue(artifactpath, artifact);
 							
-							return resolve(contractproxy);
+							return resolve(artifact);
 						}
 						else {
 							if (callback)
-								callback('error', null);
+								callback(null);
 							
 							reject('rest error calling ' + resource + ' : ' + err);
 						}
 						
 					});
+					
 				}
 				catch(e) {
-					console.log("error during loading of artifact: " + err);
-
 					if (callback)
 						callback('exception: ' + e, null);
 					
@@ -1140,8 +1062,93 @@ class Xtra_EthereumNodeAccess {
 				}
 			});
 			
-		}).then(function (prom) {
-			return prom;
+			// put load promise in cache
+			self.artifact_load_promise_cache.putValue(artifactpath, artifact_load_promise);
+		}
+
+		// contract load
+		var promise = artifact_load_promise
+		.then(function (artifact) {
+			// we chain the instantiation now because caller of
+			// web3_loadContract does not expect a promise
+			
+			var contract_load_promise;
+			
+			// look if load promise already in cache
+			contract_load_promise = self.contract_load_promise_cache.getValue(artifact.artifactuuid);
+			
+			if (!contract_load_promise) {
+				contract_load_promise = new Promise(function (resolve, reject) {
+					try {
+						var contractproxy;
+						
+						// look if contractproxy is already in cache
+						contractproxy = self.contract_cache.getValue(artifact.artifactuuid);
+						
+						if (contractproxy) {
+							if (callback)
+								callback(contractproxy);
+							
+							return resolve(contractproxy);
+						}
+
+						var resource = "/web3/contract/load";
+						
+						var postdata = [];
+						
+						postdata = {artifactuuid: artifact.artifactuuid};
+						
+						self.rest_post(resource, postdata, function (err, res) {
+							if (res) {
+								var contractuuid = res['contractuuid'];
+								
+								console.log("post_web3_loadContract /web3/contract/load post rest call resolved with " + contractuuid);
+								
+								contractproxy = ethereumnodeaccessmodule.getContractProxyObject(contractuuid, artifact);
+								
+								// put in cache
+								self.artifact_cache.putValue(artifact.artifactuuid, contractproxy);
+								
+								return resolve(contractproxy);
+							}
+							else {
+								if (callback)
+									callback(null);
+								
+								reject('rest error calling ' + resource + ' : ' + err);
+							}
+							
+						});
+					}
+					catch(e) {
+						console.log("error during loading of artifact: " + err);
+
+						if (callback)
+							callback(null);
+						
+						reject('rest exception: ' + e);
+					}
+				});
+				
+			}
+			
+			// put load promise in cache
+			self.contract_load_promise_cache.putValue(artifact.artifactuuid, contract_load_promise);
+			
+			return contract_load_promise;
+			
+		})
+		.then(function (contractproxy) {
+			if (contractproxy) {
+				if (callback)
+					callback(contractproxy);
+			}
+			else {
+				if (callback)
+					callback(null);
+			}
+			
+			return contractproxy;
 		}); 
 		
 		return promise;
@@ -1464,7 +1471,7 @@ class Xtra_EthereumNodeAccess {
 	}
 	
 	web3_contract_at(web3contract, address, callback) {
-		console.log('Xtra_EthereumNodeAccess.web3_contract_at called');
+		console.log('Xtra_EthereumNodeAccess.web3_contract_at called for address ' + address);
 		
 		var self = this;
 		var session = this.session;

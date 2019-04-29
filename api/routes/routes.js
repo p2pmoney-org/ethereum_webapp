@@ -27,47 +27,21 @@ module.exports = function(app, global) {
 	app.route(route_root_path + '/logs/server/tail')
 	.get(Controller.get_logs_server_tail);
 	
-	var includeroot = '../../server/includes';
-	var localroot = '../../server/local';
-	
 	//
-	// Webapp routes
+	// invoke hook to let services registers their routes
 	//
-	var WebappRoutes = require( localroot + '/webapp/routes/routes.js');
-		
-	var webapproutes = new WebappRoutes(app, global);
+	var result = [];
 	
-	webapproutes.registerRoutes();
+	var params = [];
+	
+	params.push(app);
+	params.push(global);
 
+	var ret = global.invokeHooks('registerRoutes_hook', result, params);
 	
-	//
-	// EthNode routes
-	//
-	var EthNodeRoutes = require( includeroot + '/ethnode/routes/routes.js');
-		
-	var ethnoderoutes = new EthNodeRoutes(app, global);
-	
-	ethnoderoutes.registerRoutes();
-
-	
-	//
-	// AuthKey routes
-	//
-	var AuthKeyRoutes = require( includeroot + '/authkey/routes/routes.js');
-		
-	var authkeyroutes = new AuthKeyRoutes(app, global);
-	
-	authkeyroutes.registerRoutes();
-	
-
-	//
-	// Storage routes
-	//
-	var StorageRoutes = require( includeroot + '/storage/routes/routes.js');
-		
-	var storageroutes = new StorageRoutes(app, global);
-	
-	storageroutes.registerRoutes();
+	if (ret && result && result.length) {
+		global.log('some services handled registerRoutes_hook ' + JSON.stringify(result));
+	}
 	
 
 };

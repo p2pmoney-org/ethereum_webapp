@@ -25,7 +25,7 @@ class WebappControllers {
 		
 		var name = global.service_name;
 		var description = 'web app for ' + global.service_name;
-		var launchurl = webappservice.webapp_app_dir;
+		var launchurl = webappservice.getServedDappIndexUrl();
 		
 		jsonresult = {status: 1, name: name, description: description, launchurl: launchurl};
 	  	

@@ -36,6 +36,8 @@ class Service {
 		
 		global.registerHook('installMysqlTables_hook', this.name, this.installMysqlTables_hook);
 
+		global.registerHook('registerRoutes_hook', this.name, this.registerRoutes_hook);
+
 		global.registerHook('createSession_hook', this.name, this.createSession_hook);
 		global.registerHook('isSessionAnonymous_hook', this.name, this.isSessionAnonymous_hook);
 		global.registerHook('isSessionAuthenticated_hook', this.name, this.isSessionAuthenticated_hook);
@@ -150,6 +152,26 @@ class Service {
 		return true;
 	}
 	
+	registerRoutes_hook(result, params) {
+		var global = this.global;
+
+		global.log('registerRoutes_hook called for ' + this.name);
+		
+		var app = params[0];
+		var global = params[1];
+		
+		//
+		// AuthKey routes
+		//
+		var AuthKeyRoutes = require( './routes/routes.js');
+			
+		var authkeyroutes = new AuthKeyRoutes(app, global);
+		
+		authkeyroutes.registerRoutes();
+		
+		result.push({service: this.name, handled: true});
+	}
+
 	_getUserFromRemoteAuthenticationServer(session) {
 		var global = this.global;
 		var remoteauthenticationserver = this.getRemoteAuthenticationServerInstance();
