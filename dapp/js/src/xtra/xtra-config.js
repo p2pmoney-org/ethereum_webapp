@@ -22,6 +22,8 @@ class XtraConfigModule {
 	registerAdditionalModules() {
 		console.log('registerAdditionalModules called for ' + this.name);
 		
+		var self = this;
+		
 		// load and register additional modules
 		var modulescriptloader = ScriptLoader.findScriptLoader('moduleloader')
 		var xtramodulescriptloader = modulescriptloader.getChildLoader('xtramoduleloader')
@@ -29,7 +31,11 @@ class XtraConfigModule {
 		var moduleroot = './includes/modules/';
 
 		// authkey
-		xtramodulescriptloader.push_script( moduleroot + 'authkey/module.js');
+		xtramodulescriptloader.push_script( moduleroot + 'authkey/module.js', function() {
+			// load module if initialization has finished
+			if (self.global && (self.global.isReady()))
+			global.loadModule('authkey', dappsmodelsloader);
+		 });
 		
 		xtramodulescriptloader.load_scripts();
 	}

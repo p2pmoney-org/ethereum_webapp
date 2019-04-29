@@ -234,7 +234,7 @@ class EthereumNode {
 
 		// wait to turn into synchronous call
 		while(finished === false)
-		{require('deasync').runLoopOnce();}
+		{global.deasync().runLoopOnce();}
 		
 		return listening;
 	}
@@ -291,7 +291,7 @@ class EthereumNode {
 
 		// wait to turn into synchronous call
 		while(finished === false)
-		{require('deasync').runLoopOnce();}
+		{global.deasync().runLoopOnce();}
 		
 		return syncing;
 	}
@@ -340,7 +340,7 @@ class EthereumNode {
 		
 		// wait to turn into synchronous call
 		while(finished === false)
-		{require('deasync').runLoopOnce();}
+		{global.deasync().runLoopOnce();}
 		
 		return networkid;
 	}
@@ -382,7 +382,7 @@ class EthereumNode {
 
 		// wait to turn into synchronous call
 		while(finished === false)
-		{require('deasync').runLoopOnce();}
+		{global.deasync().runLoopOnce();}
 		
 		return peercount;
 	}
@@ -443,7 +443,7 @@ class EthereumNode {
 		
 		// wait to turn into synchronous call
 		while(!finished)
-		{require('deasync').runLoopOnce();}
+		{global.deasync().runLoopOnce();}
 
 		
 		return balance;
@@ -475,7 +475,7 @@ class EthereumNode {
 		
 		// wait to turn into synchronous call
 		while(!finished)
-		{require('deasync').runLoopOnce();}
+		{global.deasync().runLoopOnce();}
 
 		
 		return code;
@@ -533,13 +533,15 @@ class EthereumNode {
 		
 		// wait to turn into synchronous call
 		while(!finished)
-		{require('deasync').runLoopOnce();}
+		{global.deasync().runLoopOnce();}
 
 		return result;
 	}
 	
 	web3_lockAccount(address) {
 		var global = this.session.getGlobalInstance();
+		
+		global.log('EthereumNode.web3_lockAccount locking  account ' + address);
 		
 		var web3 = this.getWeb3Instance();
 
@@ -566,6 +568,7 @@ class EthereumNode {
 						return resolve(res);
 					}
 					else {
+						global.log('EthereumNode.web3_lockAccount err is ' + err);
 						result = null;
 						finished = true;
 
@@ -578,6 +581,8 @@ class EthereumNode {
 				result = null;
 				finished = true;
 				
+				global.log('EthereumNode.web3_lockAccount exception is ' + e);
+				
 				reject('web3 exception: ' + e);
 			}
 			
@@ -586,7 +591,7 @@ class EthereumNode {
 		
 		// wait to turn into synchronous call
 		while(!finished)
-		{require('deasync').runLoopOnce();}
+		{global.deasync().runLoopOnce();}
 
 		return result;
 	}
@@ -613,7 +618,7 @@ class EthereumNode {
 
 		// wait to turn into synchronous call
 		while(blocknumber === undefined)
-		{require('deasync').runLoopOnce();}
+		{global.deasync().runLoopOnce();}
 		
 	    global.log("blocknumber is " + blocknumber);
 		return blocknumber;
@@ -690,7 +695,7 @@ class EthereumNode {
 		
 		// wait to turn into synchronous call
 		while(!finished)
-		{require('deasync').runLoopOnce();}
+		{global.deasync().runLoopOnce();}
 		
 		return blocknumber;
 	}*/
@@ -731,7 +736,7 @@ class EthereumNode {
 		
 		// wait to turn into synchronous call
 		while(!finished)
-		{require('deasync').runLoopOnce();}
+		{global.deasync().runLoopOnce();}
 		
 		return blockjson;
 	}
@@ -844,7 +849,7 @@ class EthereumNode {
 		
 		// wait to turn into synchronous call
 		while(!finished)
-		{require('deasync').runLoopOnce();}
+		{global.deasync().runLoopOnce();}
 
 		
 		return count;
@@ -885,7 +890,7 @@ class EthereumNode {
 		
 		// wait to turn into synchronous call
 		while(!finished)
-		{require('deasync').runLoopOnce();}
+		{global.deasync().runLoopOnce();}
 		
 		return txjson;
 	}
@@ -925,7 +930,7 @@ class EthereumNode {
 		
 		// wait to turn into synchronous call
 		while(!finished)
-		{require('deasync').runLoopOnce();}
+		{global.deasync().runLoopOnce();}
 		
 		return txjson;
 	}
@@ -1006,7 +1011,7 @@ class EthereumNode {
 		
 		// wait to turn into synchronous call
 		while(!finished)
-		{require('deasync').runLoopOnce();}
+		{global.deasync().runLoopOnce();}
 		
 		return result;
 	}
@@ -1113,7 +1118,7 @@ class EthereumNode {
 
 		// wait to turn into synchronous call
 		while(!finished)
-		{require('deasync').runLoopOnce();}
+		{global.deasync().runLoopOnce();}
 		
 		return result;
 	}
@@ -1301,6 +1306,9 @@ class EthereumNode {
 				if (contractartifact)
 				this.putWeb3ContractArtifact(artifactuuid, contractartifact);
 			}
+			else{
+				global.log("EthereumNode.getWeb3ContractArtifact could not find artifact in session variables for " + artifactuuid);
+			}
 		}
 		
 		return contractartifact;
@@ -1395,6 +1403,9 @@ class EthereumNode {
 				
 				if (web3contract)
 				this.putWeb3Contract(contractuuid, web3contract);
+			}
+			else{
+				global.log("EthereumNode.getWeb3Contract could not find contract in session variables for " + contractuuid);
 			}
 		}
 		
@@ -1559,7 +1570,7 @@ class EthereumNode {
 
 		// wait to turn into synchronous call
 		while(!finished)
-		{require('deasync').runLoopOnce();}
+		{global.deasync().runLoopOnce();}
 		
 		return web3_contract_instance;
 	}
@@ -1680,6 +1691,9 @@ class EthereumNode {
 					this.putWeb3ContractInstance(contractinstanceuuid, contractinstance);
 
 			}
+			else {
+				global.log("EthereumNode.getWeb3ContractInstance could not find instance in session variables for " + contractinstanceuuid);
+			}
 		}
 		
 		return contractinstance;
@@ -1763,7 +1777,7 @@ class EthereumNode {
 		
 		// wait to turn into synchronous call
 		while(!finished)
-		{require('deasync').runLoopOnce();}
+		{global.deasync().runLoopOnce();}
 		
 		return result;
 	}
@@ -1894,7 +1908,7 @@ class EthereumNode {
 		
 		// wait to turn into synchronous call
 		while(!finished)
-		{require('deasync').runLoopOnce();}
+		{global.deasync().runLoopOnce();}
 		
 
 		return result;
@@ -2078,7 +2092,7 @@ class EthereumNode {
 
 		// wait to turn into synchronous call
 		while(!finished)
-		{require('deasync').runLoopOnce();}
+		{global.deasync().runLoopOnce();}
 
 		return transactionHash;
 	}

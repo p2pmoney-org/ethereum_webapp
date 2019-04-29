@@ -34,7 +34,7 @@ class ContainerLoad {
 		this.script_code += "modulescriptloader.push_script('./includes/modules/common/module.js');\n\n";
 		
 		//chain reader
-		//modulescriptloader.push_script('./includes/modules/chainreader/module.js');
+		//modulescriptloader.push_script('./includes/modules/ethchainreader/module.js');
 
 		//noticebook
 		//modulescriptloader.push_script('/includes/modules/noticebook/module.js');

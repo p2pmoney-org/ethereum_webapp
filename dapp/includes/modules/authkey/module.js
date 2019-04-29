@@ -69,6 +69,15 @@ var Module = class {
 		global.registerHook('getAccountObjects_hook', 'authkey', this.getAccountObjects_hook);
 	}
 	
+	postRegisterModule() {
+		if (!this.isloading) {
+			var global = this.global;
+			var rootscriptloader = global.getRootScriptLoader();
+			
+			this.loadModule(rootscriptloader);
+		}
+	}
+	
 	//
 	// hooks
 	//

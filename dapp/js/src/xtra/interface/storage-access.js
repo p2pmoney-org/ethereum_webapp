@@ -324,6 +324,20 @@ class Xtra_StorageAccess {
 		return promise;
 		
 	}
+	
+	// uuid
+	guid() {
+		// we could make a rest call to get a more
+		// "universal" guid factory
+		function s4() {
+		    return Math.floor((1 + Math.random()) * 0x10000)
+		      .toString(16)
+		      .substring(1);
+		  }
+		  return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+		    s4() + '-' + s4() + s4() + s4();
+	}
+
 
 }
 

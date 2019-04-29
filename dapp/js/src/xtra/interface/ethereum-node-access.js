@@ -656,6 +656,8 @@ class Xtra_EthereumNodeAccess {
 		var user = session.getSessionUserObject();
 		var useruuid = (user ? user.getUserUUID() : null);
 
+		var ethnodemodule = global.getModuleObject('ethnode');
+
 		var promise = new Promise(function (resolve, reject) {
 			try {
 				var resource = "/web3/usertx";
@@ -675,7 +677,7 @@ class Xtra_EthereumNodeAccess {
 							var transactionuuid = tx['transactionuuid'];
 							var creationdate = global.parseDate(tx['creationdate']);
 							
-							var transaction = session.getTransactionObject(transactionuuid);
+							var transaction = ethnodemodule.getTransactionObject(transactionuuid);
 							
 							transaction.setTransactionHash(tx['transactionhash']);
 							transaction.setFrom(tx['from']);
@@ -930,7 +932,20 @@ class Xtra_EthereumNodeAccess {
 					// unsigned send (node will sign thanks to the unlocking of account)
 					var postdata = [];
 					
+					var credentials = self.getEthTransactionCredentials(ethtransaction);
+					var walletaddress = (credentials['address'] ? credentials['address'] : null);
+					var password = (credentials['password'] ? credentials['password'] : null);
+					var time = (credentials['from'] ? credentials['from'] : null);
+					var duration = (credentials['during'] ? credentials['during'] : null);
+					
+					console.log('credentials address is ' + credentials['address']);
+					
 					postdata = {transactionuuid: transactionuuid, 
+					
+					walletaddress: walletaddress,
+					password: password,
+					time: time,
+					duration: duration,
 					
 					from: ethtransaction.getFromAddress(),
 					to: ethtransaction.getToAddress(),
@@ -1402,6 +1417,20 @@ class Xtra_EthereumNodeAccess {
 		}
 	}
 
+	getEthTransactionCredentials(ethtransaction) {
+		var session = this.session;
+		var ethereumnodeaccessmodule = this.ethereumnodeaccessmodule;
+		
+		var payeraddress = ethtransaction.getPayerAddress();
+
+		var credentials = this.credentials_storage.retrieve(payeraddress);
+		
+		if (!credentials)
+			console.log('no credentials found for ' + payeraddress);
+		
+		return credentials;
+	}
+		
 
 	getTransactionCredentials(params) {
 		var session = this.session;
@@ -1698,7 +1727,7 @@ class Xtra_EthereumNodeAccess {
 						if (res) {
 							var transactionHash = res['transactionhash'];
 							
-							ethtransaction.setTransactionHash(transactionHash);
+							ethereumtransaction.setTransactionHash(transactionHash);
 
 							if (callback)
 								callback(null, transactionHash);

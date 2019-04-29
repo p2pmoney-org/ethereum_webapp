@@ -55,7 +55,7 @@ class EthNodeControllers {
 			jsonresult = {status: 1, data: nodeinfo};
 		}
 		else {
-			jsonresult = {status: 0, error: "could not retrieve balance"};
+			jsonresult = {status: 0, error: "could not retrieve node information"};
 		}
 	  	
 	  	res.json(jsonresult);
@@ -230,7 +230,7 @@ class EthNodeControllers {
 			jsonresult = {status: 1, data: blockjson};
 		}
 		else {
-			jsonresult = {status: 0, error: "could not retrieve current block number"};
+			jsonresult = {status: 0, error: "could not retrieve block with id " + blockid};
 		}
 	  	
 	  	res.json(jsonresult);
@@ -265,7 +265,7 @@ class EthNodeControllers {
 			jsonresult = {status: 1, data: blockjson};
 		}
 		else {
-			jsonresult = {status: 0, error: "could not retrieve current block number"};
+			jsonresult = {status: 0, error: "could not retrieve block with id " + blockid};
 		}
 	  	
 	  	res.json(jsonresult);
@@ -302,7 +302,7 @@ class EthNodeControllers {
 			jsonresult = {status: 1, data: txjson};
 		}
 		else {
-			jsonresult = {status: 0, error: "could not retrieve current block number"};
+			jsonresult = {status: 0, error: "could not retrieve transaction with hash " + txhash};
 		}
 	  	
 	  	res.json(jsonresult);
@@ -465,6 +465,7 @@ class EthNodeControllers {
 			var ethnode = this.getEthereumNode(session);
 			
 			if (raw) {
+				// transaction signed on the client
 				var ethereumtransaction = ethnode.createEthereumTransactionInstance(session);
 				
 				ethereumtransaction.setRawData(raw);
@@ -520,7 +521,25 @@ class EthNodeControllers {
 				
 				ethereumtransaction.setTransactionUUID(transactionuuid);
 				
-				var result = ethnode.web3_sendTransaction(fromaddress, toaddress, value, gas, gasPrice, txdata, nonce);
+				// wallet if required to unlock with a password
+				var walletaddress = (req.body.walletaddress ? req.body.walletaddress : null);
+				var password = (req.body.password ? req.body.password : null);
+				var time = (req.body.time ? req.body.time : null);
+				var duration = (req.body.duration ? req.body.duration : null);
+				
+				global.log("wallet address: " + walletaddress);
+				
+				// we unlock the wallet account
+				if (walletaddress) {
+					ethnode.web3_unlockAccount(walletaddress, password, duration);
+				}
+				
+				var result = ethnode.web3_sendTransaction(ethereumtransaction);
+				
+				// we relock the wallet account
+				if (walletaddress) {
+					ethnode.web3_lockAccount(walletaddress);
+				}
 			}
 			
 		}
@@ -748,8 +767,9 @@ class EthNodeControllers {
 			//var contract = session.getObject(contractuuid);
 			
 			// we unlock the wallet account
-			if (walletaddress)
-			ethnode.web3_unlockAccount(walletaddress, password, duration);
+			if (walletaddress) {
+				ethnode.web3_unlockAccount(walletaddress, password, duration);
+			}
 			
 			var ethereumtransaction = ethnode.createEthereumTransactionInstance(session);
 			
@@ -763,6 +783,10 @@ class EthNodeControllers {
 
 			var contractinstance = ethnode.web3_contract_new(contract, callparams);
 			
+			// we relock the wallet account
+			if (walletaddress) {
+				ethnode.web3_lockAccount(walletaddress);
+			}
 		}
 		catch(e) {
 			global.log("exception in web3_contract_new for sessiontoken " + sessionuuid +  ": " + e);
@@ -883,8 +907,9 @@ class EthNodeControllers {
 			
 
 			// we unlock the wallet account
-			if (walletaddress)
-			ethnode.web3_unlockAccount(walletaddress, password, duration);
+			if (walletaddress) {
+				ethnode.web3_unlockAccount(walletaddress, password, duration);
+			}
 			
 			var ethereumtransaction = ethnode.createEthereumTransactionInstance(session);
 			
@@ -898,6 +923,10 @@ class EthNodeControllers {
 
 			var result = ethnode.web3_method_sendTransaction(contractinstance, methodname, callparams);
 			
+			// we relock the wallet account
+			if (walletaddress) {
+				ethnode.web3_lockAccount(walletaddress);
+			}
 		}
 		catch(e) {
 			global.log("exception in web3_contract_send: " + e);

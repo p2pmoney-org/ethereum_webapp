@@ -37,7 +37,7 @@ class AuthenticationServer {
 		
 		var userpasswordobject = authkeyservice.createPasswordObjectInstance(userdetails['password'], salt, pepper, hashmethod);
 	
-		global.log("userdetails password is " + userdetails['password']);
+		//global.log("userdetails is " + JSON.stringify(userdetails));
 
 		if (userpasswordobject.equals(inputpasswordobject)) {
 			return true;

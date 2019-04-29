@@ -53,7 +53,7 @@ class RemoteAuthenticationServer {
 		
 		// wait to turn into synchronous call
 		while(!finished)
-		{require('deasync').runLoopOnce();}
+		{global.deasync().runLoopOnce();}
 		
 		return sessionstatus;
 	}
@@ -94,7 +94,7 @@ class RemoteAuthenticationServer {
 		
 		// wait to turn into synchronous call
 		while(!finished)
-		{require('deasync').runLoopOnce();}
+		{global.deasync().runLoopOnce();}
 		
 		return userdetails;
 	}
