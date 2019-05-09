@@ -183,9 +183,7 @@ class Global {
 		// hooks
 		this.hook_arrays = [];
 
-		// web3
-		//this.web3instance = null;
-		
+		// deasync mechanism
 		this._deasync = null;
 	}
 	
@@ -514,11 +512,20 @@ class Global {
 			return require(module);
 	}
 	
+	buildWeb3ProviderUrl(web3_provider_url, web3_provider_port) {
+		if ((web3_provider_port) && (web3_provider_port !== "") && (web3_provider_port !== 80))
+			return web3_provider_url + ':' + web3_provider_port;
+		else
+			return web3_provider_url;
+	}
+	
 	getWeb3ProviderFullUrl() {
-		if ((this.web3_provider_port) && (this.web3_provider_port !== "") && (this.web3_provider_port !== 80))
+		return this.buildWeb3ProviderUrl(this.web3_provider_url, this.web3_provider_port);
+		
+		/*if ((this.web3_provider_port) && (this.web3_provider_port !== "") && (this.web3_provider_port !== 80))
 			return this.web3_provider_url + ':' + this.web3_provider_port;
 		else
-			return this.web3_provider_url;
+			return this.web3_provider_url;*/
 	}
 	
 	getMySqlConnection() {

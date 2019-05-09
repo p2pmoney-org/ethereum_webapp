@@ -1,7 +1,12 @@
 {
-  "name": "ethereum-securities-webapp",
-  "version": "0.0.0",
-  "private": true,
+  "name": "ethereum_webapp",
+  "version": "0.11.0",
+  "author": "P2PMoney.org",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/github.com/p2pmoney-org/ethereum_webapp.git"
+  },
   "scripts": {
     "start": "forever ./server/server.js",
     "startdev": "nodemon ./server/server.js",

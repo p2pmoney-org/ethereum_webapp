@@ -30,6 +30,9 @@ class EthNodeRoutes {
 		var route_root_path = global.route_root_path;
 
 		// web3
+		app.route(route_root_path + '/web3')
+		.get(function(req, res) { controllers.web3_root(req, res); });
+		
 		app.route(route_root_path + '/web3/node')
 		.get(function(req, res) { controllers.web3_node(req, res); });
 		

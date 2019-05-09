@@ -140,36 +140,76 @@ class EthereumNode {
 	//
 	// Web3
 	//
+	getWeb3InstanceFromProvider(web3Provider) {
+		var global = this.session.getGlobalInstance();
+
+		var Web3 = global.require('web3');
+
+		/*if (this.web3_version == "1.0.x") {
+			Web3.providers.HttpProvider.prototype.sendAsync = Web3.providers.HttpProvider.prototype.send;
+		}*/
+		  
+		return new Web3(web3Provider);		
+	}
+	
 	getWeb3Instance() {
 		var global = this.session.getGlobalInstance();
+		
+		//global.log("EthereumNode.getWeb3Instance called" + (this.web3instance ? ': instance already created' : ': no instance yet'));
 		
 		if (this.web3instance)
 			return this.web3instance;
 		
-		var Web3 = global.require('web3');
-
+		global.log("EthereumNode.getWeb3Instance: creating web3 instance");
+		
 		var web3Provider = this.getWeb3Provider();
 		
 		/*if (this.web3_version == "1.0.x") {
 			Web3.providers.HttpProvider.prototype.sendAsync = Web3.providers.HttpProvider.prototype.send;
 		}*/
 		  
-		this.web3instance = new Web3(web3Provider);		
+		var web3instance = this.getWeb3InstanceFromProvider(web3Provider);
 		
-		global.log("ethereum node web3 instance created");
+		this.setWeb3Instance(web3instance);
+		
+		global.log("EthereumNode.getWeb3Instance: web3 instance created");
+		
+		// we check that this instance is not syncing
+		var issyncing = this._getSyncingArray();
+
+		if (issyncing !== false) {
+			// we call a hook to give a chance to put instead
+			// a web3instance to a non-syncing node
+			var result = [];
+			
+			var params = [];
+			
+			params.push(this);
+			params.push(web3instance);
+
+			var ret = global.invokeHooks('createWeb3Instance_hook', result, params);
+			
+			if (ret && result && result.length) {
+				global.log('createWeb3Instance_hook result is ' + JSON.stringify(result));
+			}
+			
+		}
 		
 		return this.web3instance;
-		
-		//return global.getWeb3Instance();
 	}
 	
-	getWeb3Provider() {
+	setWeb3Instance(web3instance) {
+		var global = this.session.getGlobalInstance();
+		global.log("EthereumNode.setWeb3Instance called for " + (web3instance ? JSON.stringify(web3instance.currentProvider) : 'no instance'));
+
+		this.web3instance = web3instance;
+	}
+	
+	getWeb3ProviderFromUrl(web3providerfullurl) {
 		var global = this.session.getGlobalInstance();
 		
 		var Web3 = global.require('web3');
 
-		var web3providerfullurl = global.getWeb3ProviderFullUrl();
-		
 		/*if (this.web3_version == "1.0.x") {
 			var web3providerwsurl = "ws:" + web3providerfullurl.substring(5);
 			var web3Provider =   new Web3.providers.WebsocketProvider(web3providerwsurl);
@@ -177,13 +217,18 @@ class EthereumNode {
 		else {
 			var web3Provider =   new Web3.providers.HttpProvider(web3providerfullurl);
 		}*/
-		
-		var web3Provider =   new Web3.providers.HttpProvider(web3providerfullurl);
-		
+	
+		var web3Provider =  new Web3.providers.HttpProvider(web3providerfullurl);
 		
 		return web3Provider;
+	}
+	
+	getWeb3Provider() {
+		var global = this.session.getGlobalInstance();
 		
-		//return global.getWeb3Provider();
+		var web3providerfullurl = global.getWeb3ProviderFullUrl();
+		
+		return this.getWeb3ProviderFromUrl(web3providerfullurl);
 	}
 	
 	// node
