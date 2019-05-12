@@ -178,6 +178,8 @@ class EthereumNode {
 		var issyncing = this._getSyncingArray();
 
 		if (issyncing !== false) {
+			global.log("EthereumNode.getWeb3Instance: provider is syncing (or unreachable)");
+
 			// we call a hook to give a chance to put instead
 			// a web3instance to a non-syncing node
 			var result = [];

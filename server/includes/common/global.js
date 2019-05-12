@@ -772,6 +772,33 @@ class Global {
 		return (this.current_version ? this.current_version : "undefined");
 	}
 	
+	getVersionInfo() {
+		var versioninfos = [];
+		
+		var versioninfo = {};
+		
+		versioninfo.label = 'ethereum webapp';
+		versioninfo.value = this.getCurrentVersion();
+		
+		versioninfos.push(versioninfo);
+		
+		// call hook to let services publish
+		// their version info if they wish to
+		var result = [];
+		
+		var params = [];
+		
+		params.push(versioninfos);
+
+		var ret = this.invokeHooks('getVersionInfo_hook', result, params);
+
+		if (ret && result && result.length) {
+			console.log('getVersionInfo_hook overload handled by a module');			
+		}
+		
+		return versioninfos
+	}
+	
 	getVersionSupported() {
 		return (this.version_support ? this.version_support : [this.getCurrentVersion()]);
 	}
