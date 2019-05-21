@@ -47,12 +47,13 @@ class EthNodeControllers {
 			
 			web3info = {};
 			
+			var web3instance = ethnode.getWeb3Instance();
+			
+			web3info.web3_version = ethnode.web3_version;
+
 			var execenv = global.getExecutionEnvironment();
 			
 			if (ethnode && (execenv == 'dev')) {
-				var web3instance = ethnode.getWeb3Instance();
-				
-				web3info.web3_version = ethnode.web3_version;
 				web3info.web3_host = (web3instance && web3instance.currentProvider ? web3instance.currentProvider.host : null);
 			}
 	
