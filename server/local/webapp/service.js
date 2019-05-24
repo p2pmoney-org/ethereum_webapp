@@ -143,6 +143,12 @@ class Service {
 		
 		global.copydirectory(sourcedir, destdir);
 		
+		
+		// add event to ./app/js/src/constants.js
+		var nowtime = Date.now();
+		var copyeventlines = '\nConstants.push(\'lifecycle\', {eventname: \'app copy\', time:' + nowtime + '});\n';
+		
+		global.append_to_file(path.join(this.webapp_app_dir, './js/src/constants.js'), copyeventlines);
 	}
 	
 	overloadDappFiles() {
@@ -213,6 +219,7 @@ class Service {
 	
 	startWebApp() {
 		var global = this.global;
+		var self = this;
 		webapp = this;
 		
 		var express = require('express');
@@ -229,9 +236,32 @@ class Service {
 		var dapp_root_dir = this.getServedDappDirectory();
 
 
+		// overload /app/js/src/constants.js
+		app.use('/js/src/constants.js', function(req, res, next) { 
+			global.log('downloading /js/src/constants.js file');
+			
+			
+			var path = require('path');
+			var filepath = path.join(self.webapp_app_dir, './js/src/constants.js');
+
+			var nowtime = Date.now();
+			var downloadeventlines = '\nConstants.push(\'lifecycle\', {eventname: \'app download\', time:' + nowtime + '});\n';
+
+			var content = global.read_file(filepath) + downloadeventlines; 
+			
+			res.setHeader('Content-Length', content.length);
+			res.setHeader('Content-Type', 'application/javascript; charset=UTF-8');
+			
+			res.write(content);
+			res.end();
+			
+			return;
+		});
+
 		//app.use(express.static(dapp_root_dir + '/app'));
 		app.use("/", express.static(dapp_root_dir + '/app'));
 		app.use("/contracts", express.static(dapp_root_dir + '/build/contracts'));
+		
 
 		// prevent caching to let /api being called
 		app.disable('etag');

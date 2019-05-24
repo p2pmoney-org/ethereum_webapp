@@ -616,6 +616,31 @@ class Global {
 		return path.dirname(this.logPath);
 	}
 	
+	append_to_file(filepath, chunk) {
+		var fs = require("fs");
+		
+		fs.appendFileSync(filepath, chunk);
+	}
+	
+	read_file(filepath) {
+		var fs = require("fs");
+		var path = require('path');
+
+		var content;
+		
+		try {
+
+			content = fs.readFileSync(filepath, 'utf8');
+	
+		}
+		catch(e) {
+			this.log('exception reading file: ' + e.message); 
+		}
+		
+		return content;
+	}
+
+	
 	tail_file(filepath, nlines) {
 		var fs = require("fs");
 
