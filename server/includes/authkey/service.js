@@ -36,6 +36,9 @@ class Service {
 		
 		global.registerHook('installMysqlTables_hook', this.name, this.installMysqlTables_hook);
 
+		global.registerHook('copyDappFiles_hook', this.name, this.copyDappFiles_hook);
+		global.registerHook('overloadDappFiles_hook', this.name, this.overloadDappFiles_hook);
+
 		global.registerHook('registerRoutes_hook', this.name, this.registerRoutes_hook);
 
 		global.registerHook('createSession_hook', this.name, this.createSession_hook);
@@ -152,6 +155,83 @@ class Service {
 		return true;
 	}
 	
+	copyDappFiles_hook(result, params) {
+		var global = this.global;
+
+		global.log('copyDappFiles_hook called for ' + this.name);
+
+		var webapp_service = params[0];
+		
+		var fs = require('fs');
+		var path = require('path');
+
+		var sourcepath;
+		var destdir;
+
+		var service_base_dir = __dirname;
+		var dapp_dir = webapp_service.getServedDappDirectory();
+		
+		// copy interfaces
+		var sourcedir = service_base_dir + '/client/includes/interface';
+		
+		if (global._checkFileExist(fs, sourcedir)) {
+			destdir = path.join(dapp_dir, './app/js/src/xtra/interface');
+			
+			global.copydirectory(sourcedir, destdir);
+		}
+		
+		// copy modules in /app/js/src/xtra/modules
+		var sourcedir = service_base_dir + '/client/includes/modules';
+		
+		if (global._checkFileExist(fs, sourcedir)) {
+			destdir = path.join(dapp_dir, './app/js/src/xtra/modules');
+			
+			global.copydirectory(sourcedir, destdir);
+		}
+		
+		// add load of client modules to constants.js
+		
+		// authkey client module
+		var modulename = 'authkey';
+		var modulepath = './js/src/xtra/modules/authkey/module.js';
+		
+		var copymodulelines = '\nConstants.push(\'xtramoduleload\', {name: \'' + modulename + '\', path:\'' + modulepath + '\'});\n';
+		
+		global.append_to_file(path.join(dapp_dir, './app/js/src/constants.js'), copymodulelines);
+		
+		if (webapp_service.overload_dapp_files != 1) {
+			// we add constants to provide authkey_url and authkey_server_api_path
+			// to authkey client module
+			var authkey_server_url = global.getConfigValue('authkey_server_url');
+			var authkey_server_api_path = global.getConfigValue('authkey_server_api_path');
+			
+			if (!authkey_server_url)
+				authkey_server_url =  global.getConfigValue('rest_server_url');
+			
+			if (!authkey_server_api_path)
+				authkey_server_api_path = global.getConfigValue('rest_server_api_path');
+			
+			var constantlines;
+			
+			constantlines = '\nConstants.push(\'authkey_server_url\', \'' + authkey_server_url + '\');\n';
+			global.append_to_file(path.join(dapp_dir, './app/js/src/constants.js'), constantlines);
+			
+			constantlines = '\nConstants.push(\'authkey_server_api_path\', \'' + authkey_server_api_path + '\');\n';
+			global.append_to_file(path.join(dapp_dir, './app/js/src/constants.js'), constantlines);
+		}
+		
+		
+		
+		result.push({service: this.name, handled: true});
+	}
+	
+	overloadDappFiles_hook(result, params) {
+		var global = this.global;
+
+		global.log('overloadDappFiles_hook called for ' + this.name);
+		
+	}
+
 	registerRoutes_hook(result, params) {
 		var global = this.global;
 

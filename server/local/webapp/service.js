@@ -41,18 +41,6 @@ class Service {
 
 		this.dapp_index_url = (config && (typeof config["dapp_index_url"] != 'undefined') ? config["dapp_index_url"] : this.rest_server_url + "/dapp/index.html");
 
-		if (this.copy_dapp_files == 1) {
-			global.log("Copying DAPP app directory")
-			// copy dapp files to webapp dir
-			this.copyDappFiles();
-		}
-		
-		if (this.overload_dapp_files == 1) {
-			global.log("Overloading DAPP files")
-			// copy files to standard dapp
-			this.overloadDappFiles();
-		}
-		
 		this.RequestValidator = require('./model/requestvalidator.js');
 
 		var apikeysjson = global.readJson("apikeys");
@@ -70,6 +58,9 @@ class Service {
 		global.registerHook('installWebappConfig_hook', this.name, this.installWebappConfig_hook);
 		
 		global.registerHook('registerRoutes_hook', this.name, this.registerRoutes_hook);
+		global.registerHook('postInitServer_hook', this.name, this.postInitServer_hook);
+
+		global.registerHook('copyDappFiles_hook', this.name, this.copyDappFiles_hook);
 
 	}
 	
@@ -113,6 +104,42 @@ class Service {
 		
 		result.push({service: this.name, handled: true});
 	}
+	
+	postInitServer_hook(result, params) {
+		var global = this.global;
+
+		global.log('postInitServer_hook called for ' + this.name);
+		
+		
+		if (this.copy_dapp_files == 1) {
+			global.log("Copying DAPP app directory")
+			// copy dapp files to webapp dir
+			this.copyDappFiles();
+
+			if (this.overload_dapp_files == 1) {
+				global.log("Overloading DAPP files")
+				// copy files to standard dapp
+				this.overloadDappFiles();
+			}
+			
+		}
+		
+	}
+
+	copyDappFiles_hook(result, params) {
+		var global = this.global;
+		var path = require('path');
+
+		global.log('copyDappFiles_hook called for ' + this.name);
+		
+		// add event to ./app/js/src/constants.js
+		var nowtime = Date.now();
+		var copyeventlines = '\nConstants.push(\'lifecycle\', {eventname: \'app copy\', time:' + nowtime + '});\n';
+		
+		global.append_to_file(path.join(this.webapp_app_dir, './js/src/constants.js'), copyeventlines);
+		
+		result.push({service: this.name, handled: true});
+	}
 
 
 	// functions
@@ -126,6 +153,7 @@ class Service {
 		var fs = require('fs');
 		
 		var sourcedir = path.join(this.dapp_root_base_dir, './app');
+		var sourcepath;
 		var destdir = this.webapp_app_dir;
 		
 		global.copydirectory(sourcedir, destdir);
@@ -143,12 +171,21 @@ class Service {
 		
 		global.copydirectory(sourcedir, destdir);
 		
+		// invoke hooks to let other services copy their own client files (e.g. in external folders) 
+		// or enrich standard files (e.g. put events in constant.js) 
+		var result = [];
 		
-		// add event to ./app/js/src/constants.js
-		var nowtime = Date.now();
-		var copyeventlines = '\nConstants.push(\'lifecycle\', {eventname: \'app copy\', time:' + nowtime + '});\n';
+		var params = [];
 		
-		global.append_to_file(path.join(this.webapp_app_dir, './js/src/constants.js'), copyeventlines);
+		params.push(this);
+		params.push(global);
+
+		var ret = global.invokeHooks('copyDappFiles_hook', result, params);
+		
+		if (ret && result && result.length) {
+			global.log('copyDappFiles_hook result is ' + JSON.stringify(result));
+		}
+		
 	}
 	
 	overloadDappFiles() {
@@ -167,8 +204,6 @@ class Service {
 		global.copyfile(fs, path, sourcepath, destdir);
 		
 		
-		
-		
 		// copy files from xtra/interface (e.g.  ethereum-node-access.js)
 		var sourcedir = global.base_dir + '/dapp/js/src/xtra/interface';
 		
@@ -182,7 +217,8 @@ class Service {
 		var sourcedir = global.base_dir + '/dapp/includes/modules';
 		
 		if (global._checkFileExist(fs, sourcedir)) {
-			destdir = (this.copy_dapp_files ? path.join(this.webapp_app_dir, './includes/modules') : path.join(this.dapp_root_exec_dir, './app/includes/modules'));
+			//destdir = (this.copy_dapp_files ? path.join(this.webapp_app_dir, './includes/modules') : path.join(this.dapp_root_exec_dir, './app/includes/modules'));
+			destdir = (this.copy_dapp_files ? path.join(this.webapp_app_dir, './js/src/xtra/modules') : path.join(this.dapp_root_exec_dir, './app/js/src/xtra/modules'));
 			
 			global.copydirectory(sourcedir, destdir);
 		}
@@ -194,6 +230,21 @@ class Service {
 			destdir = (this.copy_dapp_files ? path.join(this.webapp_app_dir, './dapps') : path.join(this.dapp_root_exec_dir, './app/dapps'));
 			
 			global.copydirectory(sourcedir, destdir);
+		}
+		
+		
+		// invoke hooks to let other services overload standard files 
+		var result = [];
+		
+		var params = [];
+		
+		params.push(this);
+		params.push(global);
+
+		var ret = global.invokeHooks('overloadDappFiles_hook', result, params);
+		
+		if (ret && result && result.length) {
+			global.log('overloadDappFiles_hook result is ' + JSON.stringify(result));
 		}
 	}
 
@@ -240,9 +291,10 @@ class Service {
 		app.use('/js/src/constants.js', function(req, res, next) { 
 			global.log('downloading /js/src/constants.js file');
 			
-			
 			var path = require('path');
-			var filepath = path.join(self.webapp_app_dir, './js/src/constants.js');
+
+			var webapp_app_dir = path.join(self.getServedDappDirectory(), './app');
+			var filepath = path.join(webapp_app_dir, './js/src/constants.js');
 
 			var nowtime = Date.now();
 			var downloadeventlines = '\nConstants.push(\'lifecycle\', {eventname: \'app download\', time:' + nowtime + '});\n';

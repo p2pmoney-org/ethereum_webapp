@@ -196,6 +196,22 @@ class Global {
 		
 		// init services
 		this.initServices();
+		
+		// call hook to let services complete their initialization
+		// once all services have been loaded and all hooks have
+		// been registered
+		var result = [];
+		
+		var params = [];
+		
+		params.push(this);
+
+		var ret = this.invokeHooks('postInitServer_hook', result, params);
+
+		if (ret && result && result.length) {
+			console.log('postInitServer_hook result is ' + JSON.stringify(result));			
+		}
+
 	}
 	
 	initServices() {
@@ -792,6 +808,10 @@ class Global {
 		return val;
 	}
 	
+	getConfigValue(key) {
+		return this.config[key];
+	}
+	
 	getCurrentVersion() {
 		//return this.getConstant('CURRENT_VERSION');
 		return (this.current_version ? this.current_version : "undefined");
@@ -818,7 +838,7 @@ class Global {
 		var ret = this.invokeHooks('getVersionInfo_hook', result, params);
 
 		if (ret && result && result.length) {
-			console.log('getVersionInfo_hook overload handled by a module');			
+			console.log('getVersionInfo_hook result is ' + JSON.stringify(result));			
 		}
 		
 		return versioninfos
@@ -895,6 +915,32 @@ class Global {
 		return this.hook_arrays[hookentry];
 	}
 	
+	_findServiceHookEntry(hookentry, servicename) {
+		var hookarray = this.getHookArray(hookentry);
+		
+		if (!hookarray)
+			return;
+		
+		for (var i=0; i < hookarray.length; i++) {
+			var entry = hookarray[i];
+			var __servicename = entry['servicename'];
+			
+			if (__servicename == servicename)
+				return entry;
+		}		
+	}
+	
+	_sortHookEntryArray(hookentry) {
+		var hookarray = this.getHookArray(hookentry);
+		
+		if (!hookarray)
+			return;
+		
+		// sort descending order
+		hookarray.sort(function(entrya,entryb) {return (entryb['priority'] - entrya['priority']);});
+		
+	}
+	
 	registerHook(hookentry, servicename, hookfunction) {
 		var hookarray = this.getHookArray(hookentry);
 		
@@ -902,13 +948,38 @@ class Global {
 			var hookfunctionname = hookfunction.toString();
 			var entry = [];
 			
+			if (typeof this._findServiceHookEntry(hookentry, servicename)  !== 'undefined') {
+				// overload existing entry
+				entry = this._findServiceHookEntry(hookentry, servicename);
+			}
+			
 			entry['servicename'] = servicename;
 			entry['functionname'] = hookfunctionname;
 			entry['function'] = hookfunction;
+			entry['priority'] = 0; // default
 			
 			console.log('registering hook '+ hookentry + ' for ' + servicename);
 			hookarray.push(entry);
+			
+			// sort array
+			this._sortHookEntryArray(hookentry)
 		}
+	}
+	
+	modifyHookPriority(hookentry, servicename, priority) {
+		
+		if (!Number.isInteger(priority))
+			return;
+		
+		var entry = this._findServiceHookEntry(hookentry, servicename);
+		
+		if (entry) {
+			entry['priority'] = priority;
+			
+			// sort array
+			this._sortHookEntryArray(hookentry)
+		}
+		
 	}
 	
 	invokeHooks(hookentry, result, inputparams) {

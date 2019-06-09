@@ -13,7 +13,7 @@ class XtraConfigModule {
 		this.isloading = false;
 		
 		this.ethereum_node_access_path = './js/src/xtra/interface/ethereum-node-access.js';
-		this.authkey_server_access_path = './js/src/xtra/interface/authkey-server-access.js';
+		//this.authkey_server_access_path = './js/src/xtra/interface/authkey-server-access.js';
 		this.storage_access_path = './js/src/xtra/interface/storage-access.js';
 		
 		this.registerAdditionalModules();
@@ -28,16 +28,56 @@ class XtraConfigModule {
 		var modulescriptloader = ScriptLoader.findScriptLoader('moduleloader')
 		var xtramodulescriptloader = modulescriptloader.getChildLoader('xtramoduleloader')
 		
-		var moduleroot = './includes/modules/';
-
+		//var moduleroot = './includes/modules/';
+		var moduleroot = './js/src/xtra/modules/';
+		
+		
+		// get list of xtra modules
+		var modulearray = [];
+		
 		// authkey
-		xtramodulescriptloader.push_script( moduleroot + 'authkey/module.js', function() {
+		/*xtramodulescriptloader.push_script( moduleroot + 'authkey/module.js', function() {
 			// load module if initialization has finished
 			if (self.global && (self.global.isReady()))
 			global.loadModule('authkey', dappsmodelsloader);
 		 });
+		modulearray.push({name: 'authkey', path: moduleroot + 'authkey/module.js'});*/
 		
-		xtramodulescriptloader.load_scripts();
+		// get list of additional modules from Constants
+		if (Constants && Constants.get) {
+			var xtramodulearray = Constants.get('xtramoduleload');
+			
+			if (Array.isArray(xtramodulearray) === false) {
+				if (xtramodulearray) {
+					modulearray.push(xtramodulearray);
+				}
+			}
+			else {
+				modulearray.push(...xtramodulearray);
+			}
+
+
+			// actual load xtra modules
+			
+			for (var i = 0; i < modulearray.length; i++) {
+				var moduleentry = modulearray[i];
+				
+				var __push_script = function (modulename) {
+					xtramodulescriptloader.push_script( moduleentry['path'], function() {
+						// load module if initialization has finished
+						if (self.global && (self.global.isReady()))
+						global.loadModule(modulename, dappsmodelsloader);
+					 });
+				};
+				
+				
+				// we need a closure to stack the module's name
+				__push_script(moduleentry['name']);
+			}
+
+			xtramodulescriptloader.load_scripts();
+		}
+		
 	}
 	
 	init() {
@@ -79,24 +119,14 @@ class XtraConfigModule {
 		var global = this.global;
 		
 		// initialization
-		global.registerHook('preFinalizeGlobalScopeInit_hook', 'xtraconfig', this.preFinalizeGlobalScopeInit_hook);
-		global.registerHook('postFinalizeGlobalScopeInit_hook', 'xtraconfig', this.postFinalizeGlobalScopeInit_hook);
+		global.registerHook('preFinalizeGlobalScopeInit_hook', this.name, this.preFinalizeGlobalScopeInit_hook);
+		global.registerHook('postFinalizeGlobalScopeInit_hook', this.name, this.postFinalizeGlobalScopeInit_hook);
 		
-		// popup login box
-		global.registerHook('handleShowLoginBox_hook', 'xtraconfig', this.handleShowLoginBox_hook);
-		
-		// angular login page
-		global.registerHook('alterLoginForm_hook', 'xtraconfig', this.alterLoginForm_hook);
-		global.registerHook('handleLoginSubmit_hook', 'xtraconfig', this.handleLoginSubmit_hook);
-
-		global.registerHook('alterLogoutForm_hook', 'xtraconfig', this.alterLogoutForm_hook);
-		global.registerHook('handleLogoutSubmit_hook', 'xtraconfig', this.handleLogoutSubmit_hook);
-
 		// node access facade
-		global.registerHook('getEthereumNodeAccessInstance_hook', 'xtraconfig', this.getEthereumNodeAccessInstance_hook);
+		global.registerHook('getEthereumNodeAccessInstance_hook', this.name, this.getEthereumNodeAccessInstance_hook);
 
 		// storage access facade
-		global.registerHook('getStorageAccessInstance_hook', 'xtraconfig', this.getStorageAccessInstance_hook);
+		global.registerHook('getStorageAccessInstance_hook', this.name, this.getStorageAccessInstance_hook);
 	}
 	
 	//
@@ -119,13 +149,13 @@ class XtraConfigModule {
 		global.pushFinalInitializationPromise(nodeaccesspromise);
 
 		// authkey access
-		var authkey_server_access_path = this.authkey_server_access_path;
+		/*var authkey_server_access_path = this.authkey_server_access_path;
 		
 		var authkeyaccesspromise = ScriptLoader.createScriptLoadPromise(authkey_server_access_path, function() {
 			console.log('XtraAuthKeyServerAccess loaded')
 		})
 		
-		global.pushFinalInitializationPromise(authkeyaccesspromise);
+		global.pushFinalInitializationPromise(authkeyaccesspromise);*/
 
 				
 		// storage access
@@ -139,7 +169,7 @@ class XtraConfigModule {
 		
 		
 		
-		result.push({module: 'xtraconfig', handled: true});
+		result.push({module: this.name, handled: true});
 		
 		return true;
 	}
@@ -160,29 +190,11 @@ class XtraConfigModule {
 		var session = commonmodule.getSessionObject();
 		session.ethereum_node_access_instance = null;
 
-		result.push({module: 'xtraconfig', handled: true});
+		result.push({module: this.name, handled: true});
 		
 		return true;
 	}
 	
-	// popup login
-	handleShowLoginBox_hook(result, params) {
-		console.log('handleShowLoginBox_hook called for ' + this.name);
-		
-		this.displayIdentificationBox();
-		
-		result.push({module: 'xtraconfig', handled: true});
-		
-		return true;
-	}
-	
-	displayIdentificationBox() {
-
-		var username = prompt("Enter username", "");
-		var password = prompt("Enter password", "");
-
-		this._authenticate(username, password);
-	}
 	
 	_getAppObject() {
 		var global = this.global;
@@ -190,195 +202,13 @@ class XtraConfigModule {
 			return global.getAppObject();
 	}
 
-	_authenticate(username, password) {
-		var global = this.global;
-		
-		var app = this._getAppObject();
-		
-		var commonmodule = global.getModuleObject('common');
-		var session = commonmodule.getSessionObject();
-
-		if (username != null) {
-			var authkeymodule = global.getModuleObject('authkey');
-			var authkeyinterface = authkeymodule.getAuthKeyInterface();
-			
-			authkeyinterface.authenticate(session, username, password)
-			.then(function(res) {
-				var authenticated = (res['status'] == '1' ? true : false);
-				
-				console.log("authentication is " + authenticated);
-				
-				if (authenticated) {
-					
-					// authenticated (and crypto-keys have been loaded)
-					// we get list of accounts (that could be encrypted)
-					var storagemodule = global.getModuleObject('storage-access');
-					var storageaccess = storagemodule.getStorageAccessInstance(session);
-					var user = session.getSessionUserObject();
-					
-					return storageaccess.account_session_keys( function(err, res) {
-						
-						if (res && res['keys']) {
-							var keys = res['keys'];
-							
-							session.readSessionAccountFromKeys(keys);
-						}
-				
-						if (app) app.refreshDisplay();
-					});
-					
-				}
-				else {
-					alert("Could not authenticate you with these credentials!");
-				}
-				
-			})
-			.catch(function (err) {
-				alert(err);
-			});
-			
-			
-		}	
-		
-	}
-	
-	_logout() {
-		var global = this.global;
-		
-		var app = this._getAppObject();
-		
-		var commonmodule = global.getModuleObject('common');
-		var session = commonmodule.getSessionObject();
-
-		if (!session.isAnonymous()) {
-			var authkeymodule = global.getModuleObject('authkey');
-			var authkeyinterface = authkeymodule.getAuthKeyInterface();
-			
-			authkeyinterface.logout(session)
-			.then(function(res) {
-				var loggedout = (res['status'] == '1' ? true : false);
-				
-				if (loggedout) {
-					
-					if (app) app.refreshDisplay();
-					
-				}
-				else {
-					alert("Could not log out on authentication server!");
-				}
-				
-			})
-			.catch(function (err) {
-				alert(err);
-			});
-			
-			
-		}	
-		
-	}
-	
-	// angular login page
-	alterLoginForm_hook(result, params) {
-		console.log('alterLoginForm_hook called for ' + this.name);
-		
-		var global = this.global;
-
-		var $scope = params[0];
-		var logoutform = params[1];
-
-		// remove private key input
-		var privkeyspan = document.getElementById('privkey-span');
-		
-		if ( privkeyspan ) {
-			privkeyspan.parentNode.removeChild(privkeyspan);
-		}
-		
-		// add our inputs
-		var formdiv = document.createElement("div");
-		logoutform.insertBefore(formdiv, logoutform.firstChild);
-
-		var span;
-		var label;
-		var textbox;
-
-		// name text box
-		span = document.createElement("span");
-		formdiv.appendChild(span);
-
-		label = document.createElement("Label");
-		label.innerHTML = global.t("User name:");
-		label.setAttribute('for',"username");
-		
-		span.appendChild(label);
-		
-		textbox = document.createElement("input"); //input element, text
-		textbox.setAttribute('type',"text");
-		textbox.setAttribute('name',"username");
-		textbox.classList.add('form-textbox');
-		textbox.classList.add('form-username-input');
-		
-		span.appendChild(textbox);
-		
-		// password
-		span = document.createElement("span");
-		formdiv.appendChild(span);
-
-		label = document.createElement("Label");
-		label.innerHTML = global.t("Password:");
-		label.setAttribute('for',"password");
-		
-		span.appendChild(label);
-		
-		textbox = document.createElement("input"); //input element, text
-		textbox.setAttribute('type',"password");
-		textbox.setAttribute('name',"password");
-		textbox.classList.add('form-textbox');
-		textbox.classList.add('form-password-input');
-		
-		span.appendChild(textbox);
-		
-		result.push({module: 'xtraconfig', handled: true});
-		
-		return true;
-	}
-	
-	handleLoginSubmit_hook(result, params) {
-		console.log('handleLoginSubmit_hook called for ' + this.name);
-
-		var $scope = params[0];
-		
-		var username = this.getFormValue("username");
-		var password = this.getFormValue("password");
-		
-		this._authenticate(username, password);
-
-		result.push({module: 'xtraconfig', handled: true});
-		
-		return true;
-	}
-	
-	alterLogoutForm_hook(result, params) {
-		console.log('alterLogoutForm_hook called for ' + this.name);
-	}
-	
-	handleLogoutSubmit_hook(result, params) {
-		console.log('handleLogoutSubmit_hook called for ' + this.name);
-		
-		this._logout();
-		
-		result.push({module: 'xtraconfig', handled: true});
-		
-		return true;
-	}
-
-	
 
 	// node access facade
 	getEthereumNodeAccessInstance_hook(result, params) {
-		console.log('xtraconfig getEthereumNodeAccessInstance_hook called');
+		console.log('XtraConfigModule.getEthereumNodeAccessInstance_hook called');
 		
-		var global = XtraConfig.getGlobalObject();
-		var xtraconfigmodule = global.getModuleObject('xtraconfig');
+		//var global = XtraConfig.getGlobalObject();
+		//var xtraconfigmodule = global.getModuleObject('xtraconfig');
 		
 		var session = params[0];
 		
@@ -389,10 +219,10 @@ class XtraConfigModule {
 	
 	// storage access facade
 	getStorageAccessInstance_hook(result, params) {
-		console.log('xtraconfig getStorageAccessInstance_hook called');
+		console.log('XtraConfigModule.getStorageAccessInstance_hook called');
 		
-		var global = XtraConfig.getGlobalObject();
-		var xtraconfigmodule = global.getModuleObject('xtraconfig');
+		//var global = XtraConfig.getGlobalObject();
+		//var xtraconfigmodule = global.getModuleObject('xtraconfig');
 		
 		var session = params[0];
 		
@@ -402,12 +232,6 @@ class XtraConfigModule {
 	}
 	
 	
-	
-	getFormValue(formelementname) {
-		var value = document.getElementsByName(formelementname)[0].value;
-		
-		return value;
-	}
 	
 
 	
@@ -515,9 +339,9 @@ class XtraConfig {
 		console.log("XtraConfig.handleDisplayIdentificationBox called");
 		
 		var global = XtraConfig.getGlobalObject();
-		var xtraconfigmodule = global.getModuleObject('xtraconfig');
+		var authkeymodule = global.getModuleObject('authkey');
 		
-		return xtraconfigmodule.displayIdentificationBox();
+		return authkeymodule.displayIdentificationBox();
 	}
 	
 	static getGlobalObject() {
