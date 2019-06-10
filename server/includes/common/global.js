@@ -947,10 +947,14 @@ class Global {
 		if (typeof hookfunction === "function") {
 			var hookfunctionname = hookfunction.toString();
 			var entry = [];
+			var bAddEntry = true;
 			
 			if (typeof this._findServiceHookEntry(hookentry, servicename)  !== 'undefined') {
 				// overload existing entry
+				console.log('overloading hook '+ hookentry + ' for ' + servicename);
+
 				entry = this._findServiceHookEntry(hookentry, servicename);
+				bAddEntry = false;
 			}
 			
 			entry['servicename'] = servicename;
@@ -959,7 +963,12 @@ class Global {
 			entry['priority'] = 0; // default
 			
 			console.log('registering hook '+ hookentry + ' for ' + servicename);
-			hookarray.push(entry);
+			
+			if (bAddEntry) {
+				console.log('registering hook '+ hookentry + ' for ' + servicename);
+				
+				hookarray.push(entry);
+			}
 			
 			// sort array
 			this._sortHookEntryArray(hookentry)
@@ -985,6 +994,9 @@ class Global {
 	invokeHooks(hookentry, result, inputparams) {
 		console.log('Global.invokeHooks called for ' + hookentry);
 
+		if ((!result) || (Array.isArray(result) === false))
+			throw 'invokeHooks did not receive an array as result parameter for hookentry: ' + hookentry;
+
 		var hookarray = this.getHookArray(hookentry);
 
 		for (var i=0; i < hookarray.length; i++) {
@@ -997,7 +1009,10 @@ class Global {
 				var ret = func.call(service, result, inputparams);
 				
 				if ((ret) && (ret === false))
-					return ret
+					return ret;
+				
+				if (result[result.length-1] && (result[result.length-1].service == servicename) && (result[result.length-1].stop === true))
+					break;
 			}
 			
 		}

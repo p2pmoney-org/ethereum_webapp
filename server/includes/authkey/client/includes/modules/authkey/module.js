@@ -92,11 +92,16 @@ var Module = class {
 	postRegisterModule() {
 		if (!this.isloading) {
 			var global = this.global;
+			var self = this;
 			var rootscriptloader = global.getRootScriptLoader();
 			
-			this.loadModule(rootscriptloader);
+			this.loadModule(rootscriptloader, function() {
+				if (self.registerHooks)
+				self.registerHooks();
+			});
 		}
 	}
+	
 	
 	//
 	// hooks
