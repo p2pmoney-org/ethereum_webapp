@@ -998,6 +998,7 @@ class Global {
 			throw 'invokeHooks did not receive an array as result parameter for hookentry: ' + hookentry;
 
 		var hookarray = this.getHookArray(hookentry);
+		var ret_array = {};
 
 		for (var i=0; i < hookarray.length; i++) {
 			var entry = hookarray[i];
@@ -1008,8 +1009,7 @@ class Global {
 			if (service) {
 				var ret = func.call(service, result, inputparams);
 				
-				if ((ret) && (ret === false))
-					return ret;
+				ret_array[servicename] = ret;
 				
 				if (result[result.length-1] && (result[result.length-1].service == servicename) && (result[result.length-1].stop === true))
 					break;

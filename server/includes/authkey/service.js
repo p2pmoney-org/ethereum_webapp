@@ -294,29 +294,9 @@ class Service {
 		
 		if (global.config['authkey_server_url']) {
 			
-			/*var remoteauthenticationserver = this.getRemoteAuthenticationServerInstance();
-			
-			var user = remoteauthenticationserver.getUser(session);*/
-			
 			var user = this._getUserFromRemoteAuthenticationServer(session);
 			
 			if (user) {
-				/*var useruuid = user.getUserUUID();
-				
-				// check if user exists in our database
-				var authenticationserver = this.getAuthenticationServerInstance();
-				
-				if (!authenticationserver.userExistsFromUUID(useruuid)) {
-					global.log('remote user not found in database, inserting user with uuid: ' + useruuid);
-					
-					// save user
-					user.altloginmethod = 'remote-authkey-server';
-					
-					authenticationserver.saveUser(session, user);
-				}
-				else {
-					global.log('remote user found in database with uuid: ' + useruuid);
-				}*/
 				
 				// attach user to session
 				session.impersonateUser(user);
@@ -328,6 +308,15 @@ class Service {
 		
 		
 		return true;
+	}
+	
+	_getSessionTransientContext(session) {
+		var name = 'service-' + this.name;
+		
+		if (!session[name]) session[name] = {};
+		var sessioncontext = session[name];
+		
+		return sessioncontext;
 	}
 	
 	_isRootSession(session) {
@@ -357,8 +346,7 @@ class Service {
 		
 		if (global.config['authkey_server_url']) {
 			
-			if (!session[this.name]) session[this.name] = {};
-			var sessioncontext = session[this.name];
+			var sessioncontext = this._getSessionTransientContext(session) ;
 			
 			var now = Date.now();
 			
@@ -371,10 +359,6 @@ class Service {
 			sessioncontext.anonymousupdate = now;
 			
 			global.log('checking remote user details');
-			
-			/*var remoteauthenticationserver = this.getRemoteAuthenticationServerInstance();
-			
-			var user = remoteauthenticationserver.getUser(session);*/
 			
 			var user = this._getUserFromRemoteAuthenticationServer(session);
 
@@ -422,8 +406,7 @@ class Service {
 		
 		if (global.config['authkey_server_url']) {
 			
-			if (!session[this.name]) session[this.name] = {};
-			var sessioncontext = session[this.name];
+			var sessioncontext = this._getSessionTransientContext(session) ;
 			
 			var now = Date.now();
 			

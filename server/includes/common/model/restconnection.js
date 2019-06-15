@@ -11,11 +11,51 @@ class RestConnection  {
 		this.rest_server_api_path = rest_server_api_path;
 	}
 	
+	_processResponseText(xhttp, callback) {
+    	if (callback) {
+	    	var jsonresponse;
+	    	
+	    	try {
+		    	jsonresponse = JSON.parse(xhttp.responseText);
+	    	}
+	    	catch(e) {
+	    		console.log('rest answer is not json compliant');
+	    	}
+	    	
+	    	if (jsonresponse) {
+	    		if (jsonresponse['status']) {
+	    			// primus compliant
+			    	if (jsonresponse['status'] == '1') {
+			    		console.log('RestConnection.rest_post response is ' + JSON.stringify(jsonresponse));
+			    		callback(null, jsonresponse);
+			    	}
+			    	else  {
+			    		callback((jsonresponse['error'] ? jsonresponse['error'] : 'unknown error'), null);
+			    	}
+	    			
+	    		}
+	    		else {
+	    			callback(null, jsonresponse);
+	    		}
+	    		
+	    	}
+	    	else {
+	    		// copy plain text
+	    		jsonresponse = xhttp.responseText;
+	    		
+	    		callback(null, jsonresponse);
+	    	}
+	    	
+		    		    		
+    	}
+	}
+	
 	rest_get(resource, callback) {
 		console.log("RestConnection.rest_get called for resource " + resource);
 		
 		var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 		
+		var self = this;
 		var session = this.session;
 	    
 		var xhttp = new XMLHttpRequest();
@@ -26,7 +66,7 @@ class RestConnection  {
 	    
 	    xhttp.open("GET", resource_url, true);
 	    
-	    xhttp.setRequestHeader("Content-type", "application/json");
+	    xhttp.setRequestHeader("Content-Type", "application/json");
 	    xhttp.setRequestHeader("sessiontoken", session.getSessionUUID());
 	    
 	    xhttp.send();
@@ -34,17 +74,7 @@ class RestConnection  {
 	    xhttp.onload = function(e) {
 		    if (xhttp.status == 200) {
 			    //console.log('response text is ' + xhttp.responseText);
-			    
-		    	if (callback) {
-			    	var jsonresponse = JSON.parse(xhttp.responseText);
-			    		    		
-			    	if (jsonresponse['status'] && (jsonresponse['status'] == '1')) {
-			    		callback(null, jsonresponse);
-			    	}
-			    	else {
-			    		callback((jsonresponse['error'] ? jsonresponse['error'] : 'unknown error'), null);
-			    	}
-		    	}
+		    	self._processResponseText(xhttp, callback);
 		    }
 		    else {
 		    	if (callback)
@@ -67,6 +97,7 @@ class RestConnection  {
 		
 		var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 		
+		var self = this;
 		var session = this.session;
 	    
 		var xhttp = new XMLHttpRequest();
@@ -77,24 +108,15 @@ class RestConnection  {
 	    
 	    xhttp.open("POST", resource_url, true);
 	    
-	    xhttp.setRequestHeader("Content-type", "application/json");
+	    xhttp.setRequestHeader("Content-Type", "application/json");
 	    xhttp.setRequestHeader("sessiontoken", session.getSessionUUID());
 	    
 	    xhttp.send(JSON.stringify(postdata));
 	    
 	    xhttp.onload = function(e) {
 		    if (xhttp.status == 200) {
-		    	if (callback) {
-			    	var jsonresponse = JSON.parse(xhttp.responseText);
-			    		    		
-			    	if (jsonresponse['status'] && (jsonresponse['status'] == '1')) {
-			    		console.log('RestConnection.rest_post response is ' + JSON.stringify(jsonresponse));
-			    		callback(null, jsonresponse);
-			    	}
-			    	else  {
-			    		callback((jsonresponse['error'] ? jsonresponse['error'] : 'unknown error'), null);
-			    	}
-		    	}
+			    //console.log('response text is ' + xhttp.responseText);
+		    	self._processResponseText(xhttp, callback);
 		    }
 		    else {
 		    	if (callback)

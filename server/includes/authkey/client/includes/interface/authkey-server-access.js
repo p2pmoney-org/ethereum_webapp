@@ -1,6 +1,6 @@
 'use strict';
 
-class Xtra_AuthKeyServerAccess {
+class AuthKeyServerAccess {
 	constructor(session) {
 		this.session = session;
 		
@@ -92,7 +92,7 @@ class Xtra_AuthKeyServerAccess {
 	// rest Auth API
 	//
 	auth_version(callback) {
-		console.log("Xtra_AuthKeyServerAccess.auth_version called");
+		console.log("AuthKeyServerAccess.auth_version called");
 		
 		var self = this;
 		var session = this.session;
@@ -132,7 +132,7 @@ class Xtra_AuthKeyServerAccess {
 		var session = this.session;
 		var sessionuuid = session.getSessionUUID();
 		
-		console.log("Xtra_AuthKeyServerAccess.auth_session_status called for " + sessionuuid);
+		console.log("AuthKeyServerAccess.auth_session_status called for " + sessionuuid);
 
 		var promise = new Promise(function (resolve, reject) {
 			
@@ -168,7 +168,7 @@ class Xtra_AuthKeyServerAccess {
 	
 	
 	auth_session_authenticate(username, password, callback) {
-		console.log("Xtra_AuthKeyServerAccess.auth_session_authenticate called");
+		console.log("AuthKeyServerAccess.auth_session_authenticate called");
 		
 		var self = this
 		var session = this.session;
@@ -206,7 +206,7 @@ class Xtra_AuthKeyServerAccess {
 	}
 	
 	auth_session_user(callback) {
-		console.log("Xtra_AuthKeyServerAccess.auth_session_user called");
+		console.log("AuthKeyServerAccess.auth_session_user called");
 		
 		var self = this
 		var session = this.session;
@@ -242,7 +242,7 @@ class Xtra_AuthKeyServerAccess {
 	
 	
 	auth_session_logout(useruuid, callback) {
-		console.log("Xtra_AuthKeyServerAccess.auth_session_logout called");
+		console.log("AuthKeyServerAccess.auth_session_logout called");
 		
 		var self = this
 		var session = this.session;
@@ -283,7 +283,7 @@ class Xtra_AuthKeyServerAccess {
 	// rest Key API
 	//
 	key_version(callback) {
-		console.log("Xtra_AuthKeyServerAccess.key_version called");
+		console.log("AuthKeyServerAccess.key_version called");
 		
 		var self = this
 		var session = this.session;
@@ -318,7 +318,7 @@ class Xtra_AuthKeyServerAccess {
 	}
 	
 	key_session_keys(callback) {
-		console.log("Xtra_AuthKeyServerAccess.key_session_keys called");
+		console.log("AuthKeyServerAccess.key_session_keys called");
 		
 		var self = this
 		var session = this.session;
@@ -352,7 +352,7 @@ class Xtra_AuthKeyServerAccess {
 	}
 
 	key_user_add(user, cryptokey, callback) {
-		console.log("Xtra_AuthKeyServerAccess.key_user_add called");
+		console.log("AuthKeyServerAccess.key_user_add called");
 		
 		var self = this
 		var session = this.session;
@@ -404,12 +404,12 @@ class Xtra_AuthKeyServerAccess {
 	}
 }
 
-console.log("Xtra_AuthKeyServerAccess is loaded");
+console.log("AuthKeyServerAccess is loaded");
 
 //if ( typeof GlobalClass !== 'undefined' && GlobalClass )
-//GlobalClass.registerModuleClass('authkey', 'Xtra_AuthKeyServerAccess', Xtra_AuthKeyServerAccess);
+//GlobalClass.registerModuleClass('authkey', 'AuthKeyServerAccess', AuthKeyServerAccess);
 // because load sequence of module and interface is not predictable
 if ( typeof window !== 'undefined' && window ) // if we are in browser and not node js (e.g. truffle)
-	window.Xtra_AuthKeyServerAccess = Xtra_AuthKeyServerAccess;
+	window.AuthKeyServerAccess = AuthKeyServerAccess;
 else
-module.exports = Xtra_AuthKeyServerAccess; // we are in node js
+	module.exports = AuthKeyServerAccess; // we are in node js

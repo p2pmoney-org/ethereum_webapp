@@ -9,6 +9,7 @@ var Module = class {
 		this.isready = false;
 		this.isloading = false;
 		
+		this.authkeyinterface = null;
 		this.authkey_server_access_instance = null;
 		
 		this.controllers = null;
@@ -111,7 +112,7 @@ var Module = class {
 		
 		var global = this.global;
 
-		result.push({module: 'authkey', handled: true});
+		result.push({module: this.name, handled: true});
 		
 		return true;
 	}
@@ -140,7 +141,7 @@ var Module = class {
 		
 		if (sessioncontext.authenticatedupdate && ((now - sessioncontext.authenticatedupdate) < 5000)) {
 			// update only every 5s
-			result.push({module: 'authkey', handled: true});
+			result.push({module: this.name, handled: true});
 			
 			return true;
 		}
@@ -236,7 +237,7 @@ var Module = class {
 
 		});
 
-		result.push({module: 'authkey', handled: true});
+		result.push({module: this.name, handled: true});
 		
 		return true;
 	}
@@ -270,7 +271,7 @@ var Module = class {
 			
 		}; // chaining of get function
 
-		result.push({module: 'authkey', handled: true});
+		result.push({module: this.name, handled: true});
 		
 		return true;
 	}
@@ -308,12 +309,15 @@ var Module = class {
 					if (nextget)
 						nextget(err, null);
 				}
-			});
+			})
+			.catch(function (err) {
+				console.log('error in getAccountObjects_hook: ' + err);
+			});;
 			
 			
 		}; // chaining of get function
 		
-		result.push({module: 'authkey', handled: true});
+		result.push({module: this.name, handled: true});
 		
 		return true;
 	}
@@ -499,7 +503,7 @@ var Module = class {
 		
 		this._authenticate(username, password);
 
-		result.push({module: 'xtraconfig', handled: true});
+		result.push({module: this.name, handled: true});
 		
 		return true;
 	}
@@ -513,7 +517,7 @@ var Module = class {
 		
 		this._logout();
 		
-		result.push({module: 'xtraconfig', handled: true});
+		result.push({module: this.name, handled: true});
 		
 		return true;
 	}
@@ -532,8 +536,9 @@ var Module = class {
 	getAuthKeyInterface() {
 		var global = this.global;
 		
-		var authkeyinterface = null;
-
+		if (this.authkeyinterface)
+			return this.authkeyinterface;
+		
 		var result = []; 
 		var inputparams = [];
 		
@@ -542,13 +547,13 @@ var Module = class {
 		var ret = global.invokeHooks('getAuthKeyInterface_hook', result, inputparams);
 		
 		if (ret && result[0]) {
-			authkeyinterface = result[0];
+			this.authkeyinterface = result[0];
 		}
 		else {
-			authkeyinterface = new this.AuthKeyInterface(this);
+			this.authkeyinterface = new this.AuthKeyInterface(this);
 		}
 		
-		return authkeyinterface;
+		return this.authkeyinterface;
 	}
 	
 	getAuthKeyServerAccessInstance(session) {
@@ -570,9 +575,9 @@ var Module = class {
 			this.authkey_server_access_instance = result[0];
 		}
 		else {
-			//this.authkey_server_access_instance = new this.Xtra_AuthKeyServerAccess(session);
+			//this.authkey_server_access_instance = new this.AuthKeyServerAccess(session);
 			// because load sequence of module and interface is not predictable
-			this.authkey_server_access_instance = new Xtra_AuthKeyServerAccess(session);
+			this.authkey_server_access_instance = new AuthKeyServerAccess(session);
 		}
 
 		

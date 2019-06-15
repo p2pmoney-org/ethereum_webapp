@@ -13,7 +13,6 @@ class XtraConfigModule {
 		this.isloading = false;
 		
 		this.ethereum_node_access_path = './js/src/xtra/interface/ethereum-node-access.js';
-		//this.authkey_server_access_path = './js/src/xtra/interface/authkey-server-access.js';
 		this.storage_access_path = './js/src/xtra/interface/storage-access.js';
 		
 		this.registerAdditionalModules();
@@ -34,14 +33,6 @@ class XtraConfigModule {
 		
 		// get list of xtra modules
 		var modulearray = [];
-		
-		// authkey
-		/*xtramodulescriptloader.push_script( moduleroot + 'authkey/module.js', function() {
-			// load module if initialization has finished
-			if (self.global && (self.global.isReady()))
-			global.loadModule('authkey', dappsmodelsloader);
-		 });
-		modulearray.push({name: 'authkey', path: moduleroot + 'authkey/module.js'});*/
 		
 		// get list of additional modules from Constants
 		if (Constants && Constants.get) {
@@ -148,16 +139,6 @@ class XtraConfigModule {
 		
 		global.pushFinalInitializationPromise(nodeaccesspromise);
 
-		// authkey access
-		/*var authkey_server_access_path = this.authkey_server_access_path;
-		
-		var authkeyaccesspromise = ScriptLoader.createScriptLoadPromise(authkey_server_access_path, function() {
-			console.log('XtraAuthKeyServerAccess loaded')
-		})
-		
-		global.pushFinalInitializationPromise(authkeyaccesspromise);*/
-
-				
 		// storage access
 		var storage_access_path = this.storage_access_path;
 		
