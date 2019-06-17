@@ -32,6 +32,13 @@ class AuthKeyServerAccess {
 		return this.rest_auth_connection;
 	}
 	
+	setRestAuthConnection(restconnection) {
+		if (!restconnection)
+			return;
+		
+		this.rest_auth_connection = restconnection;
+	}
+	
 	rest_auth_get(resource, callback) {
 		var rest_connection = this.getRestAuthConnection();
 		
@@ -66,6 +73,13 @@ class AuthKeyServerAccess {
 	    this.rest_key_connection = this.session.createRestConnection(rest_server_url, rest_server_api_path);
 		
 		return this.rest_key_connection;
+	}
+	
+	setRestKeyConnection(restconnection) {
+		if (!restconnection)
+			return;
+		
+		this.rest_key_connection = restconnection;
 	}
 	
 	rest_key_get(resource, callback) {

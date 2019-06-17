@@ -376,7 +376,7 @@ class Service {
 				
 			}
 			else {
-				if (session.isanonymous === false) {
+				if (session.user) {
 					global.log('remote session became anonymous, set local session accordingly');
 					session.disconnectUser();
 				}
@@ -438,7 +438,7 @@ class Service {
 			else {
 				global.log('remote session not found ' + sessionuuid);
 				
-				if (session.isanonymous === false) {
+				if (session.user) {
 					global.log('remote session does not exist and local session thinks is is not anonymous');
 					session.disconnectUser();
 				}

@@ -10,7 +10,7 @@ var Module = class {
 		this.isloading = false;
 		
 		this.authkeyinterface = null;
-		this.authkey_server_access_instance = null;
+		//this.authkey_server_access_instance = null;
 		
 		this.controllers = null;
 	}
@@ -72,6 +72,9 @@ var Module = class {
 		var global = this.global;
 		
 		global.registerHook('preFinalizeGlobalScopeInit_hook', this.name, this.preFinalizeGlobalScopeInit_hook);
+		
+		
+		// authkey actions
 		global.registerHook('isSessionAnonymous_hook', this.name, this.isSessionAnonymous_hook);
 
 		global.registerHook('getSessionCryptoKeyObjects_hook', this.name, this.getSessionCryptoKeyObjects_hook);
@@ -282,11 +285,11 @@ var Module = class {
 		var global = this.global;
 		var self = this;
 		
+		var session = params[0];
+		
 		var storagemodule = global.getModuleObject('storage-access');
 		var storageaccess = storagemodule.getStorageAccessInstance(session);
 
-		var session = params[0];
-		
 		var nextget = result.get;
 		result.get = function(err, keyarray) {
 
@@ -557,8 +560,8 @@ var Module = class {
 	}
 	
 	getAuthKeyServerAccessInstance(session) {
-		if (this.authkey_server_access_instance)
-			return this.authkey_server_access_instance;
+		if (session.authkey_server_access_instance)
+			return session.authkey_server_access_instance;
 		
 		console.log('instantiating AuthKeyServerAccess');
 		
@@ -568,20 +571,21 @@ var Module = class {
 		var inputparams = [];
 		
 		inputparams.push(this);
+		inputparams.push(session);
 		
 		var ret = global.invokeHooks('getAuthKeyServerAccessInstance_hook', result, inputparams);
 		
 		if (ret && result[0]) {
-			this.authkey_server_access_instance = result[0];
+			session.authkey_server_access_instance = result[0];
 		}
 		else {
 			//this.authkey_server_access_instance = new this.AuthKeyServerAccess(session);
 			// because load sequence of module and interface is not predictable
-			this.authkey_server_access_instance = new AuthKeyServerAccess(session);
+			session.authkey_server_access_instance = new AuthKeyServerAccess(session);
 		}
 
 		
-		return this.authkey_server_access_instance;
+		return session.authkey_server_access_instance;
 		
 	}
 	

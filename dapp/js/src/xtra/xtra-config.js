@@ -191,7 +191,8 @@ class XtraConfigModule {
 		//var global = XtraConfig.getGlobalObject();
 		//var xtraconfigmodule = global.getModuleObject('xtraconfig');
 		
-		var session = params[0];
+		var ethnodeaccessmodule = params[0];
+		var session = params[1];
 		
 		result[0] = new this.EthereumNodeAccess(session); 
 		
@@ -205,7 +206,8 @@ class XtraConfigModule {
 		//var global = XtraConfig.getGlobalObject();
 		//var xtraconfigmodule = global.getModuleObject('xtraconfig');
 		
-		var session = params[0];
+		var storageaccessmodule = params[0];
+		var session = params[1];
 		
 		result[0] = new this.StorageAccess(session);
 		

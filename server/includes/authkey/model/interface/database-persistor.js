@@ -249,7 +249,7 @@ class DataBasePersistor {
 			var result = mysqlcon.execute(sql);
 		}
 		else {
-			throw 'could not find user with uuid ' + useruuid;
+			throw new Error('could not find user with uuid ' + useruuid);
 		}
 		
 		
@@ -375,7 +375,7 @@ class DataBasePersistor {
 		var userarray = this.getUserArrayFromUUID(useruuid);
 		
 		if ((!userarray) || (!userarray['id']))
-			throw 'could not find user with uuid ' + useruuid;
+			throw new Error('could not find user with uuid ' + useruuid);
 		
 		
 		var mysqlcon = global.getMySqlConnection();
@@ -424,7 +424,7 @@ class DataBasePersistor {
 		var userarray = this.getUserArrayFromUUID(useruuid);
 		
 		if ((!userarray) || (!userarray['id']))
-			throw 'could not find user with uuid ' + useruuid;
+			throw new Error('could not find user with uuid ' + useruuid);
 		
 		
 		var mysqlcon = global.getMySqlConnection();
@@ -454,7 +454,7 @@ class DataBasePersistor {
 		var userarray = this.getUserArrayFromUUID(useruuid);
 		
 		if (!userarray)
-			throw 'could not find user with uuid ' + useruuid;
+			throw new Error('could not find user with uuid ' + useruuid);
 		
 		
 		var mysqlcon = global.getMySqlConnection();
