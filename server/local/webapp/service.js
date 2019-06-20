@@ -122,6 +122,21 @@ class Service {
 				this.overloadDappFiles();
 			}
 			
+			// invoke hook to let services process post assembly operations (e.g. minify daoo)
+			var result = [];
+			
+			var params = [];
+			
+			params.push(this);
+			params.push(global);
+
+			var ret = global.invokeHooks('postAssembleDappFiles_hook', result, params);
+			
+			if (ret && result && result.length) {
+				global.log('postAssembleDappFiles_hook result is ' + JSON.stringify(result));
+			}
+
+			
 		}
 		
 	}
