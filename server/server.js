@@ -23,7 +23,7 @@ if (process.env.ETHEREUM_WEBAPP_EXEC_DIR) {
 //instantiating global object
 var global = Global.getGlobalInstance();
 
-global.current_version = "0.11.2.2019.06.20_1";
+global.current_version = "0.11.3.2019.06.27";
 global.version_support = ["0.11", "0.10.0"];
 
 
@@ -95,18 +95,19 @@ catch(e) {
 // dapp
 global.log("");
 
+var ethereum_webapp_service = global.getServiceInstance('ethereum_webapp');
 
-var dapp_root_dir = global.getServiceInstance('ethereum_webapp').getServedDappDirectory();
+var dapp_root_dir = ethereum_webapp_service.getServedDappDirectory();
+var copy_dapp_files = ethereum_webapp_service.copy_dapp_files;
+var overload_dapp_files = ethereum_webapp_service.overload_dapp_files;
 
 global.log("****Files****");
 global.log("DAPP root directory is " + dapp_root_dir);
+global.log("Copy DAPP directory is " + copy_dapp_files);
+global.log("Overload DAPP directory is " + overload_dapp_files);
 global.log("Log enabled is " + global.enable_log);
 global.log("Log write is " + global.write_to_log_file);
 global.log("Log path is " + global.logPath);
-
-global.log("****Ethereum****");
-global.log("Web3 provider is " + global.web3_provider_url);
-global.log("Web3 port is " + global.web3_provider_port);
 
 global.log("****Mysql****");
 global.log("Mysql host is " + global.mysql_host);
@@ -123,6 +124,12 @@ global.log("REST server api path is " + global.config['rest_server_api_path']);
 if (global.config['authkey_server_url']) global.log("AUTHKEY server url is " + global.config['authkey_server_url']);
 if (global.config['authkey_server_api_path']) global.log("AUTHKEY server api path is " + global.config['authkey_server_api_path']);
 
+
+var ethnode_service = global.getServiceInstance('ethnode');
+
+global.log("****Ethereum****");
+global.log("Web3 provider is " + ethnode_service.web3_provider_url);
+global.log("Web3 port is " + ethnode_service.web3_provider_port);
 
 global.log("*********");
 

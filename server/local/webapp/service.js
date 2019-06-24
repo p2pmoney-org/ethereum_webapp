@@ -57,11 +57,11 @@ class Service {
 		
 		global.registerHook('installWebappConfig_hook', this.name, this.installWebappConfig_hook);
 		
-		global.registerHook('registerRoutes_hook', this.name, this.registerRoutes_hook);
 		global.registerHook('postInitServer_hook', this.name, this.postInitServer_hook);
 
 		global.registerHook('copyDappFiles_hook', this.name, this.copyDappFiles_hook);
 
+		global.registerHook('registerRoutes_hook', this.name, this.registerRoutes_hook);
 	}
 	
 	//
@@ -152,6 +152,19 @@ class Service {
 		var copyeventlines = '\nConstants.push(\'lifecycle\', {eventname: \'app copy\', time:' + nowtime + '});\n';
 		
 		global.append_to_file(path.join(this.webapp_app_dir, './js/src/constants.js'), copyeventlines);
+		
+		if (this.overload_dapp_files != 1) {
+			var configlines;
+			var dapp_dir = this.getServedDappDirectory();
+			
+			var client_env  = global.getConfigValue('client_env');
+			
+			if (client_env) {
+				configlines = '\nConfig.push(\'client_env\', \'' + client_env + '\');\n';
+				global.append_to_file(path.join(dapp_dir, './app/js/src/config.js'), configlines);
+			}
+			
+		}
 		
 		result.push({service: this.name, handled: true});
 	}

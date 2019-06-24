@@ -227,8 +227,10 @@ class EthereumNode {
 	
 	getWeb3Provider() {
 		var global = this.session.getGlobalInstance();
+		var ethnodeservice = global.getServiceInstance('ethnode');
 		
-		var web3providerfullurl = global.getWeb3ProviderFullUrl();
+		//var web3providerfullurl = global.getWeb3ProviderFullUrl();
+		var web3providerfullurl = ethnodeservice.getWeb3ProviderFullUrl();
 		
 		return this.getWeb3ProviderFromUrl(web3providerfullurl);
 	}

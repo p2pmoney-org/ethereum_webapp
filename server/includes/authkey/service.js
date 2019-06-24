@@ -175,7 +175,7 @@ class Service {
 		var sourcedir = service_base_dir + '/client/includes/interface';
 		
 		if (global._checkFileExist(fs, sourcedir)) {
-			destdir = path.join(dapp_dir, './app/js/src/xtra/interface');
+			destdir = path.join(dapp_dir, './app/includes/interface');
 			
 			global.copydirectory(sourcedir, destdir);
 		}
@@ -184,20 +184,20 @@ class Service {
 		var sourcedir = service_base_dir + '/client/includes/modules';
 		
 		if (global._checkFileExist(fs, sourcedir)) {
-			destdir = path.join(dapp_dir, './app/js/src/xtra/modules');
+			destdir = path.join(dapp_dir, './app/includes/modules');
 			
 			global.copydirectory(sourcedir, destdir);
 		}
 		
-		// add load of client modules to constants.js
+		// add load of client modules to config.js
 		
 		// authkey client module
 		var modulename = 'authkey';
-		var modulepath = './js/src/xtra/modules/authkey/module.js';
+		var modulepath = './includes/modules/authkey/module.js';
 		
-		var copymodulelines = '\nConstants.push(\'xtramoduleload\', {name: \'' + modulename + '\', path:\'' + modulepath + '\'});\n';
+		var copymodulelines = '\nConfig.push(\'xtramoduleload\', {name: \'' + modulename + '\', path:\'' + modulepath + '\'});\n';
 		
-		global.append_to_file(path.join(dapp_dir, './app/js/src/constants.js'), copymodulelines);
+		global.append_to_file(path.join(dapp_dir, './app/js/src/config.js'), copymodulelines);
 		
 		if (webapp_service.overload_dapp_files != 1) {
 			// we add constants to provide authkey_url and authkey_server_api_path
@@ -211,13 +211,17 @@ class Service {
 			if (!authkey_server_api_path)
 				authkey_server_api_path = global.getConfigValue('rest_server_api_path');
 			
-			var constantlines;
+			var configlines;
 			
-			constantlines = '\nConstants.push(\'authkey_server_url\', \'' + authkey_server_url + '\');\n';
-			global.append_to_file(path.join(dapp_dir, './app/js/src/constants.js'), constantlines);
+			if (authkey_server_url) {
+				configlines = '\nConfig.push(\'authkey_server_url\', \'' + authkey_server_url + '\');\n';
+				global.append_to_file(path.join(dapp_dir, './app/js/src/config.js'), configlines);
+			}
 			
-			constantlines = '\nConstants.push(\'authkey_server_api_path\', \'' + authkey_server_api_path + '\');\n';
-			global.append_to_file(path.join(dapp_dir, './app/js/src/constants.js'), constantlines);
+			if (authkey_server_api_path) {
+				configlines = '\nConfig.push(\'authkey_server_api_path\', \'' + authkey_server_api_path + '\');\n';
+				global.append_to_file(path.join(dapp_dir, './app/js/src/config.js'), configlines);
+			}
 		}
 		
 		

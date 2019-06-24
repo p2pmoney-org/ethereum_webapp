@@ -160,8 +160,8 @@ class Global {
 		this.server_listening_port = (config && (typeof config["server_listening_port"] != 'undefined') ? config["server_listening_port"] : 8000);
 		this.route_root_path = (config && (typeof config["route_root_path"] != 'undefined') ? config["route_root_path"] : '/api');
 
-		this.web3_provider_url = (config && (typeof config["web3_provider_url"] != 'undefined') ? config["web3_provider_url"] : 'http://localhost');
-		this.web3_provider_port= (config && (typeof config["web3_provider_port"] != 'undefined') ? config["web3_provider_port"] : '8545');
+		//this.web3_provider_url = (config && (typeof config["web3_provider_url"] != 'undefined') ? config["web3_provider_url"] : 'http://localhost');
+		//this.web3_provider_port= (config && (typeof config["web3_provider_port"] != 'undefined') ? config["web3_provider_port"] : '8545');
 
 		
 		this.mysql_host = (config && (typeof config["mysql_host"] != 'undefined') ? config["mysql_host"] : "localhost");
@@ -410,13 +410,6 @@ class Global {
 		
 		var destpath = path.resolve(destdir, filename);
 		
-		/*var source = fs.createReadStream(sourcepath);
-		var dest = fs.createWriteStream(path.resolve(destdir, filename));
-
-		source.pipe(dest);
-		source.on('end', function() { global.log(filename + ' succesfully copied'); });
-		source.on('error', function(err) { global.log(err); });*/
-		
 		fs.readFile(sourcepath, 'utf8', function(err, data) {
 			if (err) throw err;
 			  
@@ -528,7 +521,7 @@ class Global {
 			return require(module);
 	}
 	
-	buildWeb3ProviderUrl(web3_provider_url, web3_provider_port) {
+	/*buildWeb3ProviderUrl(web3_provider_url, web3_provider_port) {
 		if ((web3_provider_port) && (web3_provider_port !== "") && (web3_provider_port !== 80))
 			return web3_provider_url + ':' + web3_provider_port;
 		else
@@ -537,17 +530,9 @@ class Global {
 	
 	getWeb3ProviderFullUrl() {
 		return this.buildWeb3ProviderUrl(this.web3_provider_url, this.web3_provider_port);
-		
-		/*if ((this.web3_provider_port) && (this.web3_provider_port !== "") && (this.web3_provider_port !== 80))
-			return this.web3_provider_url + ':' + this.web3_provider_port;
-		else
-			return this.web3_provider_url;*/
-	}
+	}*/
 	
 	getMySqlConnection() {
-		/*if (this.mysqlconnection)
-			return this.mysqlconnection;*/
-		
 		if (!this.mysqlconnectionpool) {
 			this.mysqlconnectionpool = [];
 		}
@@ -563,8 +548,6 @@ class Global {
 		
 		if (this.mysql_table_prefix)
 			sqlcon.setTablePrefix(this.mysql_table_prefix);
-		
-		//this.mysqlconnection = sqlcon;
 		
 		this.mysqlconnectionpool.push(sqlcon);
 		

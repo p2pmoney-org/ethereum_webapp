@@ -16,15 +16,15 @@ class AuthKeyServerAccess {
 	    var rest_server_api_path = this.session.getXtraConfigValue('authkey_server_api_path');
 	    
 	    if (!rest_server_url) {
-	    	// we look in Constants
-	    	if (Constants && (Constants.get)  && (Constants.get('authkey_server_url')))
-	    			rest_server_url = Constants.get('authkey_server_url');
+	    	// we look in Config
+	    	if (Config && (Config.get)  && (Config.get('authkey_server_url')))
+	    			rest_server_url = Config.get('authkey_server_url');
 	    }
 
 	    if (!rest_server_api_path) {
-	    	// we look in Constants
-	    	if (Constants && (Constants.get)  && (Constants.get('authkey_server_api_path')))
-	    		rest_server_api_path = Constants.get('authkey_server_api_path');
+	    	// we look in Config
+	    	if (Config && (Config.get)  && (Config.get('authkey_server_api_path')))
+	    		rest_server_api_path = Config.get('authkey_server_api_path');
 	    }
 
 	    this.rest_auth_connection = this.session.createRestConnection(rest_server_url, rest_server_api_path);
@@ -59,15 +59,15 @@ class AuthKeyServerAccess {
 	    var rest_server_api_path = this.session.getXtraConfigValue('authkey_server_api_path');
 
 	    if (!rest_server_url) {
-	    	// we look in Constants
-	    	if (Constants && (Constants.get)  && (Constants.get('authkey_server_url')))
-	    			rest_server_url = Constants.get('authkey_server_url');
+	    	// we look in Config
+	    	if (Config && (Config.get)  && (Config.get('authkey_server_url')))
+	    			rest_server_url = Config.get('authkey_server_url');
 	    }
 
 	    if (!rest_server_api_path) {
-	    	// we look in Constants
-	    	if (Constants && (Constants.get)  && (Constants.get('authkey_server_api_path')))
-	    		rest_server_api_path = Constants.get('authkey_server_api_path');
+	    	// we look in Config
+	    	if (Config && (Config.get)  && (Config.get('authkey_server_api_path')))
+	    		rest_server_api_path = Config.get('authkey_server_api_path');
 	    }
 
 	    this.rest_key_connection = this.session.createRestConnection(rest_server_url, rest_server_api_path);

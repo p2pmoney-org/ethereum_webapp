@@ -10,7 +10,12 @@ class Service {
 		this.name = 'ethnode';
 		this.global = null;
 		
+		this.EthereumNode = require('./model/ethnode.js');
+		
 		this.contracts = {};
+		
+		this.web3_provider_url = null;
+		this.web3_provider_port= null;
 	}
 	
 	loadService() {
@@ -18,9 +23,11 @@ class Service {
 		
 		global.log('loadService called for service ' + this.name);
 		
-		this.EthereumNode = require('./model/ethnode.js');
-		
 		this.contracts = global.readJson('contracts');
+		
+		var config = global.config;
+		this.web3_provider_url = (config && (typeof config["web3_provider_url"] != 'undefined') ? config["web3_provider_url"] : 'http://localhost');
+		this.web3_provider_port= (config && (typeof config["web3_provider_port"] != 'undefined') ? config["web3_provider_port"] : '8545');
 	}
 
 	// optional  service functions
@@ -31,6 +38,8 @@ class Service {
 		
 		global.registerHook('installMysqlTables_hook', this.name, this.installMysqlTables_hook);
 		global.registerHook('installWebappConfig_hook', this.name, this.installWebappConfig_hook);
+
+		global.registerHook('copyDappFiles_hook', this.name, this.copyDappFiles_hook);
 
 		global.registerHook('registerRoutes_hook', this.name, this.registerRoutes_hook);
 
@@ -122,6 +131,70 @@ class Service {
 		var ethnoderoutes = new EthNodeRoutes(app, global);
 		
 		ethnoderoutes.registerRoutes();
+		
+		result.push({service: this.name, handled: true});
+	}
+	
+	copyDappFiles_hook(result, params) {
+		var global = this.global;
+		var path = require('path');
+		
+		var webapp_service = params[0];
+		
+		global.log('copyDappFiles_hook called for ' + this.name);
+		
+		if (webapp_service.overload_dapp_files != 1) {
+			// we add config values to let client know what
+			// are the overloaded values for web3
+			
+			var dapp_dir = webapp_service.getServedDappDirectory();
+			var config = global.config;
+		
+			var configlines;
+			
+			
+			var web3_provider_full_url = this.getWeb3ProviderFullUrl();
+			
+			if (web3_provider_full_url) {
+				configlines = '\nConfig.push(\'web3_provider_full_url\', \'' + web3_provider_full_url + '\');\n';
+				global.append_to_file(path.join(dapp_dir, './app/js/src/config.js'), configlines);
+			}
+			
+			var defaultgaslimit = (config && (typeof config["defaultgaslimit"] != 'undefined') ? config["defaultgaslimit"] : null);
+			var defaultgasprice = (config && (typeof config["defaultgasprice"] != 'undefined') ? config["defaultgasprice"] : null);
+
+			if (defaultgaslimit) {
+				configlines = '\nConfig.push(\'defaultgaslimit\', \'' + defaultgaslimit + '\');\n';
+				global.append_to_file(path.join(dapp_dir, './app/js/src/config.js'), configlines);
+			}
+			
+			if (defaultgasprice) {
+				configlines = '\nConfig.push(\'defaultgasprice\', \'' + defaultgasprice + '\');\n';
+				global.append_to_file(path.join(dapp_dir, './app/js/src/config.js'), configlines);
+			}
+			
+			
+			var need_to_unlock_accounts = (config && (typeof config["need_to_unlock_accounts"] != 'undefined') ? config["need_to_unlock_accounts"] : null);
+			var wallet_account_challenge = (config && (typeof config["wallet_account_challenge"] != 'undefined') ? config["wallet_account_challenge"] : null);
+			var wallet_account = (config && (typeof config["wallet_account"] != 'undefined') ? config["wallet_account"] : null);
+			
+			if (need_to_unlock_accounts) {
+				configlines = '\nConfig.push(\'need_to_unlock_accounts\', \'' + need_to_unlock_accounts + '\');\n';
+				global.append_to_file(path.join(dapp_dir, './app/js/src/config.js'), configlines);
+			}
+			
+			if (wallet_account_challenge) {
+				configlines = '\nConfig.push(\'wallet_account_challenge\', \'' + wallet_account_challenge + '\');\n';
+				global.append_to_file(path.join(dapp_dir, './app/js/src/config.js'), configlines);
+			}
+			
+			if (wallet_account) {
+				configlines = '\nConfig.push(\'wallet_account\', \'' + wallet_account + '\');\n';
+				global.append_to_file(path.join(dapp_dir, './app/js/src/config.js'), configlines);
+			}
+			
+		}
+
 		
 		result.push({service: this.name, handled: true});
 	}
@@ -254,6 +327,19 @@ class Service {
 		
 		return session.ethereum_node;
 	}
+	
+	buildWeb3ProviderUrl(web3_provider_url, web3_provider_port) {
+		if ((web3_provider_port) && (web3_provider_port !== "") && (web3_provider_port !== 80))
+			return web3_provider_url + ':' + web3_provider_port;
+		else
+			return web3_provider_url;
+	}
+	
+	getWeb3ProviderFullUrl() {
+		return this.buildWeb3ProviderUrl(this.web3_provider_url, this.web3_provider_port);
+	}
+	
+
 
 }
 

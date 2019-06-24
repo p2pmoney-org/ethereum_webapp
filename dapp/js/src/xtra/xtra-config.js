@@ -12,8 +12,8 @@ class XtraConfigModule {
 		this.isready = false;
 		this.isloading = false;
 		
-		this.ethereum_node_access_path = './js/src/xtra/interface/ethereum-node-access.js';
-		this.storage_access_path = './js/src/xtra/interface/storage-access.js';
+		this.ethereum_node_access_path = './js/src/xtra/interface/xtra-ethereum-node-access.js';
+		this.storage_access_path = './js/src/xtra/interface/xtra-storage-access.js';
 		
 		this.registerAdditionalModules();
 	}
@@ -34,9 +34,9 @@ class XtraConfigModule {
 		// get list of xtra modules
 		var modulearray = [];
 		
-		// get list of additional modules from Constants
-		if (Constants && Constants.get) {
-			var xtramodulearray = Constants.get('xtramoduleload');
+		// get list of additional modules from Config
+		if (Config && Config.get) {
+			var xtramodulearray = Config.get('xtramoduleload');
 			
 			if (Array.isArray(xtramodulearray) === false) {
 				if (xtramodulearray) {

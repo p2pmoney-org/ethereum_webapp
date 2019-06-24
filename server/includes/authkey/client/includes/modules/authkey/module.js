@@ -37,7 +37,7 @@ var Module = class {
 		var modulescriptloader = global.getScriptLoader('authkeyloader', parentscriptloader);
 		
 		
-		var xtraroot = './js/src/xtra';
+		var xtraroot = './includes';
 		
 		var interfaceroot = xtraroot + '/interface';
 
