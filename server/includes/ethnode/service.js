@@ -329,7 +329,7 @@ class Service {
 	}
 	
 	buildWeb3ProviderUrl(web3_provider_url, web3_provider_port) {
-		if ((web3_provider_port) && (web3_provider_port !== "") && (web3_provider_port !== 80))
+		if ((web3_provider_port) && (web3_provider_port !== "") && (web3_provider_port !== "80") && (web3_provider_port !== 80))
 			return web3_provider_url + ':' + web3_provider_port;
 		else
 			return web3_provider_url;

@@ -414,12 +414,11 @@ class DataBasePersistor {
 			sql = `UPDATE ` +  tablename + ` SET
 					  SessionVariables = ` + (sessionvariables ? `'` + sessionvariables + `'` : `''`) + `
 				WHERE SessionId = ` + current.id + `;`;
+			
+			// execute query
+			var result = mysqlcon.execute(sql);
 		}
 		
-		
-		
-		// execute query
-		var result = mysqlcon.execute(sql);
 		
 		// close connection
 		mysqlcon.close();

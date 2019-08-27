@@ -46,8 +46,36 @@ exports.version = function(req, res) {
 	var version = global.getCurrentVersion();
 	var versioninfo = global.getVersionInfo();
 	
+	
 	var jsonresult = {status: 1, version:  version, versioninfo: versioninfo, servertime: nowstring};
   	
+	try {
+		if (global.config.server_env === 'dev') {
+			var hostname = 'unknown';
+			var os = require('os');
+
+			hostname = os.hostname();
+			
+			jsonresult.hostname = hostname;
+			
+			var interfaces = os.networkInterfaces();
+			var addresses = [];
+			for (var k in interfaces) {
+			    for (var k2 in interfaces[k]) {
+			        var address = interfaces[k][k2];
+			        if (address.family === 'IPv4' && !address.internal) {
+			            addresses.push(address.address);
+			        }
+			    }
+			}
+			
+			jsonresult.hostaddress = addresses;
+		}
+
+	}
+	catch(e) {
+	}
+	
   	res.json(jsonresult);
   	
 }

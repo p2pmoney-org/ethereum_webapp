@@ -98,6 +98,8 @@ class Global {
 		this.client_env = (config && (typeof config["client_env"] != 'undefined') ? config["client_env"] : 'prod');
 		this.execution_env = this.server_env;
 		
+		this.sticky_session = (config && (typeof config["sticky_session"] != 'undefined') && (config["sticky_session"] === false) ? false : true);
+		
 		// logging
 		this.enable_log = (config && (typeof config["enable_log"] != 'undefined') ? config["enable_log"] : 1);
 		this.write_to_log_file = (config && (typeof config["write_to_log_file"] != 'undefined') ? config["write_to_log_file"] : (this.execution_env != 'dev' ? 0 : 1));
@@ -248,6 +250,10 @@ class Global {
 			default:
 				break;
 		}
+	}
+	
+	areSessionsSticky() {
+		return this.sticky_session;
 	}
 	
 	readJson(jsonname) {

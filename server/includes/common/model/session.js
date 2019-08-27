@@ -3,47 +3,58 @@
  */
 'use strict';
 
-var _SessionMutex = class {
+var _SessionInitLatch = class {
 	
 	constructor(global, session) {
 		this.global = global;
 		this.session = session;
+		
+		this.released = false;
+		
+		this.waitstarted = null;
 	}
 	
-	wait(maxtime, callback) {
+	await(maxtime, callback) {
 		var global = this.global;
 		var session = this.session;
 		
 		var self = this;
 		
-		while(!session.initializationfinished) {
+		this.waitstarted = Date.now();
+
+		while((!session.initializationfinished) && (maxtime > 0 ? ((Date.now() - this.waitstarted) < maxtime) : true)) {
 			global.deasync().runLoopOnce(this);
 		}
+		
+		this.released = true;
+
+		if (callback)
+			callback(this);
 		
 	}
 	
 	static get(session) {
-		if (!_SessionMutex.map)
-			_SessionMutex.map = Object.create(null);
+		if (!_SessionInitLatch.map)
+			_SessionInitLatch.map = Object.create(null);
 		
 		var key = session.getSessionUUID();
 		
-		if (!_SessionMutex.map[key]) {
+		if (!_SessionInitLatch.map[key]) {
 			var global = session.getGlobalInstance();
-			_SessionMutex.map[key] = new _SessionMutex(global, session);
+			_SessionInitLatch.map[key] = new _SessionInitLatch(global, session);
 		}
 		
-		// remove old mutexes
-		for (var key in _SessionMutex.map) {
-		    if (!_SessionMutex.map[key]) continue;
+		// remove old latches
+		for (var key in _SessionInitLatch.map) {
+		    if (!_SessionInitLatch.map[key]) continue;
 			
-		    var mutex = _SessionMutex.map[key];
+		    var latch = _SessionInitLatch.map[key];
 		    
-		    if ((mutex) && (mutex.session) && (mutex.session.isready))
-		    	delete _SessionMutex.map[key];
+		    if ((latch) && (latch.session) && (latch.session.isready))
+		    	delete _SessionInitLatch.map[key];
 		}
 		
-		return _SessionMutex.map[key];
+		return _SessionInitLatch.map[key];
 	}
 }
 
@@ -154,6 +165,8 @@ class Session {
 		this.creation_date = Date.now();
 		this.last_ping_date = Date.now();
 		
+		this.issticky = global.sticky_session;
+		
 		// initialization
 		this.isready = false;
 
@@ -179,14 +192,50 @@ class Session {
 	}
 	
 	// persistence
-	save() {
-		this.global.log('Session.save called');
+	/*_acquiremutex(mutextype) {
+		var global = this.global;
+		
+		// we create a mutex to acquire a lock
+		var SessionMutex = require('./sessionmutex.js');
+		
+		var sessionmutex = SessionMutex.get(this, mutextype);
+		
+		global.log('test mutex ' + sessionmutex.instanceuuid + ' to be acquired');
+		sessionmutex.acquire(5000, function(mutex) {
+			global.log('test mutex ' + mutex.instanceuuid + ' has been acquired');
+			setTimeout(function() {
+				sessionmutex.release(function() {
+					global.log('test mutex ' + mutex.instanceuuid + ' released after 3 seconds');
+				});
+			  }, 500);
+			
+		});
 
-		var commonservice = this.global.getServiceInstance('common');
+		global.log('mutex ' + sessionmutex.instanceuuid + ' of type ' + mutextype + ' to be acquired');
+		sessionmutex.acquire(5000, function(mutex) {
+			global.log('mutex ' + mutex.instanceuuid + ' of type ' + mutextype + ' has been acquired');
+		});
+		
+		return sessionmutex;
+	}*/
+	
+	save() {
+		var global = this.global;
+		
+		global.log('Session.save called');
+
+		var commonservice = global.getServiceInstance('common');
 		var server = commonservice.getServerInstance();
 		var persistor = server.getPersistor();
 		
 		if (persistor.canPersistData()) {
+			/*if (this.issticky === false) {
+				global.log('Session.save SESSION IS NOT STICKY!!!');
+				
+				// we acquire a write lock
+				var sessionmutex = this._acquiremutex('session_write');
+			}*/
+			
 			var array = {};
 			
 			array['sessionuuid'] = this.session_uuid;
@@ -202,8 +251,10 @@ class Session {
 			var jsonstring = JSON.stringify(this.sessionvar);
 			array['sessionvariables'] =  Buffer.from(jsonstring, 'utf8');
 			
-			
 			persistor.putSession(array);
+			
+			/*if (sessionmutex)
+				sessionmutex.release();*/
 		}
 		
 	}
@@ -216,6 +267,13 @@ class Session {
 		var persistor = server.getPersistor();
 		
 		if (persistor.canPersistData()) {
+			/*if (this.issticky === false) {
+				global.log('Session._saveState SESSION IS NOT STICKY!!!');
+				
+				// we acquire a write lock
+				var sessionmutex = this._acquiremutex('session_write');
+			}*/
+			
 			var array = {};
 			
 			array['sessionuuid'] = this.session_uuid;
@@ -229,6 +287,9 @@ class Session {
 			array['isauthenticated'] = this.isauthenticated;
 			
 			persistor.putSessionState(array);
+			
+			if (sessionmutex)
+				sessionmutex.release();
 		}
 		
 	}
@@ -241,6 +302,13 @@ class Session {
 		var persistor = server.getPersistor();
 		
 		if (persistor.canPersistData()) {
+			/*if (this.issticky === false) {
+				global.log('Session._saveVariables SESSION IS NOT STICKY!!!');
+				
+				// we create a mutex to acquire a write lock
+				var sessionmutex = this._acquiremutex('session_write');
+			}*/
+			
 			var array = {};
 			
 			array['sessionuuid'] = this.session_uuid;
@@ -258,6 +326,9 @@ class Session {
 			
 			
 			persistor.putSessionVariables(array);
+			
+			/*if (sessionmutex)
+				sessionmutex.release();*/
 		}
 		
 	}
@@ -333,6 +404,16 @@ class Session {
 	}
 	
 	getSessionVariable(key) {
+		var global = this.global;
+		
+		if (this.issticky === false) {
+			//global.log('Session.getSessionVariable SESSION IS NOT STICKY key ' + key);
+			
+			// we force to read variables from database in case another process
+			// changed the value of the key
+			this._read();
+		}
+		
 		if (key in this.sessionvar) {
 			return this.sessionvar[key];
 		}
@@ -597,10 +678,10 @@ class Session {
 			// we may go through this section several times because of issues with re-entrance
 			// and nodejs/javascript mono-threaded approach of stacking execution bits
 			
-			/// create a mutex to start unstacking calls once one of them has finished the initialization
-			var sessionmutex = _SessionMutex.get(session);
+			/// create a latch to start unstacking calls once one of them has finished the initialization
+			var sessionlatch = _SessionInitLatch.get(session);
 			
-			global.log('session sessionmutex retrieved for session ' + sessionuuid);
+			global.log('session sessionlatch retrieved for session ' + sessionuuid);
 			
 			var promise = new Promise(function (resolve, reject) {
 				try {
@@ -660,8 +741,8 @@ class Session {
 			
 			global.log('session initialization promise created for session ' + sessionuuid);
 			
-			sessionmutex.wait(10000, function() {
-				global.log('session going out of mutex for session ' + sessionuuid);
+			sessionlatch.await(10000, function() {
+				global.log('session going out of initialization latch for session ' + sessionuuid);
 			});
 			
 			global.log('session initialized for session ' + sessionuuid);
