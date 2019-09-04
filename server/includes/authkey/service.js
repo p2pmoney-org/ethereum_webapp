@@ -195,7 +195,7 @@ class Service {
 		var modulename = 'authkey';
 		var modulepath = './includes/modules/authkey/module.js';
 		
-		var copymodulelines = '\nConfig.push(\'xtramoduleload\', {name: \'' + modulename + '\', path:\'' + modulepath + '\'});\n';
+		var copymodulelines = '\nwindow.simplestore.Config.push(\'xtramoduleload\', {name: \'' + modulename + '\', path:\'' + modulepath + '\'});\n';
 		
 		global.append_to_file(path.join(dapp_dir, './app/js/src/config.js'), copymodulelines);
 		
@@ -214,12 +214,12 @@ class Service {
 			var configlines;
 			
 			if (authkey_server_url) {
-				configlines = '\nConfig.push(\'authkey_server_url\', \'' + authkey_server_url + '\');\n';
+				configlines = '\nwindow.simplestore.Config.push(\'authkey_server_url\', \'' + authkey_server_url + '\');\n';
 				global.append_to_file(path.join(dapp_dir, './app/js/src/config.js'), configlines);
 			}
 			
 			if (authkey_server_api_path) {
-				configlines = '\nConfig.push(\'authkey_server_api_path\', \'' + authkey_server_api_path + '\');\n';
+				configlines = '\nwindow.simplestore.Config.push(\'authkey_server_api_path\', \'' + authkey_server_api_path + '\');\n';
 				global.append_to_file(path.join(dapp_dir, './app/js/src/config.js'), configlines);
 			}
 		}

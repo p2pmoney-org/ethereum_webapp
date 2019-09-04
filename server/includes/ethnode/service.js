@@ -156,7 +156,7 @@ class Service {
 			var web3_provider_full_url = this.getWeb3ProviderFullUrl();
 			
 			if (web3_provider_full_url) {
-				configlines = '\nConfig.push(\'web3_provider_full_url\', \'' + web3_provider_full_url + '\');\n';
+				configlines = '\nwindow.simplestore.Config.push(\'web3_provider_full_url\', \'' + web3_provider_full_url + '\');\n';
 				global.append_to_file(path.join(dapp_dir, './app/js/src/config.js'), configlines);
 			}
 			
@@ -164,12 +164,12 @@ class Service {
 			var defaultgasprice = (config && (typeof config["defaultgasprice"] != 'undefined') ? config["defaultgasprice"] : null);
 
 			if (defaultgaslimit) {
-				configlines = '\nConfig.push(\'defaultgaslimit\', \'' + defaultgaslimit + '\');\n';
+				configlines = '\nwindow.simplestore.Config.push(\'defaultgaslimit\', \'' + defaultgaslimit + '\');\n';
 				global.append_to_file(path.join(dapp_dir, './app/js/src/config.js'), configlines);
 			}
 			
 			if (defaultgasprice) {
-				configlines = '\nConfig.push(\'defaultgasprice\', \'' + defaultgasprice + '\');\n';
+				configlines = '\nwindow.simplestore.Config.push(\'defaultgasprice\', \'' + defaultgasprice + '\');\n';
 				global.append_to_file(path.join(dapp_dir, './app/js/src/config.js'), configlines);
 			}
 			
@@ -179,17 +179,17 @@ class Service {
 			var wallet_account = (config && (typeof config["wallet_account"] != 'undefined') ? config["wallet_account"] : null);
 			
 			if (need_to_unlock_accounts) {
-				configlines = '\nConfig.push(\'need_to_unlock_accounts\', \'' + need_to_unlock_accounts + '\');\n';
+				configlines = '\nwindow.simplestore.Config.push(\'need_to_unlock_accounts\', \'' + need_to_unlock_accounts + '\');\n';
 				global.append_to_file(path.join(dapp_dir, './app/js/src/config.js'), configlines);
 			}
 			
 			if (wallet_account_challenge) {
-				configlines = '\nConfig.push(\'wallet_account_challenge\', \'' + wallet_account_challenge + '\');\n';
+				configlines = '\nwindow.simplestore.Config.push(\'wallet_account_challenge\', \'' + wallet_account_challenge + '\');\n';
 				global.append_to_file(path.join(dapp_dir, './app/js/src/config.js'), configlines);
 			}
 			
 			if (wallet_account) {
-				configlines = '\nConfig.push(\'wallet_account\', \'' + wallet_account + '\');\n';
+				configlines = '\nwindow.simplestore.Config.push(\'wallet_account\', \'' + wallet_account + '\');\n';
 				global.append_to_file(path.join(dapp_dir, './app/js/src/config.js'), configlines);
 			}
 			

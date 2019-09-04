@@ -149,7 +149,7 @@ class Service {
 		
 		// add event to ./app/js/src/constants.js
 		var nowtime = Date.now();
-		var copyeventlines = '\nConstants.push(\'lifecycle\', {eventname: \'app copy\', time:' + nowtime + '});\n';
+		var copyeventlines = '\nwindow.simplestore.Constants.push(\'lifecycle\', {eventname: \'app copy\', time:' + nowtime + '});\n';
 		
 		global.append_to_file(path.join(this.webapp_app_dir, './js/src/constants.js'), copyeventlines);
 		
@@ -160,7 +160,7 @@ class Service {
 			var client_env  = global.getConfigValue('client_env');
 			
 			if (client_env) {
-				configlines = '\nConfig.push(\'client_env\', \'' + client_env + '\');\n';
+				configlines = '\nwindow.simplestore.Config.push(\'client_env\', \'' + client_env + '\');\n';
 				global.append_to_file(path.join(dapp_dir, './app/js/src/config.js'), configlines);
 			}
 			
@@ -325,7 +325,7 @@ class Service {
 			var filepath = path.join(webapp_app_dir, './js/src/constants.js');
 
 			var nowtime = Date.now();
-			var downloadeventlines = '\nConstants.push(\'lifecycle\', {eventname: \'app download\', time:' + nowtime + '});\n';
+			var downloadeventlines = '\nwindow.simplestore.Constants.push(\'lifecycle\', {eventname: \'app download\', time:' + nowtime + '});\n';
 
 			var content = global.read_file(filepath) + downloadeventlines; 
 			

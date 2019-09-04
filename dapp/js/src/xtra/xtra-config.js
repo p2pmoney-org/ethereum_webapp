@@ -24,6 +24,9 @@ class XtraConfigModule {
 		var self = this;
 		
 		// load and register additional modules
+		var ScriptLoader = window.simplestore.ScriptLoader;
+		var Config = window.simplestore.Config;
+
 		var modulescriptloader = ScriptLoader.findScriptLoader('moduleloader')
 		var xtramodulescriptloader = modulescriptloader.getChildLoader('xtramoduleloader')
 		
@@ -127,6 +130,7 @@ class XtraConfigModule {
 		console.log('preFinalizeGlobalScopeInit_hook called for ' + this.name);
 		
 		var global = this.global;
+		var ScriptLoader = window.simplestore.ScriptLoader;
 
 		// create script load promises now
 		
@@ -162,10 +166,10 @@ class XtraConfigModule {
 		var commonmodule = global.getModuleObject('common');
 
 		// overload EthereumNodeAccess class
-		this.EthereumNodeAccess = window.Xtra_EthereumNodeAccess;
+		this.EthereumNodeAccess = window.simplestore.Xtra_EthereumNodeAccess;
 		
 		// overload StorageAccess class
-		this.StorageAccess = window.Xtra_StorageAccess;
+		this.StorageAccess = window.simplestore.Xtra_StorageAccess;
 		
 		// reset ethereum instance if already instantiated
 		var session = commonmodule.getSessionObject();
@@ -274,7 +278,7 @@ class XtraConfig {
 	overloadConfig() {
 		console.log("XtraConfig.overloadConfig called");
 		
-		if ( typeof window !== 'undefined' && window && window.Config) {
+		if ( typeof window !== 'undefined' && window && window.simplestore.Config) {
 			
 			// authentication rest access (if value not specified, take default rest server access)
 			if (this.authkey_server_url.substring(1) == 'authkey_server_url')
@@ -287,25 +291,25 @@ class XtraConfig {
 			// ethereum transactions parameters
 			var overload_gaslimit = (this.defaultgaslimit.substring(1) == 'defaultgaslimit' ? false : true);
 			if (overload_gaslimit)
-				window.Config.defaultGasLimit =  parseInt(this.defaultgaslimit);
+				window.simplestore.Config.defaultGasLimit =  parseInt(this.defaultgaslimit);
 			
 			var overload_gasprice = (this.defaultgasprice.substring(1) == 'defaultgasprice' ? false : true);
 			if (overload_gasprice)
-				window.Config.defaultGasPrice = this.defaultgasprice;
+				window.simplestore.Config.defaultGasPrice = this.defaultgasprice;
 
 		
 			
 			var overload_need_to_unlock_accounts = (this.need_to_unlock_accounts.substring(1) == 'need_to_unlock_accounts' ? false : true);
 			if (overload_need_to_unlock_accounts)
-				window.Config.need_to_unlock_accounts = this.need_to_unlock_accounts;
+				window.simplestore.Config.need_to_unlock_accounts = this.need_to_unlock_accounts;
 		
 			var overload_wallet_account_challenge = (this.wallet_account_challenge.substring(1) == 'wallet_account_challenge' ? false : true);
 			if (overload_wallet_account_challenge)
-				window.Config.wallet_account_challenge = this.wallet_account_challenge;
+				window.simplestore.Config.wallet_account_challenge = this.wallet_account_challenge;
 		
 			var overload_wallet_account = (this.wallet_account.substring(1) == 'wallet_account' ? false : true);
 			if (overload_wallet_account)
-				window.Config.wallet_account = this.wallet_account;
+				window.simplestore.Config.wallet_account = this.wallet_account;
 		
 		
 		
@@ -331,7 +335,7 @@ class XtraConfig {
 		var global;
 		
 		try {
-			global = window.Global.getGlobalObject();
+			global = window.simplestore.Global.getGlobalObject();
 		}
 		catch(e) {
 			console.log("exception in XtraConfig.getGlobalObject " + e);
@@ -344,7 +348,13 @@ class XtraConfig {
 
 //export
 if ( typeof window !== 'undefined' && window ) // if we are in browser and not node js (e.g. truffle)
-window.Config.XtraConfig = XtraConfig;
+window.simplestore.Config.XtraConfig = XtraConfig;
 
+if ( typeof GlobalClass !== 'undefined' && GlobalClass )
 GlobalClass.getGlobalObject().registerModuleObject(new XtraConfigModule());
+else if (typeof window !== 'undefined') {
+	let _GlobalClass = ( window && window.simplestore && window.simplestore.Global ? window.simplestore.Global : null);
+	
+	_GlobalClass.getGlobalObject().registerModuleObject(new XtraConfigModule());
+}
 

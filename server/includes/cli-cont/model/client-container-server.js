@@ -130,7 +130,7 @@ class ClientContainerServer {
 		clientglobalscope.setIsInBrowser(false);
 		
 		var Config = this.require_js_script('config.js');
-		clientglobalscope.Config = Config;
+		clientglobalscope.simplestore.Config = Config;
 		
 		// execute container load
 		clientcontainer.load();

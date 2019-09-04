@@ -17,12 +17,16 @@ class AuthKeyServerAccess {
 	    
 	    if (!rest_server_url) {
 	    	// we look in Config
+			var Config = window.simplestore.Config;
+
 	    	if (Config && (Config.get)  && (Config.get('authkey_server_url')))
 	    			rest_server_url = Config.get('authkey_server_url');
 	    }
 
 	    if (!rest_server_api_path) {
 	    	// we look in Config
+			var Config = window.simplestore.Config;
+
 	    	if (Config && (Config.get)  && (Config.get('authkey_server_api_path')))
 	    		rest_server_api_path = Config.get('authkey_server_api_path');
 	    }
@@ -60,12 +64,16 @@ class AuthKeyServerAccess {
 
 	    if (!rest_server_url) {
 	    	// we look in Config
+			var Config = window.simplestore.Config;
+
 	    	if (Config && (Config.get)  && (Config.get('authkey_server_url')))
 	    			rest_server_url = Config.get('authkey_server_url');
 	    }
 
 	    if (!rest_server_api_path) {
 	    	// we look in Config
+			var Config = window.simplestore.Config;
+
 	    	if (Config && (Config.get)  && (Config.get('authkey_server_api_path')))
 	    		rest_server_api_path = Config.get('authkey_server_api_path');
 	    }
@@ -424,6 +432,6 @@ console.log("AuthKeyServerAccess is loaded");
 //GlobalClass.registerModuleClass('authkey', 'AuthKeyServerAccess', AuthKeyServerAccess);
 // because load sequence of module and interface is not predictable
 if ( typeof window !== 'undefined' && window ) // if we are in browser and not node js (e.g. truffle)
-	window.AuthKeyServerAccess = AuthKeyServerAccess;
+	window.simplestore.AuthKeyServerAccess = AuthKeyServerAccess;
 else
 	module.exports = AuthKeyServerAccess; // we are in node js

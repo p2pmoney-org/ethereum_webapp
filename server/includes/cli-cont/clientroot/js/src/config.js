@@ -114,6 +114,6 @@ Config.oauth2_host = 'http://192.168.1.82:8000/oauth';
 // export
 
 if ( typeof window !== 'undefined' && window ) // if we are in browser and not node js (e.g. truffle)
-window.Config = Config;
+window.simplestore.Config = Config;
 else
 module.exports = Config; // we are in node js
