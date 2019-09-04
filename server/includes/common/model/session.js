@@ -165,7 +165,7 @@ class Session {
 		this.creation_date = Date.now();
 		this.last_ping_date = Date.now();
 		
-		this.issticky = global.sticky_session;
+		this.issticky = global.areSessionsSticky();
 		
 		// initialization
 		this.isready = false;
@@ -192,6 +192,10 @@ class Session {
 	}
 	
 	// persistence
+	isSticky() {
+		return (this.issticky !== false);
+	}
+	
 	/*_acquiremutex(mutextype) {
 		var global = this.global;
 		
@@ -406,13 +410,13 @@ class Session {
 	getSessionVariable(key) {
 		var global = this.global;
 		
-		if (this.issticky === false) {
+		/*if (this.issticky === false) {
 			//global.log('Session.getSessionVariable SESSION IS NOT STICKY key ' + key);
 			
 			// we force to read variables from database in case another process
 			// changed the value of the key
 			this._read();
-		}
+		}*/
 		
 		if (key in this.sessionvar) {
 			return this.sessionvar[key];
@@ -646,46 +650,126 @@ class Session {
 	static getSession(global, sessionuuid) {
 		var session;
 		
-		var sessionmap = Session.getSessionMap(global);
-		
-		var key = sessionuuid.toString();
-		var mapvalue = sessionmap.getSession(key);
-		
-		var account;
-		
-		if (mapvalue !== undefined) {
-			// is already in map
-			session = mapvalue;
+		if (global.areSessionsSticky()) {
+			var sessionmap = Session.getSessionMap(global);
+			
+			var key = sessionuuid.toString();
+			var mapvalue = sessionmap.getSession(key);
+			
+			var account;
+			
+			if (mapvalue !== undefined) {
+				// is already in map
+				session = mapvalue;
+			}
+			else {
+				// create a new session object
+				session = new Session(global);
+				session.session_uuid = sessionuuid;
+				
+				global.log('creating session object for ' + sessionuuid);
+				
+				// we push the object right away
+				// to avoid having persistence async operation creating a re-entry
+				sessionmap.pushSession(session, true); // fast push to avoid calls to mysql
+				
+			}
+			
+			if (session.isready === false) {
+				session.initializationfinished = false;
+				
+				global.log('creating session initialization promise for session ' + sessionuuid);
+				
+				// we may go through this section several times because of issues with re-entrance
+				// and nodejs/javascript mono-threaded approach of stacking execution bits
+				
+				/// create a latch to start unstacking calls once one of them has finished the initialization
+				var sessionlatch = _SessionInitLatch.get(session);
+				
+				global.log('session sessionlatch retrieved for session ' + sessionuuid);
+				
+				var promise = new Promise(function (resolve, reject) {
+					try {
+						global.log('starting initialization of session object for ' + sessionuuid);
+
+						// check to see if it's in the persistence layer
+						var array = Session._sessionRecord(global, sessionuuid);
+						
+						if (array && (array['uuid'])) {
+							session._init(array);
+						}
+						
+						session.ping();
+
+						session.save();
+
+						// invoke hooks to let services interact with the new session object
+						var result = [];
+						
+						var params = [];
+						
+						params.push(session);
+
+						var ret = global.invokeHooks('createSession_hook', result, params);
+						
+						if (ret && result && result.length) {
+							global.log('createSession_hook result is ' + JSON.stringify(result));
+						}
+						
+						session.isready = true; // end of pseudo lock on session initialization
+						
+						global.log('session ' + sessionuuid + ' is now ready!');
+
+						resolve(true);
+					}
+					catch(e) {
+						var error = 'exception in session creation promise: ' + e;
+						global.log(error);
+						
+						reject(error);
+				}
+				})
+				.then(function (res) {
+					global.log('session ' + sessionuuid + ' resolved the initialization promise');
+
+					session.initializationfinished = true;
+					
+					return Promise.resolve(true);
+				})
+				.catch(function (err) {
+					global.log("error in session initialization for sessionuuid " + sessionuuid + ": " + err);
+					
+					session.initializationfinished = true;
+					
+					return Promise.reject("error in session initialization for sessionuuid " + sessionuuid + ": " + err);
+				});
+				
+				global.log('session initialization promise created for session ' + sessionuuid);
+				
+				sessionlatch.await(10000, function() {
+					global.log('session going out of initialization latch for session ' + sessionuuid);
+				});
+				
+				global.log('session initialized for session ' + sessionuuid);
+				
+			}
+			
 		}
 		else {
+			var calluuid = global.guid();
+			
 			// create a new session object
 			session = new Session(global);
 			session.session_uuid = sessionuuid;
 			
-			global.log('creating session object for ' + sessionuuid);
+			global.log('creating non sticky session object for ' + sessionuuid + ' call ' + calluuid);
 			
-			// we push the object right away
-			// to avoid having persistence async operation creating a re-entry
-			sessionmap.pushSession(session, true); // fast push to avoid calls to mysql
+			var initializationfinished = false;
 			
-		}
-		
-		if (session.isready === false) {
-			session.initializationfinished = false;
-			
-			global.log('creating session initialization promise for session ' + sessionuuid);
-			
-			// we may go through this section several times because of issues with re-entrance
-			// and nodejs/javascript mono-threaded approach of stacking execution bits
-			
-			/// create a latch to start unstacking calls once one of them has finished the initialization
-			var sessionlatch = _SessionInitLatch.get(session);
-			
-			global.log('session sessionlatch retrieved for session ' + sessionuuid);
-			
-			var promise = new Promise(function (resolve, reject) {
+			global.log('creating session initialization promise for session ' + sessionuuid + ' call ' + calluuid);
+			var initializationpromise = new Promise(function (resolve, reject) {
 				try {
-					global.log('starting initialization of session object for ' + sessionuuid);
+					global.log('starting initialization of session object for ' + sessionuuid + ' call ' + calluuid);
 
 					// check to see if it's in the persistence layer
 					var array = Session._sessionRecord(global, sessionuuid);
@@ -694,9 +778,9 @@ class Session {
 						session._init(array);
 					}
 					
-					session.ping();
+					//session.ping();
 
-					session.save();
+					//session.save();
 
 					// invoke hooks to let services interact with the new session object
 					var result = [];
@@ -711,10 +795,8 @@ class Session {
 						global.log('createSession_hook result is ' + JSON.stringify(result));
 					}
 					
-					session.isready = true; // end of pseudo lock on session initialization
+					session.isready = true;
 					
-					global.log('session ' + sessionuuid + ' is now ready!');
-
 					resolve(true);
 				}
 				catch(e) {
@@ -722,32 +804,27 @@ class Session {
 					global.log(error);
 					
 					reject(error);
-			}
+				}
 			})
 			.then(function (res) {
-				global.log('session ' + sessionuuid + ' resolved the initialization promise');
+				global.log('session ' + sessionuuid + ' is now ready!');
 
-				session.initializationfinished = true;
-				
-				return Promise.resolve(true);
+				initializationfinished = true;
 			})
 			.catch(function (err) {
-				global.log("error in session initialization for sessionuuid " + sessionuuid + ": " + err);
+				console.log("error in session initialization for sessionuuid " + sessionuuid + ": " + err);
 				
-				session.initializationfinished = true;
-				
-				return Promise.reject("error in session initialization for sessionuuid " + sessionuuid + ": " + err);
+				initializationfinished = true;
 			});
 			
 			global.log('session initialization promise created for session ' + sessionuuid);
+
+			while(!initializationfinished)
+			{require('deasync').runLoopOnce();}
 			
-			sessionlatch.await(10000, function() {
-				global.log('session going out of initialization latch for session ' + sessionuuid);
-			});
-			
-			global.log('session initialized for session ' + sessionuuid);
-			
+			global.log('session object initialized for session ' + sessionuuid + ' call ' + calluuid);
 		}
+		
 
 		
 		return session;
