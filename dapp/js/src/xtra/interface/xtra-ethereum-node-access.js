@@ -93,6 +93,47 @@ class Xtra_EthereumNodeAccess {
 		this.web3_version = ethereumnodeaccessmodule.web3_version;
 	}
 	
+	isReady(callback) {
+		var self = this;
+		var session = this.session;
+		var global = session.getGlobalObject();
+		
+		var ethnodemodule = global.getModuleObject('ethnode');
+
+		
+		var promise = new Promise(function (resolve, reject) {
+			
+			var globalweb3url = ethnodemodule.getWeb3ProviderUrl();
+			var sessionweb3url = ethnodemodule.getWeb3ProviderUrl(session);
+			
+			if (globalweb3url !=  sessionweb3url) {
+				// url overloaded on the client side
+				// we set the url on the server side
+				self.web3_setProviderUrl(sessionweb3url, function(err, res) {
+					if (res) {
+						if (callback)
+							callback(null, true);
+						resolve(true);
+					}
+					else {
+						if (callback)
+							callback(err, null);
+						
+						reject('could not set the web3 config on the server: ' + err);
+					}
+				});
+			}
+			else {
+				if (callback)
+					callback(null, true);
+				
+				resolve(true);
+			}
+		});
+		
+		return promise
+	}
+	
 	getRestConnection() {
 		if (this.rest_connection)
 			return this.rest_connection;
@@ -115,6 +156,19 @@ class Xtra_EthereumNodeAccess {
 		var rest_connection = this.getRestConnection();
 		
 		return rest_connection.rest_post(resource, postdata, callback);
+	}
+	
+	rest_put(resource, postdata, callback) {
+		var rest_connection = this.getRestConnection();
+		
+		return rest_connection.rest_put(resource, postdata, callback);
+	}
+
+	
+	rest_delete(resource, callback) {
+		var rest_connection = this.getRestConnection();
+		
+		return rest_connection.rest_delete(resource, callback);
 	}
 	
 	//
@@ -188,6 +242,48 @@ class Xtra_EthereumNodeAccess {
 	
 
 	// node
+	web3_setProviderUrl(url, callback) {
+		console.log("Xtra_EthereumNodeAccess.web3_setProviderUrl called with: " + url);
+		
+		var self = this;
+		var session = this.session;
+
+		var promise = new Promise(function (resolve, reject) {
+			
+			try {
+				var resource = "/web3/provider";
+				
+				var postdata = [];
+				
+				postdata = {web3url: url};
+
+				var promise2 = self.rest_put(resource, postdata, function (err, res) {
+					if (res) {
+						if (callback)
+							callback(null, res['data']);
+						
+						return resolve(res['data']);
+					}
+					else {
+						if (callback)
+							callback('error', null);
+						
+						reject('rest error calling ' + resource + ' : ' + err);
+					}
+					
+				});
+			}
+			catch(e) {
+				if (callback)
+					callback('exception: ' + e, null);
+				
+				reject('rest exception: ' + e);
+			}
+		});
+		
+		return promise;
+	}
+	
 	web3_isSyncing(callback) {
 		console.log("Xtra_EthereumNodeAccess.web3_isSyncing called");
 		

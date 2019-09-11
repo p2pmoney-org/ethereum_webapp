@@ -335,11 +335,31 @@ class Service {
 			return web3_provider_url;
 	}
 	
-	getWeb3ProviderFullUrl() {
+	getWeb3ProviderFullUrl(session) {
+		if (!session)
 		return this.buildWeb3ProviderUrl(this.web3_provider_url, this.web3_provider_port);
+		else {
+			var session_web3_provider_full_url = session.getSessionVariable('web3_provider_full_url');
+			
+			if (session_web3_provider_full_url)
+				return session_web3_provider_full_url;
+			else
+				return this.buildWeb3ProviderUrl(this.web3_provider_url, this.web3_provider_port);
+		}
 	}
 	
-
+	setWeb3ProviderFullUrl(session, url) {
+		if (!session)
+			return;
+		
+		session.setSessionVariable('web3_provider_full_url', url);
+		
+		// check if ethereum_node_instance needs to be reset
+		var ethnode = this.getEthereumNodeInstance(session);
+		
+		if (ethnode)
+			ethnode.clearWeb3Instance();
+	}
 
 }
 

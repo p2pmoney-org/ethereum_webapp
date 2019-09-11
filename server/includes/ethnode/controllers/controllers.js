@@ -9,7 +9,7 @@ class EthNodeControllers {
 	constructor(global) {
 		this.global = global;
 		
-		this.ethereum_node = null;
+		//this.ethereum_node = null;
 	}
 	
 	getEthereumNode(session) {
@@ -59,7 +59,7 @@ class EthNodeControllers {
 	
 		}
 		catch(e) {
-			global.log("exception in web3info for sessiontoken " + sessionuuid + ": " + e);
+			global.log("exception in web3_root for sessiontoken " + sessionuuid + ": " + e);
 		}
 		var jsonresult;
 		
@@ -70,6 +70,55 @@ class EthNodeControllers {
 			jsonresult = {status: 0, error: "could not retrieve web3 information"};
 		}
 	  	
+	  	res.json(jsonresult);
+	}
+	
+	web3_set_provider(req, res) {
+		// PUT
+		var global = this.global;
+		var sessionuuid = req.get("sessiontoken");
+		
+		global.log("web3_set_provider called for sessiontoken " + sessionuuid);
+		
+		var commonservice = global.getServiceInstance('common');
+		var Session = commonservice.Session;
+		
+		var web3url  = req.body.web3url;
+		
+		var jsonresult;
+
+		try {
+			var session = Session.getSession(global, sessionuuid);
+			var ethnode = this.getEthereumNode(session);
+			
+			if (session.isAuthenticated()) {
+				
+				// set new url
+				ethnode.setWeb3ProviderFullUrl(web3url);
+				
+				// and return web3info
+				var web3info = {};
+				
+				var web3instance = ethnode.getWeb3Instance();
+				
+				web3info.web3_version = ethnode.web3_version;
+
+				var execenv = global.getExecutionEnvironment();
+				
+				if (ethnode && (execenv == 'dev')) {
+					web3info.web3_host = (web3instance && web3instance.currentProvider ? web3instance.currentProvider.host : null);
+				}
+				
+				jsonresult = {status: 1, data: web3info};
+			}
+			else {
+				jsonresult = {status: 0, error: "session is not authenticated"};
+			}
+		}
+		catch(e) {
+			global.log("exception in web3_set for sessiontoken " + sessionuuid + ": " + e);
+		}
+		
 	  	res.json(jsonresult);
 	}
 	

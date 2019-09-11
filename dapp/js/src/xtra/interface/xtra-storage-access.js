@@ -6,6 +6,18 @@ class Xtra_StorageAccess {
 		this.session = session;
 	}
 	
+	isReady(callback) {
+		var promise = new Promise(function (resolve, reject) {
+			
+			if (callback)
+				callback(null, true);
+			
+			resolve(true);
+		});
+		
+		return promise
+	}
+	
 	getRestConnection() {
 		if (this.rest_connection)
 			return this.rest_connection;

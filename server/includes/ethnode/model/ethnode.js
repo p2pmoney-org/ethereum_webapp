@@ -140,6 +140,50 @@ class EthereumNode {
 	//
 	// Web3
 	//
+	getWeb3ProviderFullUrl() {
+		var session = this.session;
+		var global = this.session.getGlobalInstance();
+		var ethnodeservice = global.getServiceInstance('ethnode');
+		
+		var web3providerfullurl = ethnodeservice.getWeb3ProviderFullUrl(session);
+		
+		return web3providerfullurl;
+	}
+	
+	setWeb3ProviderFullUrl(web3providerfullurl) {
+		var session = this.session;
+		var global = this.session.getGlobalInstance();
+		var ethnodeservice = global.getServiceInstance('ethnode');
+		
+		ethnodeservice.setWeb3ProviderFullUrl(session, web3providerfullurl);
+		
+		this.clearWeb3Instance();
+	}
+	
+	getWeb3ProviderFromUrl(web3providerfullurl) {
+		var global = this.session.getGlobalInstance();
+		
+		var Web3 = global.require('web3');
+
+		/*if (this.web3_version == "1.0.x") {
+			var web3providerwsurl = "ws:" + web3providerfullurl.substring(5);
+			var web3Provider =   new Web3.providers.WebsocketProvider(web3providerwsurl);
+		}
+		else {
+			var web3Provider =   new Web3.providers.HttpProvider(web3providerfullurl);
+		}*/
+	
+		var web3Provider =  new Web3.providers.HttpProvider(web3providerfullurl);
+		
+		return web3Provider;
+	}
+	
+	getWeb3Provider() {
+		var web3providerfullurl = this.getWeb3ProviderFullUrl();
+		
+		return this.getWeb3ProviderFromUrl(web3providerfullurl);
+	}
+	
 	getWeb3InstanceFromProvider(web3Provider) {
 		var global = this.session.getGlobalInstance();
 
@@ -207,32 +251,8 @@ class EthereumNode {
 		this.web3instance = web3instance;
 	}
 	
-	getWeb3ProviderFromUrl(web3providerfullurl) {
-		var global = this.session.getGlobalInstance();
-		
-		var Web3 = global.require('web3');
-
-		/*if (this.web3_version == "1.0.x") {
-			var web3providerwsurl = "ws:" + web3providerfullurl.substring(5);
-			var web3Provider =   new Web3.providers.WebsocketProvider(web3providerwsurl);
-		}
-		else {
-			var web3Provider =   new Web3.providers.HttpProvider(web3providerfullurl);
-		}*/
-	
-		var web3Provider =  new Web3.providers.HttpProvider(web3providerfullurl);
-		
-		return web3Provider;
-	}
-	
-	getWeb3Provider() {
-		var global = this.session.getGlobalInstance();
-		var ethnodeservice = global.getServiceInstance('ethnode');
-		
-		//var web3providerfullurl = global.getWeb3ProviderFullUrl();
-		var web3providerfullurl = ethnodeservice.getWeb3ProviderFullUrl();
-		
-		return this.getWeb3ProviderFromUrl(web3providerfullurl);
+	clearWeb3Instance() {
+		this.web3instance = null;
 	}
 	
 	// node
