@@ -773,7 +773,7 @@ class Xtra_EthereumNodeAccess {
 							var transactionuuid = tx['transactionuuid'];
 							var creationdate = global.parseDate(tx['creationdate']);
 							
-							var transaction = ethnodemodule.getTransactionObject(transactionuuid);
+							var transaction = ethnodemodule.getTransactionObject(session, transactionuuid);
 							
 							transaction.setTransactionHash(tx['transactionhash']);
 							transaction.setFrom(tx['from']);

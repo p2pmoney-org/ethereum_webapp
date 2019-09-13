@@ -67,7 +67,7 @@ var AuthKeyInterface = class {
 					
 					if (privatekey) {
 						
-						var cryptokey = commonmodule.createBlankCryptoKeyObject();
+						var cryptokey = commonmodule.createBlankCryptoKeyObject(session);
 						
 						cryptokey.setKeyUUID(keyuuid);
 						cryptokey.setDescription(description);
@@ -98,7 +98,7 @@ var AuthKeyInterface = class {
 		
 		
 		var commonmodule = global.getModuleObject('common');
-		var user = commonmodule.createBlankUserObject();
+		var user = commonmodule.createBlankUserObject(session);
 		
 		var loaduserpromise = authkeyserveraccess.auth_session_user( function(err, res) {
 			var authenticated = (res && (res['status'] == '1') ? true : false);
@@ -136,7 +136,7 @@ var AuthKeyInterface = class {
 							
 							if (privatekey) {
 								
-								var cryptokey = commonmodule.createBlankCryptoKeyObject();
+								var cryptokey = commonmodule.createBlankCryptoKeyObject(session);
 								
 								cryptokey.setKeyUUID(keyuuid);
 								cryptokey.setDescription(description);
@@ -192,7 +192,7 @@ var AuthKeyInterface = class {
 		
 		
 		var commonmodule = global.getModuleObject('common');
-		var user = commonmodule.createBlankUserObject();
+		var user = commonmodule.createBlankUserObject(session);
 		
 		var authenticationpromise = authkeyserveraccess.auth_session_authenticate(username, password, function(err, res) {
 			var authenticated = (res && (res['status'] == '1') ? true : false);
@@ -231,7 +231,7 @@ var AuthKeyInterface = class {
 							
 							if (privatekey) {
 								
-								var cryptokey = commonmodule.createBlankCryptoKeyObject();
+								var cryptokey = commonmodule.createBlankCryptoKeyObject(session);
 								
 								cryptokey.setKeyUUID(keyuuid);
 								cryptokey.setDescription(description);

@@ -27,7 +27,7 @@ class EthNodeControllers {
 	web3_root(req, res) {
 		// GET
 		var sessionuuid = req.get("sessiontoken");
-		var address = req.params.id;
+		//var address = req.params.id;
 		
 		var global = this.global;
 		var commonservice = global.getServiceInstance('common');
@@ -126,7 +126,7 @@ class EthNodeControllers {
 	web3_node(req, res) {
 		// GET
 		var sessionuuid = req.get("sessiontoken");
-		var address = req.params.id;
+		//var address = req.params.id;
 		
 		var global = this.global;
 		var commonservice = global.getServiceInstance('common');

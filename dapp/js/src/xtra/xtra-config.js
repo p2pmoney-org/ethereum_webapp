@@ -172,8 +172,12 @@ class XtraConfigModule {
 		this.StorageAccess = window.simplestore.Xtra_StorageAccess;
 		
 		// reset ethereum instance if already instantiated
-		var session = commonmodule.getSessionObject();
-		session.ethereum_node_access_instance = null;
+		var sessions = commonmodule.getSessionObjects();
+		
+		for (var i = 0; i < sessions.length; i++) {
+			var session = sessions[i];
+			session.ethereum_node_access_instance = null;
+		}
 
 		result.push({module: this.name, handled: true});
 		
@@ -319,7 +323,7 @@ class XtraConfig {
 		var global = XtraConfig.getGlobalObject();
 		var commonmodule = global.getModuleObject('common');
 		
-		commonmodule.resetSessionObject();
+		commonmodule.resetSessionObjects();
 	}
 	
 	handleDisplayIdentificationBox() {

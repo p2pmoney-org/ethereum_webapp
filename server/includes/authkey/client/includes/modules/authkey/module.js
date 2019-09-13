@@ -344,13 +344,15 @@ var Module = class {
 		this._authenticate(username, password);
 	}
 	
-	_authenticate(username, password) {
+	_authenticate(session, username, password) {
 		var global = this.global;
+		
+		if (session instanceof Session !== true)
+			throw 'must pass a session object as first parameter!';
 		
 		var app = this._getAppObject();
 		
 		var commonmodule = global.getModuleObject('common');
-		var session = commonmodule.getSessionObject();
 
 		if (username != null) {
 			var authkeymodule = global.getModuleObject('authkey');
@@ -396,13 +398,15 @@ var Module = class {
 		
 	}
 	
-	_logout() {
+	_logout(session) {
+		if (session instanceof Session !== true)
+			throw 'must pass a session object as first parameter!';
+		
 		var global = this.global;
 		
 		var app = this._getAppObject();
 		
 		var commonmodule = global.getModuleObject('common');
-		var session = commonmodule.getSessionObject();
 
 		if (!session.isAnonymous()) {
 			var authkeymodule = global.getModuleObject('authkey');
@@ -500,11 +504,12 @@ var Module = class {
 		console.log('handleLoginSubmit_hook called for ' + this.name);
 
 		var $scope = params[0];
+		var session = params[1];
 		
 		var username = this.getFormValue("username");
 		var password = this.getFormValue("password");
 		
-		this._authenticate(username, password);
+		this._authenticate(session, username, password);
 
 		result.push({module: this.name, handled: true});
 		
@@ -518,7 +523,9 @@ var Module = class {
 	handleLogoutSubmit_hook(result, params) {
 		console.log('handleLogoutSubmit_hook called for ' + this.name);
 		
-		this._logout();
+		var session = params[1];
+		
+		this._logout(session);
 		
 		result.push({module: this.name, handled: true});
 		
