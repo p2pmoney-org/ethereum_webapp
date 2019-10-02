@@ -252,6 +252,10 @@ class Global {
 		}
 	}
 	
+	getExecutionGlobalScope() {
+		return global; // nodejs global
+	}
+	
 	areSessionsSticky() {
 		return this.sticky_session;
 	}

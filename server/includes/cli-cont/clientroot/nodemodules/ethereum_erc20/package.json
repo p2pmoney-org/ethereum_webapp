@@ -1,0 +1,7 @@
+{
+  "name": "ethereum_erc20",
+  "version": "0.11.0",
+  "author": "P2PMoney.org",
+  "license": "MIT",
+  "dependencies": {}
+}
