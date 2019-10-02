@@ -94,6 +94,7 @@ var Module = class {
 	}
 	
 	postRegisterModule() {
+		console.log('postRegisterModule called for ' + this.name);
 		if (!this.isloading) {
 			var global = this.global;
 			var self = this;
@@ -347,8 +348,11 @@ var Module = class {
 	_authenticate(session, username, password) {
 		var global = this.global;
 		
-		if (session instanceof Session !== true)
+		var SessionClass = (typeof Session !== 'undefined' ? Session : global.getModuleObject('common').Session);
+		if (session instanceof SessionClass !== true)
 			throw 'must pass a session object as first parameter!';
+		
+		var global = session.getGlobalObject();
 		
 		var app = this._getAppObject();
 		
@@ -399,10 +403,13 @@ var Module = class {
 	}
 	
 	_logout(session) {
-		if (session instanceof Session !== true)
+		var global = this.global;
+		
+		var SessionClass = (typeof Session !== 'undefined' ? Session : global.getModuleObject('common').Session);
+		if (session instanceof SessionClass !== true)
 			throw 'must pass a session object as first parameter!';
 		
-		var global = this.global;
+		var global = session.getGlobalObject();
 		
 		var app = this._getAppObject();
 		
@@ -620,7 +627,27 @@ var Module = class {
 	
 }
 
-GlobalClass.getGlobalObject().registerModuleObject(new Module());
 
-// dependencies
-GlobalClass.getGlobalObject().registerModuleDepency('authkey', 'common');
+if ( typeof GlobalClass !== 'undefined' && GlobalClass ) {
+	GlobalClass.getGlobalObject().registerModuleObject(new Module());
+
+	// dependencies
+	GlobalClass.getGlobalObject().registerModuleDepency('authkey', 'common');
+}
+else if (typeof window !== 'undefined') {
+	let _GlobalClass = ( window && window.simplestore && window.simplestore.Global ? window.simplestore.Global : null);
+	
+	_GlobalClass.getGlobalObject().registerModuleObject(new Module());
+
+	// dependencies
+	_GlobalClass.getGlobalObject().registerModuleDepency('authkey', 'common');
+}
+else if (typeof global !== 'undefined') {
+	// we are in node js
+	let _GlobalClass = ( global && global.simplestore && global.simplestore.Global ? global.simplestore.Global : null);
+	
+	_GlobalClass.getGlobalObject().registerModuleObject(new Module());
+
+	// dependencies
+	_GlobalClass.getGlobalObject().registerModuleDepency('authkey', 'common');
+}

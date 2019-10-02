@@ -428,10 +428,9 @@ class AuthKeyServerAccess {
 
 console.log("AuthKeyServerAccess is loaded");
 
-//if ( typeof GlobalClass !== 'undefined' && GlobalClass )
 //GlobalClass.registerModuleClass('authkey', 'AuthKeyServerAccess', AuthKeyServerAccess);
 // because load sequence of module and interface is not predictable
-if ( typeof window !== 'undefined' && window ) // if we are in browser and not node js (e.g. truffle)
+if ( typeof window !== 'undefined' && window ) // if we are in browser or react-native and not node js (e.g. truffle)
 	window.simplestore.AuthKeyServerAccess = AuthKeyServerAccess;
-else
-	module.exports = AuthKeyServerAccess; // we are in node js
+else if (typeof global !== 'undefined')
+	global.simplestore.AuthKeyServerAccess = AuthKeyServerAccess; // we are in node js

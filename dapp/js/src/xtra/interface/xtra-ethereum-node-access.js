@@ -1913,6 +1913,6 @@ console.log("Xtra_EthereumNodeAccess is loaded");
 
 if ( typeof window !== 'undefined' && window ) // if we are in browser and not node js (e.g. truffle)
 window.simplestore.Xtra_EthereumNodeAccess = Xtra_EthereumNodeAccess;
-else
-module.exports = Xtra_EthereumNodeAccess; // we are in node js
+else if (typeof global !== 'undefined')
+global.simplestore.Xtra_EthereumNodeAccess = Xtra_EthereumNodeAccess; // we are in node js
 

@@ -356,5 +356,5 @@ class Xtra_StorageAccess {
 
 if ( typeof window !== 'undefined' && window ) // if we are in browser and not node js (e.g. truffle)
 window.simplestore.Xtra_StorageAccess = Xtra_StorageAccess;
-else
-module.exports = Xtra_StorageAccess; // we are in node js
+else if (typeof global !== 'undefined')
+global.simplestore.Xtra_StorageAccess = Xtra_StorageAccess; // we are in node js
