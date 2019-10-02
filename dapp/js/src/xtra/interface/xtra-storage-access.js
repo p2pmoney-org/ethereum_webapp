@@ -57,22 +57,22 @@ class Xtra_StorageAccess {
 	
 	
 	// client side
-	readClientSideJson(keys) {
+	readClientSideJson(keys, callback) {
 		var session = this.session;
 		var global = session.getGlobalObject();
 		var storagemodule = global.getModuleObject('storage-access');
 		
-		var jsonleaf = storagemodule.readClientSideJson(session, keys);
+		var jsonleaf = storagemodule.readClientSideJson(session, keys, callback);
 		
 		return jsonleaf;
 	}
 	
-	saveClientSideJson(keys, json) {
+	saveClientSideJson(keys, json, callback) {
 		var session = this.session;
 		var global = session.getGlobalObject();
 		var storagemodule = global.getModuleObject('storage-access');
 		
-		storagemodule.saveClientSideJson(session, keys, json);
+		storagemodule.saveClientSideJson(session, keys, json, callback);
 	}
 	
 
