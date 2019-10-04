@@ -10,6 +10,8 @@ class Ethereum_core {
 		this.initialized = false;
 		
 		this.initializationpromise = null;
+		
+		this.artifactmap = Object.create(null);
 	}
 	
 	init(callback) {
@@ -65,6 +67,14 @@ class Ethereum_core {
 			return global.simplestore.Global.getGlobalObject();
 		}
 		
+	}
+	
+	putArtifact(artifactname, artifact) {
+		this.artifactmap[artifactname] = artifact;
+	}
+	
+	getArtifact(artifactname) {
+		return this.artifactmap[artifactname];
 	}
 	
 

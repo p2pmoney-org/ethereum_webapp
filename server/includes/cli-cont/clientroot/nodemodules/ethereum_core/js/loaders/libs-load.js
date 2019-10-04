@@ -23,7 +23,6 @@ ethereumnodeaccessmodulescriptloader.push_script( '../../includes/lib/web3.min-1
 //import '../../includes/lib/web3.min-1.0.0-beta36.x.js';
 
 // put Web3 in window.simplestore
-//var Web3 = require('../../includes/lib/web3.min-1.0.0-beta36.x.js');
 var Web3 = require('web3');
 window.simplestore.Web3 = Web3;
 

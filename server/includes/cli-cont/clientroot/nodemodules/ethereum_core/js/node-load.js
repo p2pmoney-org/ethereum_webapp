@@ -112,6 +112,11 @@ class NodeLoad {
 			
 			_globalscope.simplestore.Web3 = Web3;
 			
+			// set low-level local storage
+			var ClientStorage = require('./localstorage/node-client-storage.js')
+
+			_globalscope.simplestore.localStorage = new ClientStorage();
+
 		});
 
 		//

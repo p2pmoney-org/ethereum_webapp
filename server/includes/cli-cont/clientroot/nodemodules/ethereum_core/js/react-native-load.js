@@ -17,23 +17,24 @@ class ReactNativeLoad {
 		console.log('ReactNativeLoad.init called');
 		
 		try {
+			var _globalscope = window; // react-native window
 			var self = this;
 			
 			// bootstrap of framework
 			
 			// prevent automatic load before we return from import
-			window.global_scope_no_load = true;
-			window.dapp_browser_no_load = true;
+			_globalscope.global_scope_no_load = true;
+			_globalscope.dapp_browser_no_load = true;
 
 			require('../imports/includes/bootstrap.js');
 			
 			// put in bootstrap window.simplestore now it exists
-			window.simplestore.ReactNativeLoad = this;
+			_globalscope.simplestore.ReactNativeLoad = this;
 
 
 			// load sequence
-			var Bootstrap = window.simplestore.Bootstrap;
-			var ScriptLoader = window.simplestore.ScriptLoader;
+			var Bootstrap = _globalscope.simplestore.Bootstrap;
+			var ScriptLoader = _globalscope.simplestore.ScriptLoader;
 			
 			// 
 			ScriptLoader._performScriptLoad = function(source, posttreatment) {
@@ -77,6 +78,11 @@ class ReactNativeLoad {
 			// listen to events
 			rootscriptloader.registerEventListener('on_bootstrap_load_end', function(eventname) {
 				console.log('ReactNativeLoad: bootstrap files loaded');
+				
+				// set low-level local storage
+				var ClientStorage = require('./localstorage/react-native-client-storage.js')
+
+				_globalscope.simplestore.localStorage = new ClientStorage();
 			});
 				
 			rootscriptloader.registerEventListener('on_core_load_end', function(eventname) {
@@ -107,7 +113,7 @@ class ReactNativeLoad {
 
 
 			// then load libs and modules
-			var global = window.simplestore.Global.getGlobalObject();
+			var global = _globalscope.simplestore.Global.getGlobalObject();
 			
 			// libs
 			require('./loaders/libs-load.js');
@@ -134,8 +140,10 @@ class ReactNativeLoad {
 	}
 	
 	_checkLoad() {
-		var Bootstrap = window.simplestore.Bootstrap;
-		var ScriptLoader = window.simplestore.ScriptLoader;
+		var _globalscope = window; // react-native window
+
+		var Bootstrap = _globalscope.simplestore.Bootstrap;
+		var ScriptLoader = _globalscope.simplestore.ScriptLoader;
 		
 		var bootstrapobject = Bootstrap.getBootstrapObject();
 		var rootscriptloader = ScriptLoader.getRootScriptLoader();

@@ -32,37 +32,51 @@ import '../../imports/includes/interface/cryptokey-encryption.js';
 // external libraries for crypto
 var cryptomodulescriptloader = corescriptloader.getChildLoader('cryptokeyencryptionmoduleloader-2');
 
+//
+// ethereumjs
+//
 rootscriptloader.push_import(cryptomodulescriptloader, '../../imports/includes/lib/ethereumjs-all-2017-10-31.min.js');
 //import '../../imports/includes/lib/ethereumjs-all-2017-10-31.min.js';
+// filtered libraries (throwing exceptions in nodejs)
 var ethereumjs;
 
-/*ethereumjs = require('ethereum.js');
+ethereumjs = require('ethereum.js');
 ethereumjs.Util = require('ethereumjs-util');
 ethereumjs.Wallet = require('ethereumjs-wallet');
-ethereumjs.tx = require('ethereumjs-tx');
 
-window.ethereumjs = ethereumjs;*/
+ethereumjs.Buffer = {};
+ethereumjs.Buffer.Buffer = Buffer.from;
 
+window.simplestore.ethereumjs = ethereumjs;
+
+//
+// keythereum
+//
 rootscriptloader.push_import(cryptomodulescriptloader, '../../imports/includes/lib/keythereum.min-1.0.2.js');
 import '../../imports/includes/lib/keythereum.min-1.0.2.js';
 
-rootscriptloader.push_import(cryptomodulescriptloader, '../../includes/lib/bitcore.min-0.11.7.x.js');
-import '../../includes/lib/bitcore.min-0.11.7.x.js';
-
-rootscriptloader.push_import(cryptomodulescriptloader, '../../includes/lib/bitcore-ecies.min-0.9.2.x.js');
-import '../../includes/lib/bitcore-ecies.min-0.9.2.x.js';
-
-
-// duplicate window reference to window.simplestore
-window.simplestore.ethereumjs = window.ethereumjs;
-
+//duplicate window reference to window.simplestore
 window.simplestore.keythereum = window.keythereum;
 
-window.simplestore.bitcore = window.bitcore;
-window.simplestore.bitcore_ecies = window.bitcore_ecies;
+//
+// bit core
+//
+rootscriptloader.push_import(cryptomodulescriptloader, '../../includes/lib/bitcore.min-0.11.7.x.js');
+//import '../../includes/lib/bitcore.min-0.11.7.x.js';
+
+rootscriptloader.push_import(cryptomodulescriptloader, '../../includes/lib/bitcore-ecies.min-0.9.2.x.js');
+//import '../../includes/lib/bitcore-ecies.min-0.9.2.x.js';
+
+var bitcore = require('bitcore');
+var bitcore_ecies = require('bitcore-ecies');
+
+window.simplestore.bitcore = bitcore;
+window.simplestore.bitcore_ecies = bitcore_ecies;
 
 
 cryptomodulescriptloader.load_scripts();
+
+
 
 // interfaces to access external services (crypto and storage)
 rootscriptloader.push_import(corescriptloader,'../../imports/includes/interface/account-encryption.js');

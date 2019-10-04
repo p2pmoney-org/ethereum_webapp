@@ -18,6 +18,11 @@ class Ethereum_erc20 {
 		var Ethereum_core = require('../ethereum_core');
 		var ethereum_core = Ethereum_core.getObject();
 		
+		// load contracts
+		var jsoncontent = require('./imports/build/contracts/TokenERC20.json');
+		ethereum_core.putArtifact('./contracts/TokenERC20.json', jsoncontent);
+		
+		// create loader
 		if (typeof window !== 'undefined') {
 			// we are in react-native
 			console.log('loading for react-native');
