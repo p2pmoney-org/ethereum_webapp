@@ -31,6 +31,8 @@ class Global {
 	
 	constructor() {
 		
+		this.globalscope = global; // nodejs global
+		
 		// overload console.log
 		this.overrideConsoleLog();
 
@@ -232,6 +234,10 @@ class Global {
 	reload() {
 		// dirty exit to restart process
 		this.exit();
+	}
+	
+	getExecutionGlobalScope() {
+		return this.globalscope;
 	}
 	
 	getExecutionEnvironment() {

@@ -18,14 +18,18 @@ class ClientContainer {
 		this.clientinterfaces = Object.create(null);
 		
 		// load interfaces
+
+		var CryptoKeyClient = require('./interface/ethereum-cryptokey.js');
+		this.clientinterfaces['cryptokey'] = new CryptoKeyClient(this);
+
+		var LocalStorageClient = require('./interface/ethereum-localstorage.js');
+		this.clientinterfaces['localstorage'] = new LocalStorageClient(this);
+
 		var Web3Client = require('./interface/ethereum-web3.js');
 		this.clientinterfaces['web3'] = new Web3Client(this);
 
 		var ER20Client = require('./interface/ethereum-erc20.js');
 		this.clientinterfaces['erc20'] = new ER20Client(this);
-
-		var CryptoKeyClient = require('./interface/ethereum-cryptokey.js');
-		this.clientinterfaces['cryptokey'] = new CryptoKeyClient(this);
 	}
 	
 

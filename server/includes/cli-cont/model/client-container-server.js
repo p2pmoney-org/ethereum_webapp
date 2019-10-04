@@ -28,6 +28,20 @@ class ClientContainerServer {
 		promise_ethereum_core.then(function() {
 			global.log('init of ethereum_core done');
 			
+			var localstoragedir = global.getConfigValue('local_storage_dir');
+			
+			if (localstoragedir) {
+				var _globalscope = global.getExecutionGlobalScope();
+				// set storage dir
+				var localStorage = _globalscope.simplestore.localStorage;
+				
+				if ( (localStorage) && (localStorage.setStorageDir) ) {
+					global.log('setting local storage directory to: ' + localstoragedir);
+					localStorage.setStorageDir(localstoragedir);
+				}
+			}
+			
+			
 			var promises = [];
 			
 			// stack promises of dapps modules
