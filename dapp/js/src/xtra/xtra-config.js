@@ -15,7 +15,39 @@ class XtraConfigModule {
 		this.ethereum_node_access_path = './js/src/xtra/interface/xtra-ethereum-node-access.js';
 		this.storage_access_path = './js/src/xtra/interface/xtra-storage-access.js';
 		
+		this.activated = true;
+		
+		this.overload_ethereum_node_access = true;
+		this.overload_storage_access = true;
+		
 		this.registerAdditionalModules();
+	}
+	
+	activation(choice) {
+		if (choice === false) {
+			this.activated = false;
+		}
+		else if (this.activated === false) {
+			this.activated = true;
+		}
+	}
+	
+	overloadEthereumNodeAccess(choice) {
+		if (choice === false) {
+			this.overload_ethereum_node_access = false;
+		}
+		else if (this.overload_ethereum_node_access === false) {
+			this.overload_ethereum_node_access = true;
+		}
+	}
+	
+	overloadStorageAccess(choice) {
+		if (choice === false) {
+			this.overload_storage_access = false;
+		}
+		else if (this.overload_storage_access === false) {
+			this.overload_storage_access = true;
+		}
 	}
 	
 	registerAdditionalModules() {
@@ -125,6 +157,20 @@ class XtraConfigModule {
 		global.registerHook('getStorageAccessInstance_hook', this.name, this.getStorageAccessInstance_hook);
 	}
 	
+	postRegisterModule() {
+		console.log('postRegisterModule called for ' + this.name);
+		if (!this.isloading) {
+			var global = this.global;
+			var self = this;
+			var rootscriptloader = global.getRootScriptLoader();
+			
+			this.loadModule(rootscriptloader, function() {
+				if (self.registerHooks)
+				self.registerHooks();
+			});
+		}
+	}
+	
 	//
 	// hooks
 	//
@@ -132,7 +178,8 @@ class XtraConfigModule {
 		console.log('preFinalizeGlobalScopeInit_hook called for ' + this.name);
 		
 		var global = this.global;
-		var ScriptLoader = window.simplestore.ScriptLoader;
+		var _globalscope = global.getExecutionGlobalScope();
+		var ScriptLoader = _globalscope.simplestore.ScriptLoader;
 
 		// create script load promises now
 		
@@ -165,13 +212,14 @@ class XtraConfigModule {
 		console.log('postFinalizeGlobalScopeInit_hook called for ' + this.name);
 		
 		var global = this.global;
+		var _globalscope = global.getExecutionGlobalScope();
 		var commonmodule = global.getModuleObject('common');
 
 		// overload EthereumNodeAccess class
-		this.EthereumNodeAccess = window.simplestore.Xtra_EthereumNodeAccess;
+		this.EthereumNodeAccess = _globalscope.simplestore.Xtra_EthereumNodeAccess;
 		
 		// overload StorageAccess class
-		this.StorageAccess = window.simplestore.Xtra_StorageAccess;
+		this.StorageAccess = _globalscope.simplestore.Xtra_StorageAccess;
 		
 		// reset ethereum instance if already instantiated
 		var sessions = commonmodule.getSessionObjects();
@@ -198,14 +246,32 @@ class XtraConfigModule {
 	getEthereumNodeAccessInstance_hook(result, params) {
 		console.log('XtraConfigModule.getEthereumNodeAccessInstance_hook called');
 		
+		if ((this.activated === false) || (this.overload_ethereum_node_access === false)) {
+			return false;
+		}
+		
 		//var global = XtraConfig.getGlobalObject();
 		//var xtraconfigmodule = global.getModuleObject('xtraconfig');
 		
 		var ethnodeaccessmodule = params[0];
 		var session = params[1];
 		
+		if (!this.EthereumNodeAccess) {
+			var global = this.global;
+			var _globalscope = global.getExecutionGlobalScope();
+			this.EthereumNodeAccess = _globalscope.simplestore.Xtra_EthereumNodeAccess;;
+		}
+		
 		result[0] = new this.EthereumNodeAccess(session); 
 		
+		if (session.web3providerurl) {
+			// if session has specified a provider
+			// we set this provider for the corresponding server session
+			result[0].web3_setProviderUrl(session.web3providerurl);
+		}
+		
+		result.push({module: this.name, handled: true});
+
 		return true;
 	}
 	
@@ -213,14 +279,26 @@ class XtraConfigModule {
 	getStorageAccessInstance_hook(result, params) {
 		console.log('XtraConfigModule.getStorageAccessInstance_hook called');
 		
+		if ((this.activated === false) || (this.overload_storage_access === false)) {
+			return false;
+		}
+		
 		//var global = XtraConfig.getGlobalObject();
 		//var xtraconfigmodule = global.getModuleObject('xtraconfig');
 		
 		var storageaccessmodule = params[0];
 		var session = params[1];
 		
+		if (!this.StorageAccess) {
+			var global = this.global;
+			var _globalscope = global.getExecutionGlobalScope();
+			this.StorageAccess = _globalscope.simplestore.Xtra_StorageAccess;;
+		}
+		
 		result[0] = new this.StorageAccess(session);
 		
+		result.push({module: this.name, handled: true});
+
 		return true;
 	}
 	
@@ -284,7 +362,9 @@ class XtraConfig {
 	overloadConfig() {
 		console.log("XtraConfig.overloadConfig called");
 		
-		if ( typeof window !== 'undefined' && window && window.simplestore.Config) {
+		var _globalscope = (typeof window !== 'undefined' && window  ? window : (typeof global !== 'undefined' && global ? global : console.log('WARNING: could not find global scope!')));
+		
+		if ( typeof _globalscope !== 'undefined' && _globalscope && _globalscope.simplestore.Config) {
 			
 			// authentication rest access (if value not specified, take default rest server access)
 			if (this.authkey_server_url.substring(1) == 'authkey_server_url')
@@ -297,25 +377,25 @@ class XtraConfig {
 			// ethereum transactions parameters
 			var overload_gaslimit = (this.defaultgaslimit.substring(1) == 'defaultgaslimit' ? false : true);
 			if (overload_gaslimit)
-				window.simplestore.Config.defaultGasLimit =  parseInt(this.defaultgaslimit);
+				_globalscope.simplestore.Config.defaultGasLimit =  parseInt(this.defaultgaslimit);
 			
 			var overload_gasprice = (this.defaultgasprice.substring(1) == 'defaultgasprice' ? false : true);
 			if (overload_gasprice)
-				window.simplestore.Config.defaultGasPrice = this.defaultgasprice;
+				_globalscope.simplestore.Config.defaultGasPrice = this.defaultgasprice;
 
 		
 			
 			var overload_need_to_unlock_accounts = (this.need_to_unlock_accounts.substring(1) == 'need_to_unlock_accounts' ? false : true);
 			if (overload_need_to_unlock_accounts)
-				window.simplestore.Config.need_to_unlock_accounts = this.need_to_unlock_accounts;
+				_globalscope.simplestore.Config.need_to_unlock_accounts = this.need_to_unlock_accounts;
 		
 			var overload_wallet_account_challenge = (this.wallet_account_challenge.substring(1) == 'wallet_account_challenge' ? false : true);
 			if (overload_wallet_account_challenge)
-				window.simplestore.Config.wallet_account_challenge = this.wallet_account_challenge;
+				_globalscope.simplestore.Config.wallet_account_challenge = this.wallet_account_challenge;
 		
 			var overload_wallet_account = (this.wallet_account.substring(1) == 'wallet_account' ? false : true);
 			if (overload_wallet_account)
-				window.simplestore.Config.wallet_account = this.wallet_account;
+				_globalscope.simplestore.Config.wallet_account = this.wallet_account;
 		
 		
 		
@@ -341,7 +421,8 @@ class XtraConfig {
 		var global;
 		
 		try {
-			global = window.simplestore.Global.getGlobalObject();
+			var _globalscope = (typeof window !== 'undefined' && window  ? window : (typeof global !== 'undefined' && global ? global : console.log('WARNING: could not find global scope!')));
+			global = _globalscope.simplestore.Global.getGlobalObject();
 		}
 		catch(e) {
 			console.log("exception in XtraConfig.getGlobalObject " + e);

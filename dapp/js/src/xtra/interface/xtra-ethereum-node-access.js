@@ -1863,32 +1863,32 @@ class Xtra_EthereumNodeAccess {
 	
 	truffle_loadContract(artifact) {
 		//console.log('artifact is ' + JSON.stringify(artifact));
-		console.log("Xtra_EthereumNodeAccess.truffle_loadContract called for artifact " + (artifact.getUUID ? artifact.getUUID() : null));
+		console.log("Xtra_EthereumNodeAccess.truffle_loadContract called for artifact " + (artifact && artifact.getUUID ? artifact.getUUID() : null));
 		
 		return this.web3_loadContract(artifact) ;
 	}
 	
 	truffle_contract_at(trufflecontract, address) {
-		console.log("Xtra_EthereumNodeAccess.truffle_contract_at called for contractuuid " + (trufflecontract.getUUID ? trufflecontract.getUUID() : null) + " and blockchain address " + address);
+		console.log("Xtra_EthereumNodeAccess.truffle_contract_at called for contractuuid " + (trufflecontract && trufflecontract.getUUID ? trufflecontract.getUUID() : null) + " and blockchain address " + address);
 		
 		return this.web3_contract_at(trufflecontract, address)
 	}
 
 	
 	truffle_contract_new(trufflecontract, params) {
-		console.log("Xtra_EthereumNodeAccess.truffle_contract_new called for contractuuid " + trufflecontract.contractuuid);
+		console.log("Xtra_EthereumNodeAccess.truffle_contract_new called for contractuuid " + (trufflecontract ? trufflecontract.contractuuid : null));
 		
 		return this.web3_contract_new(trufflecontract, params);
 	}
 
 	truffle_method_call(constractinstance, methodname, params) {
-		console.log("Xtra_EthereumNodeAccess.truffle_method_call called for contractinstanceuuid " + constractinstance.contractinstanceuuid + " and method " + methodname);
+		console.log("Xtra_EthereumNodeAccess.truffle_method_call called for contractinstanceuuid " + (constractinstance ? constractinstance.contractinstanceuuid : null) + " and method " + methodname);
 		
 		return this.web3_method_call(constractinstance, methodname, params)
 	}
 	
 	truffle_method_sendTransaction(constractinstance, methodname, params) {
-		console.log("Xtra_EthereumNodeAccess.truffle_method_sendTransaction called for contractinstanceuuid " + constractinstance.getUUID() + " and method " + methodname);
+		console.log("Xtra_EthereumNodeAccess.truffle_method_sendTransaction called for contractinstanceuuid " + (constractinstance && constractinstance.getUUID ? constractinstance.getUUID() : null) + " and method " + methodname);
 		
 		return this.web3_method_sendTransaction(constractinstance, methodname, params)
 	}
