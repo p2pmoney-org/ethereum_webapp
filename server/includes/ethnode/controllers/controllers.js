@@ -78,12 +78,12 @@ class EthNodeControllers {
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
 		
-		global.log("web3_set_provider called for sessiontoken " + sessionuuid);
+		var web3url  = req.body.web3url;
+		
+		global.log("web3_set_provider called for sessiontoken " + sessionuuid + " with url " + web3url);
 		
 		var commonservice = global.getServiceInstance('common');
 		var Session = commonservice.Session;
-		
-		var web3url  = req.body.web3url;
 		
 		var jsonresult;
 

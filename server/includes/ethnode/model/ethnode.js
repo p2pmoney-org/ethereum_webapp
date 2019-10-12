@@ -197,14 +197,15 @@ class EthereumNode {
 	}
 	
 	getWeb3Instance() {
-		var global = this.session.getGlobalInstance();
+		var session = this.session;
+		var global = session.getGlobalInstance();
 		
 		//global.log("EthereumNode.getWeb3Instance called" + (this.web3instance ? ': instance already created' : ': no instance yet'));
 		
 		if (this.web3instance)
 			return this.web3instance;
 		
-		global.log("EthereumNode.getWeb3Instance: creating web3 instance");
+		global.log("EthereumNode.getWeb3Instance: creating web3 instance for session " + session.getSessionUUID());
 		
 		var web3Provider = this.getWeb3Provider();
 		
@@ -216,7 +217,7 @@ class EthereumNode {
 		
 		this.setWeb3Instance(web3instance);
 		
-		global.log("EthereumNode.getWeb3Instance: web3 instance created");
+		global.log("EthereumNode.getWeb3Instance: web3 instance created for session " + session.getSessionUUID());
 		
 		// we check that this instance is not syncing
 		var issyncing = this._getSyncingArray();
@@ -245,13 +246,16 @@ class EthereumNode {
 	}
 	
 	setWeb3Instance(web3instance) {
-		var global = this.session.getGlobalInstance();
-		global.log("EthereumNode.setWeb3Instance called for " + (web3instance ? JSON.stringify(web3instance.currentProvider) : 'no instance'));
+		var session = this.session;
+		var global = session.getGlobalInstance();
+		global.log("EthereumNode.setWeb3Instance called for session " + session.getSessionUUID() + " with provider " + (web3instance ? JSON.stringify(web3instance.currentProvider) : 'no instance'));
 
 		this.web3instance = web3instance;
 	}
 	
 	clearWeb3Instance() {
+		var session = this.session;
+		global.log("EthereumNode.clearWeb3Instance called for session " + session.getSessionUUID());
 		this.web3instance = null;
 	}
 	
