@@ -9,11 +9,11 @@ class ClientContainerServer {
 		this.service = service;
 		this.global = service.global;
 		
-		//var path = require('path');
-		//this.app_root_dir = path.join(__dirname, '../clientroot/nodemodules/ethereum_core/imports/');
+		var Ethereum_core = require('@p2pmoney-org/ethereum_core');
+		var Ethereum_erc20 = require('@p2pmoney-org//ethereum_erc20');
 		
-		var Ethereum_core = require('../clientroot/nodemodules/ethereum_core');
-		var Ethereum_erc20 = require('../clientroot/nodemodules/ethereum_erc20');
+		//var Ethereum_core = require('../clientroot/nodemodules/ethereum_core');
+		//var Ethereum_erc20 = require('../clientroot/nodemodules/ethereum_erc20');
 
 		this.ethereum_core = Ethereum_core.getObject();
 		this.ethereum_erc20 = Ethereum_erc20.getObject();
@@ -28,10 +28,58 @@ class ClientContainerServer {
 		promise_ethereum_core.then(function() {
 			global.log('init of ethereum_core done');
 			
+			var _globalscope = global.getExecutionGlobalScope();
+			
+			// config
+			var Config = _globalscope.simplestore.Config;
+			var clientglobal = _globalscope.simplestore.Global.getGlobalObject();
+
+			var web3_provider_url = global.getConfigValue('web3_provider_url');
+			
+			if (web3_provider_url) {
+				if (web3_provider_url.startsWith('https://')) {
+					Config.web3provider_protocol = 'https://';
+					Config.web3provider_host = web3_provider_url.substring(8);
+				}
+				else if (web3_provider_url.startsWith('http://')) {
+					Config.web3provider_protocol = 'http://';
+					Config.web3provider_host = web3_provider_url.substring(7);
+				}
+				
+			}
+			
+			var web3_provider_port = global.getConfigValue('web3_provider_port');
+			
+			if (web3_provider_port) {
+				if ((web3_provider_port == '80') || (web3_provider_port == 80)) {
+					Config.web3provider_port = '';
+				}
+				else {
+					Config.web3provider_port = web3_provider_port;
+				}
+			}
+			
+			// set url in ethnode module to overload previous computation
+			var fullweb3providerurl = Config.getWeb3ProviderUrl();
+			
+			var ethnodemodule = clientglobal.getModuleObject('ethnode');
+			
+			ethnodemodule.setWeb3ProviderUrl(fullweb3providerurl);
+			
+			// test
+			/*var commonmodule = clientglobal.getModuleObject('common');
+			var session = commonmodule.createBlankSessionObject();
+			
+			var ethereumnodeaccessinstance = ethnodemodule.getEthereumNodeAccessInstance(session)
+			var url = ethereumnodeaccessinstance._getWeb3Instance()._provider.host;
+			global.log('web3 provider is ' + url);*/
+			// test
+
+
+			// local storage
 			var localstoragedir = global.getConfigValue('local_storage_dir');
 			
 			if (localstoragedir) {
-				var _globalscope = global.getExecutionGlobalScope();
 				// set storage dir
 				var localStorage = _globalscope.simplestore.localStorage;
 				

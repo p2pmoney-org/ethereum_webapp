@@ -58,7 +58,7 @@ class ClientContainerControllers {
 		
 		var global = this.global;
 
-		global.log("clicont_web3_account_balance called for sessiontoken " + sessionuuid + " and address " + address);
+		global.log("clicont_keys_generate called for sessiontoken " + sessionuuid + " and address " + address);
 		
 		var jsonresult = {status: 0, error: "can not use this route"};
 	  	
@@ -77,7 +77,7 @@ class ClientContainerControllers {
 			jsonresult = {status: 1, private_key: private_key};
 		}
 		catch(e) {
-			global.log("exception in clicont_web3_account_balance for sessiontoken " + sessionuuid + " and address " + address + ": " + e);
+			global.log("exception in clicont_keys_generate for sessiontoken " + sessionuuid + " and address " + address + ": " + e);
 			global.log(e.stack);
 		}
 
