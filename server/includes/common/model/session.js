@@ -10,6 +10,7 @@ var _SessionInitLatch = class {
 		this.session = session;
 		
 		this.released = false;
+		this.released_at = null;
 		
 		this.waitstarted = null;
 	}
@@ -27,6 +28,7 @@ var _SessionInitLatch = class {
 		}
 		
 		this.released = true;
+		this.released_at = Date.now();
 
 		if (callback)
 			callback(this);
@@ -45,12 +47,15 @@ var _SessionInitLatch = class {
 		}
 		
 		// remove old latches
+    	var now = Date.now();
+    	
 		for (var key in _SessionInitLatch.map) {
 		    if (!_SessionInitLatch.map[key]) continue;
 			
 		    var latch = _SessionInitLatch.map[key];
 		    
 		    if ((latch) && (latch.session) && (latch.session.isready))
+		    	if (((now - latch.released_at) > 10000) && ((now - latch.waitstarted) > 20000))
 		    	delete _SessionInitLatch.map[key];
 		}
 		

@@ -153,6 +153,13 @@ class Service {
 		
 		global.append_to_file(path.join(this.webapp_app_dir, './js/src/constants.js'), copyeventlines);
 		
+		// add ethereum_webapp_version to ./app/js/src/constants.js
+		var ethereum_webapp_version = global.getCurrentVersion();
+		var copyversionlines = '\nwindow.simplestore.Constants.push(\'ethereum_webapp_version\', {value: \'' + ethereum_webapp_version + '\'});\n';
+		
+		global.append_to_file(path.join(this.webapp_app_dir, './js/src/constants.js'), copyversionlines);
+
+		// in case we do not overload files, put pure client environment
 		if (this.overload_dapp_files != 1) {
 			var configlines;
 			var dapp_dir = this.getServedDappDirectory();
@@ -180,6 +187,8 @@ class Service {
 		var path = require('path');
 		var fs = require('fs');
 		
+		
+		// files
 		var sourcedir = path.join(this.dapp_root_base_dir, './app');
 		var sourcepath;
 		var destdir = this.webapp_app_dir;
@@ -221,6 +230,13 @@ class Service {
 		var fs = require('fs');
 		var path = require('path');
 		
+		// add event to ./app/js/src/constants.js
+		var nowtime = Date.now();
+		var copyeventlines = '\nwindow.simplestore.Constants.push(\'lifecycle\', {eventname: \'app overload\', time:' + nowtime + '});\n';
+		
+		global.append_to_file(path.join(this.webapp_app_dir, './js/src/constants.js'), copyeventlines);
+		
+		// files
 		var sourcepath;
 		var destdir;
 		

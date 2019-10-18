@@ -82,6 +82,10 @@ var Module = class {
 		
 		var global = this.global;
 		
+		global.registerHook('getVersionInfo_hook', this.name, this.getVersionInfo_hook);
+		global.modifyHookPriority('getVersionInfo_hook', this.name, -5);
+		
+		// initialization
 		global.registerHook('preFinalizeGlobalScopeInit_hook', this.name, this.preFinalizeGlobalScopeInit_hook);
 		global.registerHook('postFinalizeGlobalScopeInit_hook', this.name, this.postFinalizeGlobalScopeInit_hook);
 		
@@ -123,6 +127,29 @@ var Module = class {
 	//
 	// hooks
 	//
+	getVersionInfo_hook(result, params) {
+		console.log('getVersionInfo_hook called for ' + this.name);
+		
+		var global = this.global;
+		var _globalscope = global.getExecutionGlobalScope();
+		var Constants = _globalscope.simplestore.Constants;
+		var authkey_versioninfo = Constants.get('authkey_version');
+		
+		var versioninfos = params[0];
+		
+		var versioninfo = {};
+		
+		versioninfo.label = global.t('authkey');
+		versioninfo.value = (authkey_versioninfo && authkey_versioninfo.value ? authkey_versioninfo.value : global.t('unknown'));
+		
+		versioninfos.push(versioninfo);
+
+		
+		result.push({module: this.name, handled: true});
+		
+		return true;
+	}
+	
 	preFinalizeGlobalScopeInit_hook(result, params) {
 		console.log('preFinalizeGlobalScopeInit_hook called for ' + this.name);
 		
@@ -205,7 +232,10 @@ var Module = class {
 						
 						var mvccontroller = mvcmodule.getControllersObject();
 						
-						mvccontroller.gotoLoginPage();
+						if (mvccontroller && mvccontroller.gotoLoginPage)
+							mvccontroller.gotoLoginPage();
+						else 
+							console.log('WARNING: mvc controller has no gotoLoginPage method');
 					}
 				}
 				else {
@@ -224,7 +254,10 @@ var Module = class {
 								
 								var mvccontroller = mvcmodule.getControllersObject();
 								
-								mvccontroller.refreshPage();
+								if (mvccontroller && mvccontroller.gotoLoginPage)
+									mvccontroller.refreshPage();
+								else 
+									console.log('WARNING: mvc controller has no refreshPage method');
 							}
 							else {
 								console.log('error while loading user from server: ' + err);

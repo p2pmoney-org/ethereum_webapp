@@ -15,9 +15,9 @@ class AuthKeyControllers {
 	//
 	authorize(req, res) {
 		// GET
-		var AuthKeyService = require('../../server/includes/authkey/authkey-service.js');
-		var service = AuthKeyService.getService();
-		var version = service.getVersion();
+		var global = this.global;
+		var authkeyservice = global.getServiceInstance('authkey');
+		var version = authkeyservice.getVersion();
 	  	
 		var jsonresult = {status: 1, version:  version};
 		
