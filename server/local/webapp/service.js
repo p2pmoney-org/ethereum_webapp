@@ -368,7 +368,7 @@ class Service {
 		app.use(function(req, res, next) {
 			var origin = "*"; // domain allowed to cross
 			var headers = "Origin, X-Requested-With, Content-Type, Accept"; // standard fields
-			headers += ", sessiontoken, accesstoken, apikey"; // specific fields
+			headers += ", sessiontoken, accesstoken, apikey, calltoken"; // specific fields
 			
 			res.header("Access-Control-Allow-Origin", origin);
 			res.header("Access-Control-Allow-Headers", headers);

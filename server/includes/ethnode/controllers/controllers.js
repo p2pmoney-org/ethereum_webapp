@@ -27,7 +27,7 @@ class EthNodeControllers {
 	web3_root(req, res) {
 		// GET
 		var sessionuuid = req.get("sessiontoken");
-		var web3providerurl = req.get("web3providerurl");
+		var web3providerurl = req.get("calltoken");
 		//var address = req.params.id;
 		
 		var global = this.global;
@@ -231,7 +231,7 @@ class EthNodeControllers {
 	web3_node(req, res) {
 		// GET
 		var sessionuuid = req.get("sessiontoken");
-		var web3providerurl = req.get("web3providerurl");
+		var web3providerurl = req.get("calltoken");
 		//var address = req.params.id;
 		
 		var global = this.global;
@@ -282,7 +282,7 @@ class EthNodeControllers {
 	web3_account_balance(req, res) {
 		// GET
 		var sessionuuid = req.get("sessiontoken");
-		var web3providerurl = req.get("web3providerurl");
+		var web3providerurl = req.get("calltoken");
 		var address = req.params.id;
 		
 		var global = this.global;
@@ -317,7 +317,7 @@ class EthNodeControllers {
 	web3_account_code(req, res) {
 		// GET
 		var sessionuuid = req.get("sessiontoken");
-		var web3providerurl = req.get("web3providerurl");
+		var web3providerurl = req.get("calltoken");
 		var address = req.params.id;
 		
 		var global = this.global;
@@ -352,7 +352,7 @@ class EthNodeControllers {
 	web3_account_transaction_count(req, res) {
 		// GET
 		var sessionuuid = req.get("sessiontoken");
-		var web3providerurl = req.get("web3providerurl");
+		var web3providerurl = req.get("calltoken");
 		var address = req.params.id;
 		
 		var global = this.global;
@@ -388,7 +388,7 @@ class EthNodeControllers {
 	web3_block_current_number(req, res) {
 		// GET
 		var sessionuuid = req.get("sessiontoken");
-		var web3providerurl = req.get("web3providerurl");
+		var web3providerurl = req.get("calltoken");
 		
 		var global = this.global;
 		var commonservice = global.getServiceInstance('common');
@@ -422,7 +422,7 @@ class EthNodeControllers {
 	web3_block(req, res) {
 		// GET
 		var sessionuuid = req.get("sessiontoken");
-		var web3providerurl = req.get("web3providerurl");
+		var web3providerurl = req.get("calltoken");
 		
 		var blockid = req.params.id;
 
@@ -459,7 +459,7 @@ class EthNodeControllers {
 	web3_block_and_transactions(req, res) {
 		// GET
 		var sessionuuid = req.get("sessiontoken");
-		var web3providerurl = req.get("web3providerurl");
+		var web3providerurl = req.get("calltoken");
 		
 		var blockid = req.params.id;
 
@@ -496,7 +496,7 @@ class EthNodeControllers {
 	web3_transaction(req, res) {
 		// GET
 		var sessionuuid = req.get("sessiontoken");
-		var web3providerurl = req.get("web3providerurl");
+		var web3providerurl = req.get("calltoken");
 		
 		var txhash = req.params.id;
 
@@ -533,7 +533,7 @@ class EthNodeControllers {
 	web3_transaction_receipt(req, res) {
 		// GET
 		var sessionuuid = req.get("sessiontoken");
-		var web3providerurl = req.get("web3providerurl");
+		var web3providerurl = req.get("calltoken");
 		
 		var txhash = req.params.id;
 
@@ -569,7 +569,7 @@ class EthNodeControllers {
 	web3_find_transaction(req, res) {
 		// POST
 		var sessionuuid = req.get("sessiontoken");
-		var web3providerurl = req.get("web3providerurl");
+		var web3providerurl = req.get("calltoken");
 		
 		var global = this.global;
 		var commonservice = global.getServiceInstance('common');
@@ -609,7 +609,7 @@ class EthNodeControllers {
 	web3_user_transactions(req, res) {
 		// POST
 		var sessionuuid = req.get("sessiontoken");
-		var web3providerurl = req.get("web3providerurl");
+		var web3providerurl = req.get("calltoken");
 		
 		var global = this.global;
 		var commonservice = global.getServiceInstance('common');
@@ -673,7 +673,7 @@ class EthNodeControllers {
 	web3_sendtransaction(req, res) {
 		// POST
 		var sessionuuid = req.get("sessiontoken");
-		var web3providerurl = req.get("web3providerurl");
+		var web3providerurl = req.get("calltoken");
 		
 		var global = this.global;
 		var commonservice = global.getServiceInstance('common');
@@ -794,7 +794,7 @@ class EthNodeControllers {
 	web3_artifact_load(req, res) {
 		// POST
 		var sessionuuid = req.get("sessiontoken");
-		var web3providerurl = req.get("web3providerurl");
+		var web3providerurl = req.get("calltoken");
 		
 		var global = this.global;
 		var commonservice = global.getServiceInstance('common');
@@ -843,7 +843,7 @@ class EthNodeControllers {
 	web3_contract_load(req, res) {
 		// POST
 		var sessionuuid = req.get("sessiontoken");
-		var web3providerurl = req.get("web3providerurl");
+		var web3providerurl = req.get("calltoken");
 		
 		var artifactuid = req.body.artifactuuid;
 		
@@ -887,7 +887,7 @@ class EthNodeControllers {
 	web3_contract_at(req, res) {
 		// POST
 		var sessionuuid = req.get("sessiontoken");
-		var web3providerurl = req.get("web3providerurl");
+		var web3providerurl = req.get("calltoken");
 		
 		var contractuuid = req.body.contractuuid;
 		var address = req.body.address;
@@ -970,7 +970,7 @@ class EthNodeControllers {
 	web3_contract_new(req, res) {
 		// POST
 		var sessionuuid = req.get("sessiontoken");
-		var web3providerurl = req.get("web3providerurl");
+		var web3providerurl = req.get("calltoken");
 		
 		var contractuuid = req.body.contractuuid;
 		var args = (req.body.args ? JSON.parse(req.body.args) : []);
@@ -1043,7 +1043,7 @@ class EthNodeControllers {
 	web3_contract_call(req, res) {
 		// POST
 		var sessionuuid = req.get("sessiontoken");
-		var web3providerurl = req.get("web3providerurl");
+		var web3providerurl = req.get("calltoken");
 		
 		var contractaddress = req.params.id;
 		
@@ -1105,7 +1105,7 @@ class EthNodeControllers {
 	web3_contract_send(req, res) {
 		// POST
 		var sessionuuid = req.get("sessiontoken");
-		var web3providerurl = req.get("web3providerurl");
+		var web3providerurl = req.get("calltoken");
 		
 		var contractaddress = req.params.id;
 		

@@ -264,7 +264,7 @@ class Xtra_EthereumNodeAccess {
 		// set header of restconnection
 		var restconnection = this.getRestConnection();
 		
-		restconnection.addToHeader({key: 'web3providerurl', value: url});
+		restconnection.addToHeader({key: 'calltoken', value: url});
 		
 		var promise = new Promise(function (resolve, reject) {
 			
