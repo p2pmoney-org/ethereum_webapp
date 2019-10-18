@@ -956,7 +956,7 @@ class EthNodeControllers {
 		}
 		catch(e) {
 			global.log("exception in web3_contract_at for sessiontoken " + sessionuuid+ " and contractuuid " + contractuuid + " and address " + address +  ": " + e);
-			global.log(e.stack);
+			//global.log(e.stack);
 		}
 		
 

@@ -402,6 +402,10 @@ class XtraConfig {
 		this.authkey_server_url = ':authkey_server_url';
 		this.authkey_server_api_path = ':authkey_server_api_path';
 		
+		// ethereum web3 provider
+		this.web3_provider_url = ':web3_provider_url';
+		this.web3_provider_port = ':web3_provider_port';
+		
 		// ethereum transactions parameters
 		this.defaultgaslimit = ':defaultgaslimit';
 		this.defaultgasprice = ':defaultgasprice';
@@ -450,6 +454,29 @@ class XtraConfig {
 			if (this.authkey_server_api_path.substring(1) == 'authkey_server_api_path')
 				this.authkey_server_api_path = this.rest_server_api_path;
 
+			// ethereum web3 provider
+			var overload_web3_provider_url = (this.web3_provider_url.substring(1) == 'web3_provider_url' ? false : true);
+			if (overload_web3_provider_url) {
+				if (this.web3_provider_url.startsWith('http://')) {
+					_globalscope.simplestore.Config.web3provider_protocol = 'http://';
+					_globalscope.simplestore.Config.web3provider_host = this.web3_provider_url.substring(7);
+				}
+				else if (this.web3_provider_url.startsWith('https://')) {
+					_globalscope.simplestore.Config.web3provider_protocol = 'https://';
+					_globalscope.simplestore.Config.web3provider_host = this.web3_provider_url.substring(8);
+				}
+			}
+
+			var overload_web3_provider_port = (this.web3_provider_port.substring(1) == 'web3_provider_port' ? false : true);
+			if (overload_web3_provider_port) {
+				if ((this.web3_provider_port == '80') || (this.web3_provider_port == 80)) {
+					_globalscope.simplestore.Config.web3provider_port = '';
+				}
+				else {
+					_globalscope.simplestore.Config.web3provider_port = this.web3_provider_port;
+				}
+
+			}
 
 			// ethereum transactions parameters
 			var overload_gaslimit = (this.defaultgaslimit.substring(1) == 'defaultgaslimit' ? false : true);
