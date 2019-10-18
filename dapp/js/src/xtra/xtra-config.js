@@ -14,6 +14,7 @@ class XtraConfigModule {
 		
 		this.ethereum_node_access_path = './js/src/xtra/interface/xtra-ethereum-node-access.js';
 		this.storage_access_path = './js/src/xtra/interface/xtra-storage-access.js';
+		this.server_access_path = './js/src/xtra/interface/xtra-server-access.js';
 		
 		this.activated = true;
 		
@@ -146,6 +147,9 @@ class XtraConfigModule {
 		
 		var global = this.global;
 		
+		global.registerHook('getVersionInfo_hook', this.name, this.getVersionInfo_hook);
+		global.modifyHookPriority('getVersionInfo_hook', this.name, -10);
+		
 		// initialization
 		global.registerHook('preFinalizeGlobalScopeInit_hook', this.name, this.preFinalizeGlobalScopeInit_hook);
 		global.registerHook('postFinalizeGlobalScopeInit_hook', this.name, this.postFinalizeGlobalScopeInit_hook);
@@ -174,6 +178,30 @@ class XtraConfigModule {
 	//
 	// hooks
 	//
+	getVersionInfo_hook(result, params) {
+		console.log('getVersionInfo_hook called for ' + this.name);
+		
+		var global = this.global;
+		var _globalscope = global.getExecutionGlobalScope();
+		var Constants = _globalscope.simplestore.Constants;
+		var ethereum_webapp_versioninfo = Constants.get('ethereum_webapp_version');
+		
+		var versioninfos = params[0];
+		
+		var versioninfo = {};
+		
+		versioninfo.label = global.t('ethereum webapp');
+		versioninfo.value = (ethereum_webapp_versioninfo && ethereum_webapp_versioninfo.value ? ethereum_webapp_versioninfo.value : global.t('unknown'));
+		
+		versioninfos.push(versioninfo);
+
+		
+		result.push({module: this.name, handled: true});
+		
+		return true;
+	}
+	
+
 	preFinalizeGlobalScopeInit_hook(result, params) {
 		console.log('preFinalizeGlobalScopeInit_hook called for ' + this.name);
 		
@@ -201,6 +229,14 @@ class XtraConfigModule {
 		
 		global.pushFinalInitializationPromise(storageaccesspromise);
 		
+		// server access
+		var server_access_path = this.server_access_path;
+		
+		var serveraccesspromise = ScriptLoader.createScriptLoadPromise(server_access_path, function() {
+			console.log('XtraServerAccess loaded')
+		})
+		
+		global.pushFinalInitializationPromise(serveraccesspromise);
 		
 		
 		result.push({module: this.name, handled: true});
@@ -240,6 +276,44 @@ class XtraConfigModule {
 		if (global.getAppObject)
 			return global.getAppObject();
 	}
+	
+	// server access facade
+	getServerAccessInstance(session) {
+		if (session.server_access_instance)
+			return session.server_access_instance;
+		
+		console.log('instantiating ServerAccess');
+		
+		var global = this.global;
+
+		if (!this.Xtra_ServerAccess) {
+			var global = this.global;
+			var _globalscope = global.getExecutionGlobalScope();
+			this.Xtra_ServerAccess = _globalscope.simplestore.Xtra_ServerAccess;;
+		}
+
+
+		var result = []; 
+		var inputparams = [];
+		
+		inputparams.push(this);
+		inputparams.push(session);
+		
+		result[0] = new this.Xtra_ServerAccess(session);
+		
+		// call hook to let modify or replace instance
+		var ret = global.invokeHooks('getServerAccessInstance_hook', result, inputparams);
+		
+		if (ret && result[0]) {
+			session.server_access_instance = result[0];
+		}
+		else {
+			session.server_access_instance = new this.Xtra_ServerAccess(session);
+		}
+
+		
+		return session.server_access_instance;
+	}
 
 
 	// node access facade
@@ -267,7 +341,10 @@ class XtraConfigModule {
 		if (session.web3providerurl) {
 			// if session has specified a provider
 			// we set this provider for the corresponding server session
-			result[0].web3_setProviderUrl(session.web3providerurl);
+			result[0].web3_setProviderUrl(session.web3providerurl)
+			.catch(err => {
+				console.log('promise rejection in XtraConfigModule.getEthereumNodeAccessInstance_hook: ' + err);
+			});
 		}
 		
 		result.push({module: this.name, handled: true});
