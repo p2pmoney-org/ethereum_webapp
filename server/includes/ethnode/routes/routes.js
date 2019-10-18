@@ -34,7 +34,8 @@ class EthNodeRoutes {
 		.get(function(req, res) { controllers.web3_root(req, res); });
 		
 		app.route(route_root_path + '/web3/provider')
-		.get(function(req, res) { controllers.web3_root(req, res); })
+		.get(function(req, res) { controllers.web3_get_provider(req, res); })
+		.post(function(req, res) { controllers.web3_add_provider(req, res); })
 		.put(function(req, res) { controllers.web3_set_provider(req, res); });
 		
 		app.route(route_root_path + '/web3/node')

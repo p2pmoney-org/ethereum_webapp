@@ -14,7 +14,7 @@ class Service {
 		
 		this.contracts = {};
 		
-		this.web3_provider_url = null;
+		this.web3_provider_url = null; // default
 		this.web3_provider_port= null;
 	}
 	
@@ -304,11 +304,31 @@ class Service {
 	}
 	
 	// service functions
-	getEthereumNodeInstance(session) {
-		if (session.ethereum_node)
-			return session.ethereum_node;
+	getEthereumNodeInstance(session, web3providerurl) {
+		var providerurl;
+		var key ;
 		
-		session.ethereum_node = new this.EthereumNode(session);
+		// map of providers
+		var session_web3_provider_map = (session.web3_provider_map ? session.web3_provider_map : session.web3_provider_map = Object.create(null));
+
+
+		if (!web3providerurl) {
+			// asking for default
+			if (session.ethereum_node)
+				return session.ethereum_node;
+			
+			providerurl = this.getWeb3ProviderFullUrl(session);
+		}
+		else {
+			key = web3providerurl.toLowerCase();
+				
+			if (session_web3_provider_map[key])
+				return session_web3_provider_map[key].getEthereumNodeInstance();
+			
+			providerurl = web3providerurl;
+		}
+		
+		var ethereum_node = new this.EthereumNode(session, providerurl);
 		
 		var global = this.global;
 		
@@ -317,7 +337,7 @@ class Service {
 		
 		var params = [];
 		
-		params.push(session.ethereum_node);
+		params.push(ethereum_node);
 
 		var ret = global.invokeHooks('createEthereumNodeInstance_hook', result, params);
 		
@@ -325,7 +345,24 @@ class Service {
 			global.log('createEthereumNodeInstance_hook result is ' + JSON.stringify(result));
 		}
 		
-		return session.ethereum_node;
+		key = providerurl.toLowerCase();
+
+		if (!session_web3_provider_map[key]) {
+			// put in map
+			var Web3Provider = require('./model/web3provider.js');
+			var web3provider = new Web3Provider(session, providerurl, ethereum_node);
+			
+			session_web3_provider_map[key] = web3provider;
+		}
+
+		
+		if (!web3providerurl) {
+			// put in default
+			session.ethereum_node = ethereum_node;
+		}
+		
+		
+		return ethereum_node;
 	}
 	
 	buildWeb3ProviderUrl(web3_provider_url, web3_provider_port) {
@@ -355,10 +392,8 @@ class Service {
 		session.setSessionVariable('web3_provider_full_url', url);
 		
 		// check if ethereum_node_instance needs to be reset
-		var ethnode = this.getEthereumNodeInstance(session);
-		
-		if (ethnode)
-			ethnode.clearWeb3Instance();
+		if (session.ethereum_node)
+			session.ethereum_node = null;
 	}
 
 }

@@ -118,7 +118,7 @@ class ContractInstanceProxy{
 
 
 class EthereumNode {
-	constructor(session) {
+	constructor(session, web3providerurl) {
 		this.session = session;
 		
 		var Persistor = require('./interface/database-persistor.js');
@@ -128,6 +128,7 @@ class EthereumNode {
 		this.web3_version = "1.0.x";
 		//this.web3_version = "0.20.x";
 		
+		this.web3providerurl = web3providerurl;
 		this.web3instance = null;
 	}
 	
@@ -141,21 +142,26 @@ class EthereumNode {
 	// Web3
 	//
 	getWeb3ProviderFullUrl() {
+		if (this.web3providerurl)
+			return this.web3providerurl;
+		
 		var session = this.session;
 		var global = this.session.getGlobalInstance();
 		var ethnodeservice = global.getServiceInstance('ethnode');
 		
-		var web3providerfullurl = ethnodeservice.getWeb3ProviderFullUrl(session);
+		this.web3providerurl = ethnodeservice.getWeb3ProviderFullUrl(session);
 		
-		return web3providerfullurl;
+		return this.web3providerurl;
 	}
 	
 	setWeb3ProviderFullUrl(web3providerfullurl) {
-		var session = this.session;
+		this.web3providerurl = web3providerfullurl;
+		
+		/*var session = this.session;
 		var global = this.session.getGlobalInstance();
 		var ethnodeservice = global.getServiceInstance('ethnode');
 		
-		ethnodeservice.setWeb3ProviderFullUrl(session, web3providerfullurl);
+		ethnodeservice.setWeb3ProviderFullUrl(session, web3providerfullurl);*/
 		
 		this.clearWeb3Instance();
 	}
@@ -255,6 +261,7 @@ class EthereumNode {
 	
 	clearWeb3Instance() {
 		var session = this.session;
+		var global = session.getGlobalInstance();
 		global.log("EthereumNode.clearWeb3Instance called for session " + session.getSessionUUID());
 		this.web3instance = null;
 	}
@@ -848,7 +855,8 @@ class EthereumNode {
 			else {
 				// first time for this transactionuuid
 				// create array for transaction and put it in map
-				var tx = [];
+				//var tx = [];
+				var tx = this.createEthereumTransactionInstance(session);
 				
 				tx['transactionuuid'] = transactionuuid;
 				
@@ -862,6 +870,17 @@ class EthereumNode {
 				
 				if ((typeof tx['status'] !== 'undefined') && (tx['status'] !== 'completed'))
 					tx['status'] = 'started';
+				
+				// parse log
+				try {
+					var txjsonstring = transactionlog['log'].toString('utf8');
+					var txjson =  JSON.parse(txjsonstring);
+					
+					if (txjson['web3providerurl'])
+						tx['web3providerurl'] = txjson['web3providerurl'];
+				}
+				catch(e) {
+				}
 			}
 			else if (action == 500) {
 				try {
@@ -1023,7 +1042,10 @@ class EthereumNode {
 		var ethereum_transaction_uuid = ((ethtransaction.getTransactionUUID() !== null) ? ethtransaction.getTransactionUUID() : session.guid());
 		
 		// log start of transaction
-		this._saveTransactionLog(ethereum_transaction_uuid, 'sendRawTransaction', 1, raw);
+		var web3providerurl = this.getWeb3ProviderFullUrl();
+		var logString = JSON.stringify({web3providerurl: web3providerurl, raw: raw});
+		
+		this._saveTransactionLog(ethereum_transaction_uuid, 'sendRawTransaction', 1, logString);
 
 		var promise = new Promise( function(resolve, reject) {
 			var web3 = self.getWeb3Instance();
@@ -1108,12 +1130,15 @@ class EthereumNode {
 		var txdata = ethtransaction.getData();
 		var nonce = ethtransaction.getNonce();
 		
-		var params = {from: fromaddress, to: toaddress, value: amount, gas: gas, gasPrice: gasPrice, data: txdata, nonce: nonce};
+		var web3providerurl = this.getWeb3ProviderFullUrl();
+		var params = {from: fromaddress, to: toaddress, value: amount, gas: gas, gasPrice: gasPrice, data: txdata, nonce: nonce, web3providerurl: web3providerurl};
 		var ethereum_transaction_uuid = ((ethtransaction.getTransactionUUID() !== null) ? ethtransaction.getTransactionUUID() : session.guid());
 		
 		// log start of transaction
 		var ethereum_transaction_uuid = session.guid();
-		this._saveTransactionLog(ethereum_transaction_uuid, 'sendTransaction', 1, JSON.stringify(params));
+		var logString = JSON.stringify(params);
+
+		this._saveTransactionLog(ethereum_transaction_uuid, 'sendTransaction', 1, logString);
 
 		var promise = new Promise( function(resolve, reject) {
 			var web3 = self.getWeb3Instance();
@@ -1204,7 +1229,7 @@ class EthereumNode {
 	_getContractInstance(abi, address) {
 		var global = this.session.getGlobalInstance();
 		var web3 = this.getWeb3Instance();
-
+		
 		if (this.web3_version == "1.0.x") {
 			// Web3 > 1.0
 			var instance = new web3.eth.Contract(abi, address);
@@ -1513,7 +1538,10 @@ class EthereumNode {
 		var logcall = args.slice();
 		logcall.push(txjson);
 		
-		this._saveTransactionLog(ethereum_transaction_uuid, methodname, 1, JSON.stringify(logcall));
+		var web3providerurl = this.getWeb3ProviderFullUrl();
+		var logString = JSON.stringify({web3providerurl: web3providerurl, call: logcall});
+		
+		this._saveTransactionLog(ethereum_transaction_uuid, methodname, 1, logString);
 		
 		var web3_contract_instance = new ContractInstanceProxy(web3contract.contractuuid, null, web3contract, null);
 		
@@ -2032,7 +2060,10 @@ class EthereumNode {
 		var self = this;
 		
 		// log start of transaction
-		this._saveTransactionLog(ethereum_transaction_uuid, methodname, 1, paramstring);
+		var web3providerurl = this.getWeb3ProviderFullUrl();
+		var logString = JSON.stringify({web3providerurl: web3providerurl, args: args});
+
+		this._saveTransactionLog(ethereum_transaction_uuid, methodname, 1, logString);
 		
 		try {
 			var abi = web3_contract_instance.getAbi();

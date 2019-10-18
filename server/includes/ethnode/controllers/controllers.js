@@ -12,10 +12,10 @@ class EthNodeControllers {
 		//this.ethereum_node = null;
 	}
 	
-	getEthereumNode(session) {
+	getEthereumNode(session, web3providerurl) {
 		var ethnodeservice = this.global.getServiceInstance('ethnode');
 		
-		return ethnodeservice.getEthereumNodeInstance(session);
+		return ethnodeservice.getEthereumNodeInstance(session, web3providerurl);
 	}
 	
 	//
@@ -27,6 +27,7 @@ class EthNodeControllers {
 	web3_root(req, res) {
 		// GET
 		var sessionuuid = req.get("sessiontoken");
+		var web3providerurl = req.get("web3providerurl");
 		//var address = req.params.id;
 		
 		var global = this.global;
@@ -43,7 +44,7 @@ class EthNodeControllers {
 		
 		try {
 			var session = Session.getSession(global, sessionuuid);
-			var ethnode = this.getEthereumNode(session);
+			var ethnode = this.getEthereumNode(session, web3providerurl);
 			
 			web3info = {};
 			
@@ -73,14 +74,63 @@ class EthNodeControllers {
 	  	res.json(jsonresult);
 	}
 	
-	web3_set_provider(req, res) {
-		// PUT
+	// providers
+	web3_get_provider(req, res) {
+		// GET
+		var sessionuuid = req.get("sessiontoken");
+		
+		var global = this.global;
+		var commonservice = global.getServiceInstance('common');
+		var Session = commonservice.Session;
+		
+		if (!sessionuuid) {
+			// we allow calls without a session
+			sessionuuid = global.guid(); // give a one-time sessionuuid
+		}
+
+		global.log("web3_get_provider called for sessiontoken " + sessionuuid);
+		var web3info = null;
+		
+		try {
+			var session = Session.getSession(global, sessionuuid);
+			var ethnode = this.getEthereumNode(session);
+			
+			web3info = {};
+			
+			var web3instance = ethnode.getWeb3Instance();
+			
+			web3info.web3_version = ethnode.web3_version;
+
+			var execenv = global.getExecutionEnvironment();
+			
+			if (ethnode && (execenv == 'dev')) {
+				web3info.web3_host = (web3instance && web3instance.currentProvider ? web3instance.currentProvider.host : null);
+			}
+	
+		}
+		catch(e) {
+			global.log("exception in web3_get_provider for sessiontoken " + sessionuuid + ": " + e);
+		}
+		var jsonresult;
+		
+		if (web3info !== null) {
+			jsonresult = {status: 1, data: web3info};
+		}
+		else {
+			jsonresult = {status: 0, error: "could not retrieve web3 information"};
+		}
+	  	
+	  	res.json(jsonresult);
+	}
+	
+	web3_add_provider(req, res) {
+		// POST
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
 		
 		var web3url  = req.body.web3url;
 		
-		global.log("web3_set_provider called for sessiontoken " + sessionuuid + " with url " + web3url);
+		global.log("web3_add_provider called for sessiontoken " + sessionuuid + " with url " + web3url);
 		
 		var commonservice = global.getServiceInstance('common');
 		var Session = commonservice.Session;
@@ -89,14 +139,15 @@ class EthNodeControllers {
 
 		try {
 			var session = Session.getSession(global, sessionuuid);
-			var ethnode = this.getEthereumNode(session);
 			
 			if (session.isAuthenticated()) {
+				var ethnodeservice = this.global.getServiceInstance('ethnode');
 				
 				// set new url
-				ethnode.setWeb3ProviderFullUrl(web3url);
+				var ethnode = this.getEthereumNode(session, web3url);
 				
 				// and return web3info
+
 				var web3info = {};
 				
 				var web3instance = ethnode.getWeb3Instance();
@@ -116,7 +167,61 @@ class EthNodeControllers {
 			}
 		}
 		catch(e) {
-			global.log("exception in web3_set for sessiontoken " + sessionuuid + ": " + e);
+			global.log("exception in web3_add_provider for sessiontoken " + sessionuuid + ": " + e);
+			
+			jsonresult = {status: 0, error: "exception: " + e};
+		}
+		
+	  	res.json(jsonresult);
+	}
+	
+	web3_set_provider(req, res) {
+		// PUT
+		var global = this.global;
+		var sessionuuid = req.get("sessiontoken");
+		
+		var web3url  = req.body.web3url;
+		
+		global.log("web3_set_provider called for sessiontoken " + sessionuuid + " with url " + web3url);
+		
+		var commonservice = global.getServiceInstance('common');
+		var Session = commonservice.Session;
+		
+		var jsonresult;
+
+		try {
+			var session = Session.getSession(global, sessionuuid);
+			
+			if (session.isAuthenticated()) {
+				var ethnodeservice = this.global.getServiceInstance('ethnode');
+				
+				// set new url
+				ethnodeservice.setWeb3ProviderFullUrl(session, url);
+				
+				// and return default web3info
+
+				var web3info = {};
+				
+				var web3instance = ethnode.getWeb3Instance();
+				
+				web3info.web3_version = ethnode.web3_version;
+
+				var execenv = global.getExecutionEnvironment();
+				
+				if (ethnode && (execenv == 'dev')) {
+					web3info.web3_host = (web3instance && web3instance.currentProvider ? web3instance.currentProvider.host : null);
+				}
+				
+				jsonresult = {status: 1, data: web3info};
+			}
+			else {
+				jsonresult = {status: 0, error: "session is not authenticated"};
+			}
+		}
+		catch(e) {
+			global.log("exception in web3_set_provider for sessiontoken " + sessionuuid + ": " + e);
+			
+			jsonresult = {status: 0, error: "exception: " + e};
 		}
 		
 	  	res.json(jsonresult);
@@ -126,6 +231,7 @@ class EthNodeControllers {
 	web3_node(req, res) {
 		// GET
 		var sessionuuid = req.get("sessiontoken");
+		var web3providerurl = req.get("web3providerurl");
 		//var address = req.params.id;
 		
 		var global = this.global;
@@ -141,7 +247,7 @@ class EthNodeControllers {
 		
 		try {
 			var session = Session.getSession(global, sessionuuid);
-			var ethnode = this.getEthereumNode(session);
+			var ethnode = this.getEthereumNode(session, web3providerurl);
 			
 			var nodeinfo = ethnode.web3_getNodeInfo();
 			
@@ -176,6 +282,7 @@ class EthNodeControllers {
 	web3_account_balance(req, res) {
 		// GET
 		var sessionuuid = req.get("sessiontoken");
+		var web3providerurl = req.get("web3providerurl");
 		var address = req.params.id;
 		
 		var global = this.global;
@@ -186,7 +293,7 @@ class EthNodeControllers {
 		
 		try {
 			var session = Session.getSession(global, sessionuuid);
-			var ethnode = this.getEthereumNode(session);
+			var ethnode = this.getEthereumNode(session, web3providerurl);
 			
 			var balance = ethnode.web3_getAccountBalance(address);
 		}
@@ -210,6 +317,7 @@ class EthNodeControllers {
 	web3_account_code(req, res) {
 		// GET
 		var sessionuuid = req.get("sessiontoken");
+		var web3providerurl = req.get("web3providerurl");
 		var address = req.params.id;
 		
 		var global = this.global;
@@ -220,7 +328,7 @@ class EthNodeControllers {
 		
 		try {
 			var session = Session.getSession(global, sessionuuid);
-			var ethnode = this.getEthereumNode(session);
+			var ethnode = this.getEthereumNode(session, web3providerurl);
 			
 			var code = ethnode.web3_getAccountCode(address);
 		}
@@ -244,6 +352,7 @@ class EthNodeControllers {
 	web3_account_transaction_count(req, res) {
 		// GET
 		var sessionuuid = req.get("sessiontoken");
+		var web3providerurl = req.get("web3providerurl");
 		var address = req.params.id;
 		
 		var global = this.global;
@@ -254,7 +363,7 @@ class EthNodeControllers {
 		
 		try {
 			var session = Session.getSession(global, sessionuuid);
-			var ethnode = this.getEthereumNode(session);
+			var ethnode = this.getEthereumNode(session, web3providerurl);
 			
 			var count = ethnode.web3_getTransactionCount(address);
 		}
@@ -279,6 +388,7 @@ class EthNodeControllers {
 	web3_block_current_number(req, res) {
 		// GET
 		var sessionuuid = req.get("sessiontoken");
+		var web3providerurl = req.get("web3providerurl");
 		
 		var global = this.global;
 		var commonservice = global.getServiceInstance('common');
@@ -288,7 +398,7 @@ class EthNodeControllers {
 		
 		try {
 			var session = Session.getSession(global, sessionuuid);
-			var ethnode = this.getEthereumNode(session);
+			var ethnode = this.getEthereumNode(session, web3providerurl);
 			
 			var blocknumber = ethnode.web3_getHighestBlockNumber();
 		}
@@ -312,6 +422,7 @@ class EthNodeControllers {
 	web3_block(req, res) {
 		// GET
 		var sessionuuid = req.get("sessiontoken");
+		var web3providerurl = req.get("web3providerurl");
 		
 		var blockid = req.params.id;
 
@@ -323,7 +434,7 @@ class EthNodeControllers {
 		
 		try {
 			var session = Session.getSession(global, sessionuuid);
-			var ethnode = this.getEthereumNode(session);
+			var ethnode = this.getEthereumNode(session, web3providerurl);
 			
 			var blockjson = ethnode.web3_getBlock(blockid, false);
 		}
@@ -348,6 +459,7 @@ class EthNodeControllers {
 	web3_block_and_transactions(req, res) {
 		// GET
 		var sessionuuid = req.get("sessiontoken");
+		var web3providerurl = req.get("web3providerurl");
 		
 		var blockid = req.params.id;
 
@@ -359,7 +471,7 @@ class EthNodeControllers {
 		
 		try {
 			var session = Session.getSession(global, sessionuuid);
-			var ethnode = this.getEthereumNode(session);
+			var ethnode = this.getEthereumNode(session, web3providerurl);
 			
 			var blockjson = ethnode.web3_getBlock(blockid, true);
 		}
@@ -384,6 +496,7 @@ class EthNodeControllers {
 	web3_transaction(req, res) {
 		// GET
 		var sessionuuid = req.get("sessiontoken");
+		var web3providerurl = req.get("web3providerurl");
 		
 		var txhash = req.params.id;
 
@@ -395,7 +508,7 @@ class EthNodeControllers {
 		
 		try {
 			var session = Session.getSession(global, sessionuuid);
-			var ethnode = this.getEthereumNode(session);
+			var ethnode = this.getEthereumNode(session, web3providerurl);
 			
 			var txjson = ethnode.web3_getTransaction(txhash);
 		}
@@ -420,6 +533,7 @@ class EthNodeControllers {
 	web3_transaction_receipt(req, res) {
 		// GET
 		var sessionuuid = req.get("sessiontoken");
+		var web3providerurl = req.get("web3providerurl");
 		
 		var txhash = req.params.id;
 
@@ -431,7 +545,7 @@ class EthNodeControllers {
 		
 		try {
 			var session = Session.getSession(global, sessionuuid);
-			var ethnode = this.getEthereumNode(session);
+			var ethnode = this.getEthereumNode(session, web3providerurl);
 			
 			var txjson = ethnode.web3_getTransactionReceipt(txhash);
 		}
@@ -455,6 +569,7 @@ class EthNodeControllers {
 	web3_find_transaction(req, res) {
 		// POST
 		var sessionuuid = req.get("sessiontoken");
+		var web3providerurl = req.get("web3providerurl");
 		
 		var global = this.global;
 		var commonservice = global.getServiceInstance('common');
@@ -468,7 +583,7 @@ class EthNodeControllers {
 		
 		try {
 			var session = Session.getSession(global, sessionuuid);
-			var ethnode = this.getEthereumNode(session);
+			var ethnode = this.getEthereumNode(session, web3providerurl);
 			
 			var result = ethnode.web3_findTransaction(transactionuuid);
 		
@@ -494,6 +609,7 @@ class EthNodeControllers {
 	web3_user_transactions(req, res) {
 		// POST
 		var sessionuuid = req.get("sessiontoken");
+		var web3providerurl = req.get("web3providerurl");
 		
 		var global = this.global;
 		var commonservice = global.getServiceInstance('common');
@@ -507,7 +623,7 @@ class EthNodeControllers {
 		
 		try {
 			var session = Session.getSession(global, sessionuuid);
-			var ethnode = this.getEthereumNode(session);
+			var ethnode = this.getEthereumNode(session, web3providerurl);
 			
 			var txarray = ethnode.web3_getUserTransactions(useruuid);
 			
@@ -526,7 +642,9 @@ class EthNodeControllers {
 				
 				var status = tx['status'];
 				
-				var json = {transactionuuid: transactionuuid, transactionhash: transactionhash, creationdate: creationdate, from: from, to: to, value: value, status: status};
+				var web3providerurl = tx.getWeb3ProviderUrl();
+				
+				var json = {transactionuuid: transactionuuid, transactionhash: transactionhash, creationdate: creationdate, from: from, to: to, value: value, status: status, web3providerurl: web3providerurl};
 				
 				result.push(json);
 			}
@@ -555,6 +673,7 @@ class EthNodeControllers {
 	web3_sendtransaction(req, res) {
 		// POST
 		var sessionuuid = req.get("sessiontoken");
+		var web3providerurl = req.get("web3providerurl");
 		
 		var global = this.global;
 		var commonservice = global.getServiceInstance('common');
@@ -570,7 +689,7 @@ class EthNodeControllers {
 		
 		try {
 			var session = Session.getSession(global, sessionuuid);
-			var ethnode = this.getEthereumNode(session);
+			var ethnode = this.getEthereumNode(session, web3providerurl);
 			
 			if (raw) {
 				// transaction signed on the client
@@ -675,6 +794,7 @@ class EthNodeControllers {
 	web3_artifact_load(req, res) {
 		// POST
 		var sessionuuid = req.get("sessiontoken");
+		var web3providerurl = req.get("web3providerurl");
 		
 		var global = this.global;
 		var commonservice = global.getServiceInstance('common');
@@ -687,14 +807,13 @@ class EthNodeControllers {
 		
 		try {
 			var session = Session.getSession(global, sessionuuid);
-			var ethnode = this.getEthereumNode(session);
+			var ethnode = this.getEthereumNode(session, web3providerurl);
 			
 			var contractartifact = ethnode.web3_loadArtifact(artifactpath);
 			
 		}
 		catch(e) {
 			global.log("exception in web3_artifact_load for sessiontoken " + sessionuuid +  ": " + e);
-			global.log(e.stack);
 		}
 
 		
@@ -724,6 +843,7 @@ class EthNodeControllers {
 	web3_contract_load(req, res) {
 		// POST
 		var sessionuuid = req.get("sessiontoken");
+		var web3providerurl = req.get("web3providerurl");
 		
 		var artifactuid = req.body.artifactuuid;
 		
@@ -738,7 +858,7 @@ class EthNodeControllers {
 		
 		try {
 			var session = Session.getSession(global, sessionuuid);
-			var ethnode = this.getEthereumNode(session);
+			var ethnode = this.getEthereumNode(session, web3providerurl);
 			
 			var artifact = ethnode.getWeb3ContractArtifact(artifactuid);
 			//var artifact = session.getObject(artifactuid);
@@ -767,6 +887,7 @@ class EthNodeControllers {
 	web3_contract_at(req, res) {
 		// POST
 		var sessionuuid = req.get("sessiontoken");
+		var web3providerurl = req.get("web3providerurl");
 		
 		var contractuuid = req.body.contractuuid;
 		var address = req.body.address;
@@ -781,7 +902,7 @@ class EthNodeControllers {
 			
 			if (contractuuid) {
 				var session = Session.getSession(global, sessionuuid);
-				var ethnode = this.getEthereumNode(session);
+				var ethnode = this.getEthereumNode(session, web3providerurl);
 				
 				var web3contract = ethnode.getWeb3Contract(contractuuid);
 				//var trufflecontract = session.getObject(contractuuid);
@@ -835,6 +956,7 @@ class EthNodeControllers {
 		}
 		catch(e) {
 			global.log("exception in web3_contract_at for sessiontoken " + sessionuuid+ " and contractuuid " + contractuuid + " and address " + address +  ": " + e);
+			global.log(e.stack);
 		}
 		
 
@@ -848,6 +970,7 @@ class EthNodeControllers {
 	web3_contract_new(req, res) {
 		// POST
 		var sessionuuid = req.get("sessiontoken");
+		var web3providerurl = req.get("web3providerurl");
 		
 		var contractuuid = req.body.contractuuid;
 		var args = (req.body.args ? JSON.parse(req.body.args) : []);
@@ -869,7 +992,7 @@ class EthNodeControllers {
 		
 		try {
 			var session = Session.getSession(global, sessionuuid);
-			var ethnode = this.getEthereumNode(session);
+			var ethnode = this.getEthereumNode(session, web3providerurl);
 			
 			var contract = ethnode.getWeb3Contract(contractuuid);
 			//var contract = session.getObject(contractuuid);
@@ -920,6 +1043,7 @@ class EthNodeControllers {
 	web3_contract_call(req, res) {
 		// POST
 		var sessionuuid = req.get("sessiontoken");
+		var web3providerurl = req.get("web3providerurl");
 		
 		var contractaddress = req.params.id;
 		
@@ -940,7 +1064,7 @@ class EthNodeControllers {
 		
 		try {
 			var session = Session.getSession(global, sessionuuid);
-			var ethnode = this.getEthereumNode(session);
+			var ethnode = this.getEthereumNode(session, web3providerurl);
 			
 			var contractinstance = ethnode.getWeb3ContractInstance(contractinstanceuuid)
 			
@@ -981,6 +1105,7 @@ class EthNodeControllers {
 	web3_contract_send(req, res) {
 		// POST
 		var sessionuuid = req.get("sessiontoken");
+		var web3providerurl = req.get("web3providerurl");
 		
 		var contractaddress = req.params.id;
 		
@@ -1008,7 +1133,7 @@ class EthNodeControllers {
 		
 		try {
 			var session = Session.getSession(global, sessionuuid);
-			var ethnode = this.getEthereumNode(session);
+			var ethnode = this.getEthereumNode(session, web3providerurl);
 			
 			var contractinstance = ethnode.getWeb3ContractInstance(contractinstanceuuid);;
 			//var contractinstance = session.getObject(contractinstanceuuid);

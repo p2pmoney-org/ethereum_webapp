@@ -24,6 +24,7 @@ class EthereumTransaction {
 		
 		this.nonce = null;
 		
+		this.web3providerurl = null;
 	}
 	
 	getTransactionUUID() {
@@ -96,6 +97,21 @@ class EthereumTransaction {
 	
 	setData(data) {
 		this.data = data;
+	}
+	
+	getWeb3ProviderUrl() {
+		if (this.web3providerurl)
+		return this.web3providerurl;
+		
+		// return default
+		var global = this.session.getGlobalInstance();
+		var ethnodeservice = global.getServiceInstance('ethnode');
+		
+		return ethnodeservice.getWeb3ProviderFullUrl();
+	}
+	
+	setWeb3ProviderUrl(url) {
+		this.web3providerurl = url;
 	}
 	
 	getTxJson() {

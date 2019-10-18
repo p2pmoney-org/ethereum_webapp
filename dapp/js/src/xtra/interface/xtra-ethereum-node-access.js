@@ -91,6 +91,8 @@ class Xtra_EthereumNodeAccess {
 		
 		this.ethereumnodeaccessmodule = ethereumnodeaccessmodule;
 		this.web3_version = ethereumnodeaccessmodule.web3_version;
+		
+		this.web3providerurl = null;
 	}
 	
 	isReady(callback) {
@@ -242,12 +244,28 @@ class Xtra_EthereumNodeAccess {
 	
 
 	// node
+	web3_getProviderUrl() {
+		if (this.web3providerurl)
+			return this.web3providerurl;
+		
+		this.web3providerurl = this.ethereumnodeaccessmodule.getWeb3ProviderUrl(this.session);
+		
+		return this.web3providerurl;
+	}
+	
 	web3_setProviderUrl(url, callback) {
 		console.log("Xtra_EthereumNodeAccess.web3_setProviderUrl called with: " + url);
 		
 		var self = this;
 		var session = this.session;
 
+		this.web3providerurl = url;
+		
+		// set header of restconnection
+		var restconnection = this.getRestConnection();
+		
+		restconnection.addToHeader({key: 'web3providerurl', value: url});
+		
 		var promise = new Promise(function (resolve, reject) {
 			
 			try {
@@ -257,7 +275,7 @@ class Xtra_EthereumNodeAccess {
 				
 				postdata = {web3url: url};
 
-				var promise2 = self.rest_put(resource, postdata, function (err, res) {
+				var promise2 = self.rest_post(resource, postdata, function (err, res) {
 					if (res) {
 						if (callback)
 							callback(null, res['data']);
@@ -781,6 +799,7 @@ class Xtra_EthereumNodeAccess {
 							transaction.setValue(tx['value']);
 							transaction.setCreationDate(creationdate);
 							transaction.setStatus(tx['status']);
+							transaction.setWeb3ProviderUrl(tx['web3providerurl']);
 						
 							transactionarray.push(transaction);
 						}

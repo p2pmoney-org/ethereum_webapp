@@ -54,6 +54,14 @@ class ClientContainerRoutes {
 		  .post(function(req, res) { controllers.clicont_localstorage_set(req, res); });
 
 		// web3
+		app.route(route_root_path + '/clicont/web3/provider')
+		.get(function(req, res) { controllers.clicont_web3_get_provider(req, res); })
+		.post(function(req, res) { controllers.clicont_web3_add_provider(req, res); })
+		.put(function(req, res) { controllers.clicont_web3_set_provider(req, res); });
+		
+		app.route(route_root_path + '/clicont/web3/node')
+		.get(function(req, res) { controllers.clicont_web3_node(req, res); });
+		
 		app.route(route_root_path + '/clicont/web3/account/:id/balance')
 		.get(function(req, res) { controllers.clicont_web3_account_balance(req, res); });
 		

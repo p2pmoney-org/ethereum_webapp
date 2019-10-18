@@ -164,13 +164,22 @@ class Service {
 		
 		var fs = require('fs');
 		var path = require('path');
-
-		var sourcepath;
-		var destdir;
-
+		
 		var service_base_dir = __dirname;
 		var dapp_dir = webapp_service.getServedDappDirectory();
 		
+
+		// add authkey_version to ./app/js/src/constants.js
+		var ethereum_webapp_version = global.getCurrentVersion();
+		var copyversionlines = '\nwindow.simplestore.Constants.push(\'authkey_version\', {value: \'' + ethereum_webapp_version + '\'});\n';
+		
+		global.append_to_file(path.join(dapp_dir, './app/js/src/constants.js'), copyversionlines);
+
+		
+		// files
+		var sourcepath;
+		var destdir;
+
 		// copy interfaces
 		var sourcedir = service_base_dir + '/client/includes/interface';
 		
@@ -459,13 +468,7 @@ class Service {
 	getVersion() {
 		var global = this.global;
 		
-		var mysqlcon = global.getMySqlConnection();
-		
-		var query = 'SHOW TABLES;';
-		
-		var result = mysqlcon.execute(query);
-		
-        return JSON.stringify(result.rows);
+        return global.getVersionInfo();
 	}
 	
 	// objects

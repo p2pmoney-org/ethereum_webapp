@@ -274,6 +274,190 @@ class ClientContainerControllers {
 	// web3
 	//
 	
+	// providers
+	clicont_web3_get_provider(req, res) {
+		// GET
+		var sessionuuid = req.get("sessiontoken");
+		
+		var global = this.global;
+		var commonservice = global.getServiceInstance('common');
+		var Session = commonservice.Session;
+		
+		if (!sessionuuid) {
+			// we allow calls without a session
+			sessionuuid = global.guid(); // give a one-time sessionuuid
+		}
+
+		global.log("web3_get_provider called for sessiontoken " + sessionuuid);
+		var web3info = null;
+		
+		try {
+			var session = Session.getSession(global, sessionuuid);
+			
+			var clicontservice = global.getServiceInstance('client-container');
+			
+			var clientcontainer = clicontservice.getClientContainer(session);
+			var web3interface = clientcontainer.getClientInterface('web3');
+			
+			web3info = {};
+			
+			web3info.web3_host = web3interface.getWeb3ProviderUrl(session);
+	
+		}
+		catch(e) {
+			global.log("exception in web3_get_provider for sessiontoken " + sessionuuid + ": " + e);
+		}
+		var jsonresult;
+		
+		if (web3info !== null) {
+			jsonresult = {status: 1, data: web3info};
+		}
+		else {
+			jsonresult = {status: 0, error: "could not retrieve web3 information"};
+		}
+	  	
+	  	res.json(jsonresult);
+	}
+	
+	clicont_web3_add_provider(req, res) {
+		// POST
+		var global = this.global;
+		var sessionuuid = req.get("sessiontoken");
+		
+		var web3url  = req.body.web3url;
+		
+		global.log("web3_add_provider called for sessiontoken " + sessionuuid + " with url " + web3url);
+		
+		var commonservice = global.getServiceInstance('common');
+		var Session = commonservice.Session;
+		
+		var jsonresult;
+
+		try {
+			var session = Session.getSession(global, sessionuuid);
+			
+			var clicontservice = global.getServiceInstance('client-container');
+			
+			if (session.isAuthenticated()) {
+				var clientcontainer = clicontservice.getClientContainer(session);
+				var web3interface = clientcontainer.getClientInterface('web3');
+				
+				// add new url (if not already done)
+				var ethnode = web3interface.addWeb3ProviderUrl(session, web3url);
+				
+				// and return web3info
+				var web3info = {};
+				
+				web3info.web3_host = ethnode.web3_getProviderUrl(session);
+				
+				jsonresult = {status: 1, data: web3info};
+			}
+			else {
+				jsonresult = {status: 0, error: "session is not authenticated"};
+			}
+		}
+		catch(e) {
+			global.log("exception in web3_add_provider for sessiontoken " + sessionuuid + ": " + e);
+			
+			jsonresult = {status: 0, error: "exception: " + e};
+		}
+		
+	  	res.json(jsonresult);
+	}
+	
+	clicont_web3_set_provider(req, res) {
+		// PUT
+		var global = this.global;
+		var sessionuuid = req.get("sessiontoken");
+		
+		var web3url  = req.body.web3url;
+		
+		global.log("web3_set_provider called for sessiontoken " + sessionuuid + " with url " + web3url);
+		
+		var commonservice = global.getServiceInstance('common');
+		var Session = commonservice.Session;
+		
+		var jsonresult;
+
+		try {
+			var session = Session.getSession(global, sessionuuid);
+			
+			var clicontservice = global.getServiceInstance('client-container');
+			
+			if (session.isAuthenticated()) {
+				var clientcontainer = clicontservice.getClientContainer(session);
+				var web3interface = clientcontainer.getClientInterface('web3');
+				
+				// set new url
+				var ethnode = web3interface.setWeb3ProviderUrl(session, web3url);
+				
+				// and return web3info
+				var web3info = {};
+				
+				web3info.web3_host = ethnode.web3_getProviderUrl(session);
+				
+				jsonresult = {status: 1, data: web3info};
+			}
+			else {
+				jsonresult = {status: 0, error: "session is not authenticated"};
+			}
+		}
+		catch(e) {
+			global.log("exception in web3_set_provider for sessiontoken " + sessionuuid + ": " + e);
+			
+			jsonresult = {status: 0, error: "exception: " + e};
+		}
+		
+	  	res.json(jsonresult);
+	}
+
+	// node info
+	clicont_web3_node(req, res) {
+		// GET
+		var sessionuuid = req.get("sessiontoken");
+		//var address = req.params.id;
+		
+		var global = this.global;
+		var commonservice = global.getServiceInstance('common');
+		var Session = commonservice.Session;
+		
+		if (!sessionuuid) {
+			// we allow calls without a session
+			sessionuuid = global.guid(); // give a one-time sessionuuid
+		}
+
+		global.log("clicont_web3_node called for sessiontoken " + sessionuuid);
+		
+		try {
+			var commonservice = global.getServiceInstance('common');
+			var Session = commonservice.Session;
+			var session = Session.getSession(global, sessionuuid);
+			
+			var clicontservice = global.getServiceInstance('client-container');
+			
+			var clientcontainer = clicontservice.getClientContainer(session);
+			var web3interface = clientcontainer.getClientInterface('web3');
+			
+			var nodeinfo = web3interface.getNodeInfo(session);
+
+		}
+		catch(e) {
+			global.log("exception in clicont_web3_node for sessiontoken " + sessionuuid + ": " + e);
+		}
+		var jsonresult;
+		
+		if (nodeinfo !== null) {
+			jsonresult = {status: 1, data: nodeinfo};
+		}
+		else {
+			jsonresult = {status: 0, error: "could not retrieve node information"};
+		}
+	  	
+	  	res.json(jsonresult);
+	  	
+	}
+
+
 	// balance
 	clicont_web3_account_balance(req, res) {
 		// GET
