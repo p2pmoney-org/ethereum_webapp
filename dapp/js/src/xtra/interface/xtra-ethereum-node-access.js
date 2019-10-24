@@ -50,13 +50,15 @@ var NodeCache = class {
 	}
 	
 	getValue(key) {
-		if (key in this.map) {
-			return this.map[key];
+		var keystring = key.toString().toLowerCase(); // stringify and use property instead of using Map object
+		if (keystring in this.map) {
+			return this.map[keystring];
 		} 
 	}
 	
 	putValue(key, value) {
-		this.map[key] = value;
+		var keystring = key.toString().toLowerCase();
+		this.map[keystring] = value;
 	}
 	
 	count() {
@@ -949,6 +951,13 @@ class Xtra_EthereumNodeAccess {
 		
 		if (ethtransaction.getTransactionUUID() === null)
 			ethtransaction.setTransactionUUID(session.guid());
+		
+		if (ethtransaction.web3providerurl === null) {
+			// fill with default provider url if caller didn't
+			console.log('WARNING: EthereumNodeAccess.web3_sendEthTransaction caller did not set provider url for transaction ' + ethtransaction.getTransactionUUID());
+			let web3providerurl = this.web3_getProviderUrl();
+			ethtransaction.setWeb3ProviderUrl(web3providerurl);
+		}
 		
 		var transactionuuid = ethtransaction.getTransactionUUID();
 		
