@@ -54,6 +54,9 @@ class ClientContainerRoutes {
 		  .post(function(req, res) { controllers.clicont_localstorage_set(req, res); });
 
 		// web3
+		app.route(route_root_path + '/clicont/web3')
+		.get(function(req, res) { controllers.clicont_web3_root(req, res); });
+		
 		app.route(route_root_path + '/clicont/web3/provider')
 		.get(function(req, res) { controllers.clicont_web3_get_provider(req, res); })
 		.post(function(req, res) { controllers.clicont_web3_add_provider(req, res); })

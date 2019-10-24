@@ -56,6 +56,7 @@ class EthNodeControllers {
 			
 			if (ethnode && (execenv == 'dev')) {
 				web3info.web3_host = (web3instance && web3instance.currentProvider ? web3instance.currentProvider.host : null);
+				web3info.web3_instance_version = (web3instance && web3instance.version ? web3instance.version : null);
 			}
 	
 		}

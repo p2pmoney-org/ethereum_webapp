@@ -274,6 +274,59 @@ class ClientContainerControllers {
 	// web3
 	//
 	
+	// root
+	clicont_web3_root(req, res) {
+		// GET
+		var sessionuuid = req.get("sessiontoken");
+		
+		var global = this.global;
+		var commonservice = global.getServiceInstance('common');
+		var Session = commonservice.Session;
+		
+		if (!sessionuuid) {
+			// we allow calls without a session
+			sessionuuid = global.guid(); // give a one-time sessionuuid
+		}
+
+		global.log("web3_get_provider called for sessiontoken " + sessionuuid);
+		var web3info = null;
+		
+		try {
+			var session = Session.getSession(global, sessionuuid);
+			
+			var clicontservice = global.getServiceInstance('client-container');
+			
+			var clientcontainer = clicontservice.getClientContainer(session);
+			var web3interface = clientcontainer.getClientInterface('web3');
+			
+			web3info = {};
+			
+			web3info.web3_host = web3interface.getWeb3ProviderUrl(session);
+
+			var execenv = global.getExecutionEnvironment();
+			
+			if (execenv == 'dev') {
+				var web3instance = web3interface.getWeb3Instance(session);
+
+				web3info.web3_instance_version = (web3instance && web3instance.version ? web3instance.version : null);
+			}
+	
+		}
+		catch(e) {
+			global.log("exception in web3_get_provider for sessiontoken " + sessionuuid + ": " + e);
+		}
+		var jsonresult;
+		
+		if (web3info !== null) {
+			jsonresult = {status: 1, data: web3info};
+		}
+		else {
+			jsonresult = {status: 0, error: "could not retrieve web3 information"};
+		}
+	  	
+	  	res.json(jsonresult);
+	}
+
 	// providers
 	clicont_web3_get_provider(req, res) {
 		// GET

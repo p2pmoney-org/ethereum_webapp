@@ -9,6 +9,16 @@ class Web3Client {
 		this.clientcontainer = clientcontainer;
 	}
 	
+	getWeb3Instance(serversession) {
+		var clientcontainer = this.clientcontainer;
+		var clientsession = clientcontainer.getClientSession(serversession);
+		
+		var ethnodemodule = clientcontainer.getModuleObject('ethnode');
+		var ethereumnodeaccess = ethnodemodule.getEthereumNodeAccessInstance(clientsession);
+
+		return ( ethereumnodeaccess._getWeb3Instance ? ethereumnodeaccess._getWeb3Instance() : null);
+	}
+	
 	getWeb3ProviderUrl(serversession) {
 		var clientcontainer = this.clientcontainer;
 		var clientsession = clientcontainer.getClientSession(serversession);
