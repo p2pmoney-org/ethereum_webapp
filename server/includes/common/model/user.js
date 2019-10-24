@@ -60,12 +60,18 @@ class User {
 	}
 	
 	removeRole(rolevalue) {
+		var newroles = [];
+		
 		for (var i = 0; i < this.roles.length; i++) {
 			var role = this.roles[i];
 			
 			if (role.getValue() == rolevalue)
-				this.roles.splice(i, 1);
+				continue;
+			else
+				newroles.push(role);
 		}
+		
+		this.roles = newroles;
 	}
 	
 	_hasRole(rolevalue) {

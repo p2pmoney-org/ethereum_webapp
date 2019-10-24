@@ -282,17 +282,23 @@ class Service {
 					jsonarray = [];
 				
 				var contractmap = this._getBuiltInContractMap() ;
+				var newjsonarray = []
 				
 				for (var i = 0; i < jsonarray.length; i++) {
 					var contract = jsonarray[i];
 					
 					if ((contract.uuid) && (contract.uuid in contractmap)) {
-						jsonarray.splice(i,1);
+						continue;
+					}
+					else {
+						newjsonarray.push(contract);
 					}
 				}
 				
-				if (jsonarray.length)
-				result.content = JSON.stringify(jsonarray);
+				if (newjsonarray.length)
+					result.content = JSON.stringify(newjsonarray);
+				else 
+					result.content = '[]';
 			}
 			catch(e) {
 			}
