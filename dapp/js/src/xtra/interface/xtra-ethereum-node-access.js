@@ -230,16 +230,16 @@ class Xtra_EthereumNodeAccess {
 	}
 	
 	_getWeb3Provider() {
-		return  this.ethereumnodeaccessmodule.getWeb3Provider(this.session);
+		return  this.ethereumnodeaccessmodule.getWeb3Provider(this.session, this.web3providerurl);
 	}
 	
 	_getWeb3Instance() {
 		if (this.web3instance)
 			return this.web3instance;
 		
-		this.web3instance = this.ethereumnodeaccessmodule.getWeb3Instance(this.session);		
+		this.web3instance = this.ethereumnodeaccessmodule.getWeb3Instance(this.session, this.web3providerurl);		
 		
-		console.log("web3 instance created in EthereumNodeAccess");
+		console.log("web3 instance created in Xtra_EthereumNodeAccess" + (this.web3providerurl ? " for " + this.web3providerurl : " (with default provider)"));
 		
 		return this.web3instance;
 	}
