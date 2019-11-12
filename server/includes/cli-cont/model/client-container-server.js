@@ -9,11 +9,11 @@ class ClientContainerServer {
 		this.service = service;
 		this.global = service.global;
 		
-		var Ethereum_core = require('@p2pmoney-org/ethereum_core');
-		var Ethereum_erc20 = require('@p2pmoney-org//ethereum_erc20');
+		//var Ethereum_core = require('@p2pmoney-org/ethereum_core');
+		//var Ethereum_erc20 = require('@p2pmoney-org//ethereum_erc20');
 		
-		//var Ethereum_core = require('../clientroot/nodemodules/ethereum_core');
-		//var Ethereum_erc20 = require('../clientroot/nodemodules/ethereum_erc20');
+		var Ethereum_core = require('../clientroot/nodemodules/@p2pmoney-org/ethereum_core');
+		var Ethereum_erc20 = require('../clientroot/nodemodules/@p2pmoney-org/ethereum_erc20');
 
 		this.ethereum_core = Ethereum_core.getObject();
 		this.ethereum_erc20 = Ethereum_erc20.getObject();

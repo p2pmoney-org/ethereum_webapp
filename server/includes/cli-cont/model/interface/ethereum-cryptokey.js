@@ -59,6 +59,33 @@ class CryptoKeyClient {
 
 		return cryptokey.aesDecryptString(cyphertext);
 	}
+	
+	rsaEncryptString(serversession, senderprivatekey, recipientpublickey, plaintext) {
+		var clientcontainer = this.clientcontainer;
+		var clientsession = clientcontainer.getClientSession(serversession);
+		
+		var sendercryptokey = clientsession.createBlankCryptoKeyObject();
+		var recipientcryptokey = clientsession.createBlankCryptoKeyObject();
+		
+		sendercryptokey.setPrivateKey(senderprivatekey);
+		recipientcryptokey.setRsaPublicKey(recipientpublickey);
+		
+		return sendercryptokey.rsaEncryptString(plaintext, recipientcryptokey);
+		
+	}
+	
+	rsaDecryptString(serversession, senderpublickey, recipientprivatekey, cyphertext) {
+		var clientcontainer = this.clientcontainer;
+		var clientsession = clientcontainer.getClientSession(serversession);
+		
+		var sendercryptokey = clientsession.createBlankCryptoKeyObject();
+		var recipientcryptokey = clientsession.createBlankCryptoKeyObject();
+		
+		sendercryptokey.setRsaPublicKey(senderpublickey);
+		recipientcryptokey.setPrivateKey(recipientprivatekey);
+
+		return recipientcryptokey.rsaDecryptString(cyphertext, sendercryptokey);
+	}
 }
 
 

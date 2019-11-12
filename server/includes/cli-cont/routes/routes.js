@@ -40,11 +40,17 @@ class ClientContainerRoutes {
 		app.route(route_root_path + '/clicont/keys/publickeys')
 		  .post(function(req, res) { controllers.clicont_keys_publickeys(req, res); });
 
-		app.route(route_root_path + '/clicont/keys/encrypt')
-		  .post(function(req, res) { controllers.clicont_keys_encrypt(req, res); });
+		app.route(route_root_path + '/clicont/keys/aes/encrypt')
+		  .post(function(req, res) { controllers.clicont_keys_aes_encrypt(req, res); });
 
-		app.route(route_root_path + '/clicont/keys/decrypt')
-		  .post(function(req, res) { controllers.clicont_keys_decrypt(req, res); });
+		app.route(route_root_path + '/clicont/keys/aes/decrypt')
+		  .post(function(req, res) { controllers.clicont_keys_aes_decrypt(req, res); });
+
+		app.route(route_root_path + '/clicont/keys/rsa/encrypt')
+		  .post(function(req, res) { controllers.clicont_keys_rsa_encrypt(req, res); });
+
+		app.route(route_root_path + '/clicont/keys/rsa/decrypt')
+		  .post(function(req, res) { controllers.clicont_keys_rsa_decrypt(req, res); });
 
 		// local storage
 		app.route(route_root_path + '/clicont/localstorage/get')

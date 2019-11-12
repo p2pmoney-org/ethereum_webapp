@@ -122,12 +122,12 @@ class ClientContainerControllers {
 	}
 
 	// encrypt plain text
-	clicont_keys_encrypt(req, res) {
+	clicont_keys_aes_encrypt(req, res) {
 		// POST
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
 		
-		global.log("clicont_keys_encrypt called for sessiontoken " + sessionuuid);
+		global.log("clicont_keys_aes_encrypt called for sessiontoken " + sessionuuid);
 		
 		var privatekey  = req.body.private_key;
 		var plaintext  = req.body.plaintext;
@@ -149,7 +149,7 @@ class ClientContainerControllers {
 			var jsonresult = {status: 1, plaintext: plaintext, cyphertext: cyphertext};
 		}
 		catch(e) {
-			global.log("exception in clicont_keys_encrypt for sessiontoken " + sessionuuid + ": " + e);
+			global.log("exception in clicont_keys_aes_encrypt for sessiontoken " + sessionuuid + ": " + e);
 			global.log(e.stack);
 
 			jsonresult = {status: 0, error: "exception could not encrypt text"};
@@ -159,12 +159,12 @@ class ClientContainerControllers {
 	}
 
 	// decrypt cypher text
-	clicont_keys_decrypt(req, res) {
+	clicont_keys_aes_decrypt(req, res) {
 		// POST
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
 		
-		global.log("clicont_keys_decrypt called for sessiontoken " + sessionuuid);
+		global.log("clicont_keys_aes_decrypt called for sessiontoken " + sessionuuid);
 		
 		var privatekey  = req.body.private_key;
 		var cyphertext  = req.body.cyphertext;
@@ -186,7 +186,7 @@ class ClientContainerControllers {
 			var jsonresult = {status: 1, cyphertext: cyphertext, plaintext: plaintext};
 		}
 		catch(e) {
-			global.log("exception in clicont_keys_decrypt for sessiontoken " + sessionuuid + ": " + e);
+			global.log("exception in clicont_keys_aes_decrypt for sessiontoken " + sessionuuid + ": " + e);
 			global.log(e.stack);
 
 			jsonresult = {status: 0, error: "exception could not decrypt text"};
@@ -195,6 +195,81 @@ class ClientContainerControllers {
 	  	res.json(jsonresult);
 	}
 	
+	// rsa encrypt plain text
+	clicont_keys_rsa_encrypt(req, res) {
+		// POST
+		var global = this.global;
+		var sessionuuid = req.get("sessiontoken");
+		
+		global.log("clicont_keys_rsa_encrypt called for sessiontoken " + sessionuuid);
+		
+		var senderprivatekey  = req.body.sender_private_key;
+		var recipientpublickey  = req.body.recipient_rsa_public_key;
+		var plaintext  = req.body.plaintext;
+		
+		var jsonresult;
+		
+		try {
+			var commonservice = global.getServiceInstance('common');
+			var Session = commonservice.Session;
+			var session = Session.getSession(global, sessionuuid);
+			
+			var clicontservice = global.getServiceInstance('client-container');
+			
+			var clientcontainer = clicontservice.getClientContainer(session);
+			var cryptokeyinterface = clientcontainer.getClientInterface('cryptokey');
+
+			var cyphertext = cryptokeyinterface.rsaEncryptString(session, senderprivatekey, recipientpublickey, plaintext);
+			
+			var jsonresult = {status: 1, plaintext: plaintext, cyphertext: cyphertext};
+		}
+		catch(e) {
+			global.log("exception in clicont_keys_rsa_encrypt for sessiontoken " + sessionuuid + ": " + e);
+			global.log(e.stack);
+
+			jsonresult = {status: 0, error: "exception could not encrypt text"};
+		}
+
+	  	res.json(jsonresult);
+	}
+
+	// rsa decrypt cypher text
+	clicont_keys_rsa_decrypt(req, res) {
+		// POST
+		var global = this.global;
+		var sessionuuid = req.get("sessiontoken");
+		
+		global.log("clicont_keys_rsa_decrypt called for sessiontoken " + sessionuuid);
+		
+		var senderpublickey  = req.body.sender_rsa_public_key;
+		var recipientprivatekey  = req.body.recipient_private_key;
+		var cyphertext  = req.body.cyphertext;
+		
+		var jsonresult;
+		
+		try {
+			var commonservice = global.getServiceInstance('common');
+			var Session = commonservice.Session;
+			var session = Session.getSession(global, sessionuuid);
+			
+			var clicontservice = global.getServiceInstance('client-container');
+			
+			var clientcontainer = clicontservice.getClientContainer(session);
+			var cryptokeyinterface = clientcontainer.getClientInterface('cryptokey');
+
+			var plaintext = cryptokeyinterface.rsaDecryptString(session, senderpublickey, recipientprivatekey, cyphertext);
+			
+			var jsonresult = {status: 1, cyphertext: cyphertext, plaintext: plaintext};
+		}
+		catch(e) {
+			global.log("exception in clicont_keys_rsa_decrypt for sessiontoken " + sessionuuid + ": " + e);
+			global.log(e.stack);
+
+			jsonresult = {status: 0, error: "exception could not decrypt text"};
+		}
+
+	  	res.json(jsonresult);
+	}
 	
 	//
 	// local storage
