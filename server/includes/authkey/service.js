@@ -16,7 +16,7 @@ class Service {
 		this.remoteauthenticationserverinstance = null;
 		
 		// user database (json file)
-		this.users = {};
+		//this.users = {};
 	}
 	
 	loadService() {
@@ -24,7 +24,7 @@ class Service {
 		
 		var global = this.global;
 		
-		this.users = global.readJson("users");
+		//this.users = global.readJson("users");
 
 	}
 
@@ -208,26 +208,80 @@ class Service {
 		
 		global.append_to_file(path.join(dapp_dir, './app/js/src/config.js'), copymodulelines);
 		
+		// we add constants to provide authkey_url and authkey_server_api_path
+		// to authkey client module
+		var authkey_server_url = global.getConfigValue('authkey_server_url');
+		var authkey_server_api_path = global.getConfigValue('authkey_server_api_path');
+		
+		var auth_server_url = global.getConfigValue('auth_server_url');
+		var auth_server_api_path = global.getConfigValue('auth_server_api_path');
+		
+		var key_server_url = global.getConfigValue('key_server_url');
+		var key_server_api_path = global.getConfigValue('key_server_api_path');
+		
+		if (!authkey_server_url) {
+			// if neither auth or key defined, turn to default
+			if ((!auth_server_url) && (!key_server_url))
+			authkey_server_url =  global.getConfigValue('rest_server_url');
+		}
+		
+		if (!authkey_server_api_path) {
+			if ((!auth_server_api_path) && (!key_server_api_path))
+			authkey_server_api_path = global.getConfigValue('rest_server_api_path');
+		}
+		
+		var configlines;
+		
+		// put authkey
+		if (authkey_server_url) {
+			configlines = '\nwindow.simplestore.Config.push(\'authkey_server_url\', \'' + authkey_server_url + '\');\n';
+			global.append_to_file(path.join(dapp_dir, './app/js/src/config.js'), configlines);
+		}
+		
+		// then put url for auth and/or key that have been specified (if any)
+		if (auth_server_url) {
+			configlines = '\nwindow.simplestore.Config.push(\'auth_server_url\', \'' + auth_server_url + '\');\n';
+			global.append_to_file(path.join(dapp_dir, './app/js/src/config.js'), configlines);
+		}
+		
+		if (key_server_url) {
+			configlines = '\nwindow.simplestore.Config.push(\'key_server_url\', \'' + key_server_url + '\');\n';
+			global.append_to_file(path.join(dapp_dir, './app/js/src/config.js'), configlines);
+		}
+		
+		if (authkey_server_api_path) {
+			configlines = '\nwindow.simplestore.Config.push(\'authkey_server_api_path\', \'' + authkey_server_api_path + '\');\n';
+			global.append_to_file(path.join(dapp_dir, './app/js/src/config.js'), configlines);
+		}
+		
+		// then put api_path for auth and/or key that have been specified (if any)
+		if (auth_server_api_path) {
+			configlines = '\nwindow.simplestore.Config.push(\'auth_server_api_path\', \'' + auth_server_api_path + '\');\n';
+			global.append_to_file(path.join(dapp_dir, './app/js/src/config.js'), configlines);
+		}
+
+		if (key_server_api_path) {
+			configlines = '\nwindow.simplestore.Config.push(\'key_server_api_path\', \'' + key_server_api_path + '\');\n';
+			global.append_to_file(path.join(dapp_dir, './app/js/src/config.js'), configlines);
+		}
+
+		
+		// check if will overload or just copy
 		if (webapp_service.overload_dapp_files != 1) {
-			// we add constants to provide authkey_url and authkey_server_api_path
-			// to authkey client module
-			var authkey_server_url = global.getConfigValue('authkey_server_url');
-			var authkey_server_api_path = global.getConfigValue('authkey_server_api_path');
+			// do copies of values that won't be put in XtraConfig
+			// and which must be inserted if (webapp_service.overload_dapp_files != 1)
 			
-			if (!authkey_server_url)
+			// if no authkey server specified in settings, we put rest_server (normally current server) to do authkey
+			if (!authkey_server_url) {
 				authkey_server_url =  global.getConfigValue('rest_server_url');
-			
-			if (!authkey_server_api_path)
-				authkey_server_api_path = global.getConfigValue('rest_server_api_path');
-			
-			var configlines;
-			
-			if (authkey_server_url) {
+				
 				configlines = '\nwindow.simplestore.Config.push(\'authkey_server_url\', \'' + authkey_server_url + '\');\n';
 				global.append_to_file(path.join(dapp_dir, './app/js/src/config.js'), configlines);
 			}
 			
-			if (authkey_server_api_path) {
+			if (!authkey_server_api_path) {
+				authkey_server_api_path = global.getConfigValue('rest_server_api_path');
+
 				configlines = '\nwindow.simplestore.Config.push(\'authkey_server_api_path\', \'' + authkey_server_api_path + '\');\n';
 				global.append_to_file(path.join(dapp_dir, './app/js/src/config.js'), configlines);
 			}
@@ -476,9 +530,23 @@ class Service {
 		if (this.authenticationserverinstance)
 			return this.authenticationserverinstance;
 			
+		var global = this.global;
 		var AuthenticationServer = require('./model/authentication-server.js');
 		
 		this.authenticationserverinstance = new AuthenticationServer(this);
+		
+		// invoke hook to let other services potentially overload instance
+		var result = [];
+		
+		var params = [];
+		
+		params.push(this.authenticationserverinstance);
+
+		var ret = global.invokeHooks('getAuthenticationServerInstance_hook', result, params);
+		
+		if (ret && result && result.length) {
+			global.log('getAuthenticationServerInstance_hook result is ' + JSON.stringify(result));
+		}
 		
 		return this.authenticationserverinstance;
 	}
@@ -487,9 +555,23 @@ class Service {
 		if (this.remoteauthenticationserverinstance)
 			return this.remoteauthenticationserverinstance;
 			
+		var global = this.global;
 		var RemoteAuthenticationServer = require('./model/remote-authentication-server.js');
 		
 		this.remoteauthenticationserverinstance = new RemoteAuthenticationServer(this);
+		
+		// invoke hook to let other services potentially overload instance
+		var result = [];
+		
+		var params = [];
+		
+		params.push(this.remoteauthenticationserverinstance);
+
+		var ret = global.invokeHooks('getRemoteAuthenticationServerInstance_hook', result, params);
+		
+		if (ret && result && result.length) {
+			global.log('getRemoteAuthenticationServerInstance_hook result is ' + JSON.stringify(result));
+		}
 		
 		return this.remoteauthenticationserverinstance;
 	}

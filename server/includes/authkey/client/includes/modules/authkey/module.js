@@ -603,11 +603,16 @@ var Module = class {
 	
 	alterLogoutForm_hook(result, params) {
 		console.log('alterLogoutForm_hook called for ' + this.name);
+		
+		var $scope = params[0];
+		var logoutform = params[1];
+		var session = params[2];
 	}
 	
 	handleLogoutSubmit_hook(result, params) {
 		console.log('handleLogoutSubmit_hook called for ' + this.name);
 		
+		var $scope = params[0];
 		var session = params[1];
 		
 		this._logout(session);
