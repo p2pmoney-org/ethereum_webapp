@@ -64,8 +64,9 @@ class DataBasePersistor {
 		var mysqlcon = global.getMySqlConnection();
 		
 		var tablename = mysqlcon.getTableName('users');
+		var _useruuid = mysqlcon.escape(useruuid);
 		
-		var sql = "SELECT * FROM " + tablename + " WHERE UserUUID = '" + useruuid + "';";
+		var sql = "SELECT * FROM " + tablename + " WHERE UserUUID = " + _useruuid + ";";
 		
 		// open connection
 		mysqlcon.open();
@@ -110,8 +111,9 @@ class DataBasePersistor {
 		var mysqlcon = global.getMySqlConnection();
 		
 		var tablename = mysqlcon.getTableName('users');
+		var _username = mysqlcon.escape(username);
 		
-		var sql = "SELECT * FROM " + tablename + " WHERE UserName = '" + username + "';";
+		var sql = "SELECT * FROM " + tablename + " WHERE UserName = " + _username + ";";
 		
 		// open connection
 		mysqlcon.open();
@@ -175,16 +177,16 @@ class DataBasePersistor {
 		// open connection
 		mysqlcon.open();
 		
-		var current = this.getUserArrayFromUUID(useruuid);
+		var _current = this.getUserArrayFromUUID(useruuid);
 		
-		if (current.uuid !== undefined) {
+		if (_current.uuid !== undefined) {
 			sql = `UPDATE ` +  tablename + ` SET
 					  UserEmail = '` + useremail + `',
 					  AccountStatus = ` + accountstatus + `,
 					  RegistrationDate = ` + registrationon + `,
 					  LastModificationOn = ` + lastmodificationon + `,
 					  UserName = '` + username + `'
-				WHERE UserId = ` + current.id + `;`;
+				WHERE UserId = ` + _current.id + `;`;
 		}
 		else {
 			
@@ -236,14 +238,14 @@ class DataBasePersistor {
 		// open connection
 		mysqlcon.open();
 		
-		var current = this.getUserArrayFromUUID(useruuid);
+		var _current = this.getUserArrayFromUUID(useruuid);
 		
-		if (current.uuid !== undefined) {
+		if (_current.uuid !== undefined) {
 			sql = `UPDATE ` +  tablename + ` SET
 					  Password = '` + password + `',
 					  HashMethod = ` + hashmethod + `,
 					  Salt = '` + salt + `'
-				WHERE UserId = ` + current.id + `;`;
+				WHERE UserId = ` + _current.id + `;`;
 			
 			// execute query
 			var result = mysqlcon.execute(sql);
@@ -264,11 +266,12 @@ class DataBasePersistor {
 		
 		var tablename = mysqlcon.getTableName('users');
 		var keystablename = mysqlcon.getTableName('keys');
+		var _useruuid = mysqlcon.escape(useruuid);
 		
 		var sql = "SELECT * FROM " + tablename;
 		sql += " INNER JOIN " + keystablename;
 		sql += " ON " + tablename + ".UserId=" + keystablename + ".UserId";
-		sql += " WHERE "+ tablename + ".UserUUID = '" + useruuid + "';";
+		sql += " WHERE "+ tablename + ".UserUUID = " + _useruuid + ";";
 		
 		// open connection
 		mysqlcon.open();
@@ -320,11 +323,12 @@ class DataBasePersistor {
 		
 		var tablename = mysqlcon.getTableName('users');
 		var keystablename = mysqlcon.getTableName('keys');
+		var _username = mysqlcon.escape(username);
 		
 		var sql = "SELECT * FROM " + tablename;
 		sql += " INNER JOIN " + keystablename;
 		sql += " ON " + tablename + ".UserId=" + keystablename + ".UserId";
-		sql += " WHERE "+ tablename + ".UserName = '" + username + "';";
+		sql += " WHERE "+ tablename + ".UserName = " + _username + ";";
 		
 		// open connection
 		mysqlcon.open();
@@ -372,15 +376,22 @@ class DataBasePersistor {
 	putUserKey(useruuid, keyuuid, privatekey, publickey, address, rsapublickey, type, description) {
 		var global = this.global;
 		
-		var userarray = this.getUserArrayFromUUID(useruuid);
+		var _userarray = this.getUserArrayFromUUID(useruuid);
 		
-		if ((!userarray) || (!userarray['id']))
+		if ((!_userarray) || (!_userarray['id']))
 			throw new Error('could not find user with uuid ' + useruuid);
 		
 		
 		var mysqlcon = global.getMySqlConnection();
 		
 		var tablename = mysqlcon.getTableName('keys');
+		var _useruuid = mysqlcon.escape(useruuid);
+		var _keyuuid = mysqlcon.escape(keyuuid);
+		var _privatekey = (privatekey ? mysqlcon.escape(privatekey) : null);
+		var _publickey = (publickey ? mysqlcon.escape(publickey) : null);
+		var _address = (address ? mysqlcon.escape(address) : null);
+		var _rsapublickey = (rsapublickey ? mysqlcon.escape(rsapublickey) : null);
+		var _description = (description ? mysqlcon.escape(description) : null);
 		
 		var sql;
 		
@@ -399,15 +410,15 @@ class DataBasePersistor {
 		  Description
 		  )
 		  VALUES (
-		  '` + keyuuid + `',
-		  ` + userarray['id'] + `,
-		  '` + useruuid + `',
+		  ` + _keyuuid + `,
+		  ` + _userarray['id'] + `,
+		  ` + _useruuid + `,
 		  ` + type + `,
-		  ` + (privatekey ? `'` + privatekey + `'` : `NULL`) + `,
-		  ` + (publickey ? `'` + publickey + `'` : `NULL`) + `,
-		  ` + (address ? `'` + address + `'` : `NULL`) + `,
-		  ` + (rsapublickey ? `'` + rsapublickey + `'` : `NULL`) + `,
-		  ` + (description ? `'` + description + `'` : `NULL`) + `
+		  ` + (_privatekey ? _privatekey : `NULL`) + `,
+		  ` + (_publickey ? _publickey : `NULL`) + `,
+		  ` + (_address ? _address : `NULL`) + `,
+		  ` + (_rsapublickey ? _rsapublickey : `NULL`) + `,
+		  ` + (_description ? _description : `NULL`) + `
 		  );`;
 		
 		
@@ -421,15 +432,16 @@ class DataBasePersistor {
 	updateUserKey(useruuid, keyuuid, description) {
 		var global = this.global;
 		
-		var userarray = this.getUserArrayFromUUID(useruuid);
+		var _userarray = this.getUserArrayFromUUID(useruuid);
 		
-		if ((!userarray) || (!userarray['id']))
+		if ((!_userarray) || (!_userarray['id']))
 			throw new Error('could not find user with uuid ' + useruuid);
 		
 		
 		var mysqlcon = global.getMySqlConnection();
 		
 		var tablename = mysqlcon.getTableName('keys');
+		var _keyuuid = mysqlcon.escape(keyuuid);
 		
 		var sql;
 		
@@ -438,7 +450,7 @@ class DataBasePersistor {
 		
 		sql = `UPDATE ` +  tablename + ` SET
 		  Description = '` + description + `'
-				WHERE UserId = ` + userarray['id'] + ` AND ` + tablename + `.KeyUUID = '` + keyuuid + `';`;;
+				WHERE UserId = ` + _userarray['id'] + ` AND ` + tablename + `.KeyUUID = ` + _keyuuid + `;`;;
 		
 		
 		// execute query
@@ -451,22 +463,23 @@ class DataBasePersistor {
 	removeUserKey(useruuid, keyuuid) {
 		var global = this.global;
 		
-		var userarray = this.getUserArrayFromUUID(useruuid);
+		var _userarray = this.getUserArrayFromUUID(useruuid);
 		
-		if (!userarray)
+		if (!_userarray)
 			throw new Error('could not find user with uuid ' + useruuid);
 		
 		
 		var mysqlcon = global.getMySqlConnection();
 		
 		var tablename = mysqlcon.getTableName('keys');
+		var _keyuuid = mysqlcon.escape(keyuuid);
 		
 		var sql;
 		
 		// open connection
 		mysqlcon.open();
 		
-		sql = `DELETE FROM ` +  tablename + ` WHERE KeyUUID='` + keyuuid + `' AND UserId=` + userarray['id'] + `;`;
+		sql = `DELETE FROM ` +  tablename + ` WHERE KeyUUID=` + _keyuuid + ` AND UserId=` + _userarray['id'] + `;`;
 		
 		// execute query
 		var result = mysqlcon.execute(sql);

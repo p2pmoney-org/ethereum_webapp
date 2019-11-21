@@ -17,8 +17,9 @@ class DataBasePersistor {
 		var mysqlcon = session.getMySqlConnection();
 		
 		var tablename = mysqlcon.getTableName('users');
+		var _useruuid = mysqlcon.escape(useruuid);
 		
-		var sql = "SELECT * FROM " + tablename + " WHERE UserUUID = '" + useruuid + "';";
+		var sql = "SELECT * FROM " + tablename + " WHERE UserUUID = " + _useruuid + ";";
 		
 		// open connection
 		mysqlcon.open();
@@ -64,8 +65,9 @@ class DataBasePersistor {
 		var mysqlcon = session.getMySqlConnection();
 		
 		var tablename = mysqlcon.getTableName('ethereum_transactions_logs');
+		var _ethereum_transaction_uuid = mysqlcon.escape(ethereum_transaction_uuid);
 		
-		var sql = "SELECT * FROM " + tablename + " WHERE "+ tablename + ".transaction_uuid = '" + ethereum_transaction_uuid + "';";
+		var sql = "SELECT * FROM " + tablename + " WHERE "+ tablename + ".transaction_uuid = " + _ethereum_transaction_uuid + ";";
 		
 		// open connection
 		mysqlcon.open();
@@ -111,16 +113,16 @@ class DataBasePersistor {
 		var session = this.session;
 		
 		var userarray = ( useruuid ? this._getUserArrayFromUUID(useruuid) : {id: -1});
-		var userid = userarray['id'];
+		var _userid = userarray['id'];
 		
-		if (userid == -1)
+		if (_userid == -1)
 			return [];
 
 		var mysqlcon = session.getMySqlConnection();
 		
 		var tablename = mysqlcon.getTableName('ethereum_transactions_logs');
 		
-		var sql = "SELECT * FROM " + tablename + " WHERE "+ tablename + ".UserId = " + userid + ";";
+		var sql = "SELECT * FROM " + tablename + " WHERE "+ tablename + ".UserId = " + _userid + ";";
 		
 		// open connection
 		mysqlcon.open();
@@ -214,8 +216,9 @@ class DataBasePersistor {
 		var mysqlcon = session.getMySqlConnection();
 		
 		var tablename = mysqlcon.getTableName('ethereum_transactions_logs');
+		var _ethereum_transaction_uuid = mysqlcon.escape(ethereum_transaction_uuid);
 		
-		var sql = "SELECT * FROM " + tablename + " WHERE "+ tablename + ".transaction_uuid = '" + ethereum_transaction_uuid + "' AND "+ tablename + ".action = 1000;";
+		var sql = "SELECT * FROM " + tablename + " WHERE "+ tablename + ".transaction_uuid = " + _ethereum_transaction_uuid + " AND "+ tablename + ".action = 1000;";
 		
 		// open connection
 		mysqlcon.open();

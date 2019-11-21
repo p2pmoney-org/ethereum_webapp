@@ -23,8 +23,9 @@ class DataBasePersistor {
 		var mysqlcon = global.getMySqlConnection();
 		
 		var tablename = mysqlcon.getTableName('globalparameters');
+		var _key = mysqlcon.escape(key);
 		
-		var sql = "SELECT * FROM " + tablename + " WHERE \`Key\` = '" + key + "';";
+		var sql = "SELECT * FROM " + tablename + " WHERE \`Key\` = " + _key + ";";
 		
 		// open connection
 		mysqlcon.open();
@@ -98,6 +99,8 @@ class DataBasePersistor {
 		var mysqlcon = global.getMySqlConnection();
 		
 		var tablename = mysqlcon.getTableName('globalparameters');
+		var _key = mysqlcon.escape(key);
+		var _value = mysqlcon.escape(value);
 		
 		var sql;
 		
@@ -106,8 +109,8 @@ class DataBasePersistor {
 		
 		sql = `UPDATE ` +  tablename + ` SET
 		  \`Type\` = ` + type + `,
-		  \`Value\` = '` + value + `'
-		  WHERE  \`Key\` = '` + key + `';`;
+		  \`Value\` = ` + _value + `
+		  WHERE  \`Key\` = ` + _key + `;`;
 
 		
 		// execute query
@@ -124,8 +127,9 @@ class DataBasePersistor {
 		var mysqlcon = global.getMySqlConnection();
 		
 		var tablename = mysqlcon.getTableName('users');
+		var _useruuid = mysqlcon.escape(useruuid);
 		
-		var sql = "SELECT * FROM " + tablename + " WHERE UserUUID = '" + useruuid + "';";
+		var sql = "SELECT * FROM " + tablename + " WHERE UserUUID = " + _useruuid + ";";
 		
 		// open connection
 		mysqlcon.open();
@@ -170,8 +174,9 @@ class DataBasePersistor {
 		var mysqlcon = global.getMySqlConnection();
 		
 		var tablename = mysqlcon.getTableName('users');
+		var _userid = mysqlcon.escape(userid);
 		
-		var sql = "SELECT * FROM " + tablename + " WHERE UserId = " + userid + ";";
+		var sql = "SELECT * FROM " + tablename + " WHERE UserId = " + _userid + ";";
 		
 		// open connection
 		mysqlcon.open();
@@ -218,8 +223,9 @@ class DataBasePersistor {
 		var mysqlcon = global.getMySqlConnection();
 		
 		var tablename = mysqlcon.getTableName('sessions');
+		var _sessionuuid = mysqlcon.escape(sessionuuid);
 		
-		var sql = "SELECT * FROM " + tablename + " WHERE SessionUUID = '" + sessionuuid + "';";
+		var sql = "SELECT * FROM " + tablename + " WHERE SessionUUID = " + _sessionuuid + ";";
 		
 		// open connection
 		mysqlcon.open();
@@ -290,15 +296,15 @@ class DataBasePersistor {
 		// open connection
 		mysqlcon.open();
 		
-		var current = this.getSession(sessionuuid);
+		var _current = this.getSession(sessionuuid);
 		
-		if (current.uuid !== undefined) {
+		if (_current.uuid !== undefined) {
 			sql = `UPDATE ` +  tablename + ` SET
 					  UserId = ` + userid + `,
 					  LastPingOn = ` + lastpingon + `,
 					  IsAuthenticated = ` + isauthenticated + `,
 					  SessionVariables = ` + (sessionvariables ? `'` + sessionvariables + `'` : `''`) + `
-				WHERE SessionId = ` + current.id + `;`;
+				WHERE SessionId = ` + _current.id + `;`;
 		}
 		else {
 			var salt = this.global.generateUUID(16);
@@ -354,14 +360,14 @@ class DataBasePersistor {
 		// open connection
 		mysqlcon.open();
 		
-		var current = this.getSession(sessionuuid);
+		var _current = this.getSession(sessionuuid);
 		
-		if (current.uuid !== undefined) {
+		if (_current.uuid !== undefined) {
 			sql = `UPDATE ` +  tablename + ` SET
 					  UserId = ` + userid + `,
 					  LastPingOn = ` + lastpingon + `,
 					  IsAuthenticated = ` + isauthenticated + `
-				WHERE SessionId = ` + current.id + `;`;
+				WHERE SessionId = ` + _current.id + `;`;
 		}
 		else {
 			var salt = this.global.generateUUID(16);
@@ -408,12 +414,12 @@ class DataBasePersistor {
 		// open connection
 		mysqlcon.open();
 		
-		var current = this.getSession(sessionuuid);
+		var _current = this.getSession(sessionuuid);
 		
-		if (current.uuid !== undefined) {
+		if (_current.uuid !== undefined) {
 			sql = `UPDATE ` +  tablename + ` SET
 					  SessionVariables = ` + (sessionvariables ? `'` + sessionvariables + `'` : `''`) + `
-				WHERE SessionId = ` + current.id + `;`;
+				WHERE SessionId = ` + _current.id + `;`;
 			
 			// execute query
 			var result = mysqlcon.execute(sql);

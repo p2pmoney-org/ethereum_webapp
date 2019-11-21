@@ -201,6 +201,16 @@ class MySqlConnection {
 		return this.connection.escape(val);
 	}
 	
+	escapeId(id) {
+		if (!this.connection)
+			this._connect();
+		
+		if (!this.connectionactive)
+			return id;
+		
+		return this.connection.escapeId(id);
+	}
+	
 	
 }
 

@@ -16,8 +16,10 @@ class DataBasePersistor {
 		var mysqlcon = global.getMySqlConnection();
 		
 		var tablename = mysqlcon.getTableName('storage_users');
+		var _useruuid = mysqlcon.escape(useruuid);
+		var _key = mysqlcon.escape(key);
 		
-		var sql = "SELECT * FROM " + tablename + " WHERE " + tablename + ".UserUUID='" + useruuid + "' AND " + tablename + ".Key='" + key + "';";
+		var sql = "SELECT * FROM " + tablename + " WHERE " + tablename + ".UserUUID=" + _useruuid + " AND " + tablename + ".Key=" + _key + ";";
 		
 		// open connection
 		mysqlcon.open();
@@ -65,12 +67,12 @@ class DataBasePersistor {
 		// open connection
 		mysqlcon.open();
 		
-		var current = this.getUserKeyContent(useruuid, key);
+		var _current = this.getUserKeyContent(useruuid, key);
 		
-		if (current.key !== undefined) {
+		if (_current.key !== undefined) {
 			sql = `UPDATE ` +  tablename + ` SET
 					  Content = ` + contentstring + `
-				WHERE ` + tablename + `.UserUUID = '` + current.useruuid + `' AND ` + tablename + `.Key='` + current.key + `';`;
+				WHERE ` + tablename + `.UserUUID = '` + _current.useruuid + `' AND ` + tablename + `.Key='` + _current.key + `';`;
 		}
 		else {
 			
@@ -109,13 +111,15 @@ class DataBasePersistor {
 		var mysqlcon = global.getMySqlConnection();
 		
 		var tablename = mysqlcon.getTableName('storage_users');
+		var _useruuid = mysqlcon.escape(useruuid);
+		var _key = mysqlcon.escape(key);
 		
 		var sql;
 		
 		// open connection
 		mysqlcon.open();
 		
-		sql = `DELETE FROM ` +  tablename + ` WHERE ` + tablename + `.UserUUID='` + useruuid + `' AND ` + tablename + `.Key='` + key + `';`;
+		sql = `DELETE FROM ` +  tablename + ` WHERE ` + tablename + `.UserUUID=` + _useruuid + ` AND ` + tablename + `.Key=` + _key + `;`;
 		
 		// execute query
 		var result = mysqlcon.execute(sql);
