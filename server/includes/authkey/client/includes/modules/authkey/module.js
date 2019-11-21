@@ -107,6 +107,8 @@ var Module = class {
 		global.registerHook('alterLogoutForm_hook', this.name, this.alterLogoutForm_hook);
 		global.registerHook('handleLogoutSubmit_hook', this.name, this.handleLogoutSubmit_hook);
 
+		// vaults
+		global.registerHook('handleOpenVaultSubmit_hook', this.name, this.handleOpenVaultSubmit_hook);
 	}
 	
 	postRegisterModule() {
@@ -272,18 +274,12 @@ var Module = class {
 								
 								// authenticated (and crypto-keys have been loaded)
 								// we get list of accounts (that could be encrypted)
-								var storagemodule = global.getModuleObject('storage-access');
-								var storageaccess = storagemodule.getStorageAccessInstance(session);
+								/*var localstorageaccess = session.getLocalStorageAccessInstance();
 								var user = session.getSessionUserObject();
 								
-								return storageaccess.account_session_keys( function(err, res) {
+								return localstorageaccess.account_session_keys( (err, res) => {*/
+								return this._initializeAccounts(session, (err, res) => {	
 									
-									if (res && res['keys']) {
-										var keys = res['keys'];
-										
-										session.readSessionAccountFromKeys(keys);
-									}
-							
 									if (app) app.refreshDisplay();
 								});
 								
@@ -360,13 +356,12 @@ var Module = class {
 		
 		var session = params[0];
 		
-		var storagemodule = global.getModuleObject('storage-access');
-		var storageaccess = storagemodule.getStorageAccessInstance(session);
+		var localstorageaccess = session.getLocalStorageAccessInstance();
 
 		var nextget = result.get;
 		result.get = function(err, keyarray) {
 
-			storageaccess.account_session_keys(function(err, res) {
+			localstorageaccess.account_session_keys((err, res) => {
 				var mykeyarray;
 				
 				if (res && res['keys']) {
@@ -420,6 +415,38 @@ var Module = class {
 		this._authenticate(username, password);
 	}
 	
+	_initializeAccounts(session, callback) {
+		var global = this.global;
+		
+		// read first accounts from client storage
+		var clientstorageaccess = session.getClientStorageAccessInstance();
+		
+		clientstorageaccess.account_session_keys( (errc, resc) => {
+			
+			if (resc && resc['keys']) {
+				var keys = resc['keys'];
+				
+				session.readSessionAccountFromKeys(keys);
+			}
+			
+			var localstorageaccess = session.getLocalStorageAccessInstance();
+			
+			localstorageaccess.account_session_keys( (errl, resl) => {
+				
+				if (resl && resl['keys']) {
+					var keys = resl['keys'];
+					
+					session.readSessionAccountFromKeys(keys);
+				}
+		
+				if (callback)
+					callback((errc || errl ? 'errors: ' + (errc ? errc : ' none ') + ' & ' + (errl ? errl : ' none ') : null), session);
+			});
+
+		});
+		
+	}
+	
 	_authenticate(session, username, password, callback) {
 		var global = this.global;
 		
@@ -438,7 +465,7 @@ var Module = class {
 			var authkeyinterface = authkeymodule.getAuthKeyInterface();
 			
 			authkeyinterface.authenticate(session, username, password)
-			.then(function(res) {
+			.then((res) => {
 				var authenticated = (res['status'] == '1' ? true : false);
 				
 				console.log("authentication is " + authenticated);
@@ -447,32 +474,37 @@ var Module = class {
 					
 					// authenticated (and crypto-keys have been loaded)
 					// we get list of accounts (that could be encrypted)
-					var storagemodule = global.getModuleObject('storage-access');
-					var storageaccess = storagemodule.getStorageAccessInstance(session);
+					/*var localstorageaccess = session.getLocalStorageAccessInstance();
 					var user = session.getSessionUserObject();
 					
-					return storageaccess.account_session_keys( function(err, res) {
-						
-						if (res && res['keys']) {
+					return localstorageaccess.account_session_keys( (err, res) => {*/
+					return this._initializeAccounts(session, (err, res) => {	
+						/*if (res && res['keys']) {
 							var keys = res['keys'];
 							
 							session.readSessionAccountFromKeys(keys);
-						}
+						}*/
 				
 						if (app) app.refreshDisplay();
 						
 						if (callback)
-							callback((authenticated ? null : 'could not authenticate user'), authenticated);
+							callback(null, authenticated);
 					});
 					
 				}
 				else {
 					alert("Could not authenticate you with these credentials!");
+					
+					if (callback)
+						callback('could not authenticate user', false);
 				}
 				
 			})
 			.catch(function (err) {
 				alert(err);
+				
+				if (callback)
+					callback(err, false);
 			});
 			
 			
@@ -621,7 +653,94 @@ var Module = class {
 		
 		return true;
 	}
+	
+	// vaults
+	_openVault(session, vaultname, passphrase, vaulttype, callback) {
+		var global = this.global;
+		var app = this._getAppObject();
+		var commonmodule = global.getModuleObject('common');
+		
+		commonmodule.openVault(session, vaultname, passphrase, vaulttype, (err, res) => {
+			var vault = res;
+			
+			if (vault) {
+				var cryptokey = vault.getCryptoKeyObject();
+				
+				// add crypto key to session
+				session.addCryptoKeyObject(cryptokey);
 
+				// read accounts from client storage
+				var clientstorageaccess = session.getClientStorageAccessInstance();
+				
+				clientstorageaccess.account_session_keys( (err, res) => {
+					
+					if (res && res['keys']) {
+						var keys = res['keys'];
+						
+						session.readSessionAccountFromKeys(keys);
+					}
+			
+					if (app) app.refreshDisplay();
+					
+					if (callback)
+						callback(null, vault);
+				});
+				
+			}
+			else {
+				var error = global.t('Could not open vault') + ' ' + vaultname;
+				alert(global.t(error));
+				
+				if (callback)
+					callback(error, null);
+			}
+			
+		});
+		
+	}
+	
+
+	handleOpenVaultSubmit_hook(result, params) {
+		console.log('handleOpenVaultSubmit_hook called for ' + this.name);
+		
+		var global = this.global;
+		var app = this._getAppObject();
+
+		var $scope = params[0];
+		var session = params[1];
+		
+		var vaultname = this.getFormValue("vaultname");
+		var password = this.getFormValue("password");
+		
+		var vaulttype = 0;
+		
+		if (!session.isAnonymous()) {
+			// open vault
+			this._openVault(session, vaultname, password, vaulttype, (err, res) => {
+				app.refreshDisplay();
+				
+				var mvcmodule = global.getModuleObject('mvc');
+				
+				var mvccontroller = mvcmodule.getControllersObject();
+				
+				if (mvccontroller && mvccontroller.gotoHome) {
+					mvccontroller.gotoHome();
+				}
+			});
+		}
+		else {
+			var error = 'You must first log in to open a vault'
+			alert(global.t(error));
+		}
+		
+		
+		result.push({module: this.name, handled: true});
+		
+		return true;
+	}
+
+
+	// utils
 	getFormValue(formelementname) {
 		var value = document.getElementsByName(formelementname)[0].value;
 		

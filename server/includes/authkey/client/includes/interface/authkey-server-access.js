@@ -363,6 +363,9 @@ class AuthKeyServerAccess {
 		var self = this
 		var session = this.session;
 
+		var rest_connection = this.getRestKeyConnection();
+		var rest_connection_url = rest_connection.getRestCallUrl();
+
 		var promise = new Promise(function (resolve, reject) {
 			
 			try {
@@ -370,6 +373,14 @@ class AuthKeyServerAccess {
 				
 				self.rest_key_get(resource, function (err, res) {
 					if (res) {
+						var keysjson = (res && res.keys ? res.keys : []);
+						
+						// add the origin of the keys
+						var origin = {storage: 'remote', url: rest_connection_url};
+						for (var i = 0; i < keysjson.length; i++) {
+							var key = keysjson[i];
+							key.origin = origin;
+						}
 						
 						if (callback)
 							callback(null, res);

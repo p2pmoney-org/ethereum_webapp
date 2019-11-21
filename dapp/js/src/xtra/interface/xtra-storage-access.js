@@ -187,6 +187,9 @@ class Xtra_StorageAccess {
 		var global = session.getGlobalObject();
 		var cryptoencryptionmodule = global.getModuleObject('cryptokey-encryption');
 
+		var rest_connection = this.getRestConnection();
+		var rest_connection_url = rest_connection.getRestCallUrl();
+
 		var promise = new Promise(function (resolve, reject) {
 			
 			try {
@@ -198,6 +201,13 @@ class Xtra_StorageAccess {
 
 						// we decrypt the keys
 						var keysjson = cryptoencryptionmodule.decryptJsonArray(session, reskeys);
+						
+						// add the origin of the keys
+						var origin = {storage: 'remote', url: rest_connection_url};
+						for (var i = 0; i < keysjson.length; i++) {
+							var key = keysjson[i];
+							key.origin = origin;
+						}
 						
 						var json = {keys: keysjson};
 						

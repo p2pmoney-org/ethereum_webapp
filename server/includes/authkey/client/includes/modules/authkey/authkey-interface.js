@@ -65,12 +65,16 @@ var AuthKeyInterface = class {
 					var rsapublickey = key['rsa_public_key'];
 					var description = key['description'];
 					
+					var origin = key['origin'];
+					
 					if (privatekey) {
 						
 						var cryptokey = commonmodule.createBlankCryptoKeyObject(session);
 						
 						cryptokey.setKeyUUID(keyuuid);
 						cryptokey.setDescription(description);
+						
+						cryptokey.setOrigin(origin);
 						
 						cryptokey.setPrivateKey(privatekey);
 						
@@ -133,6 +137,7 @@ var AuthKeyInterface = class {
 							var address = key['address'];
 							var rsapublickey = key['rsa_public_key'];
 							var description = key['description'];
+							var origin = key['origin'];
 							
 							if (privatekey) {
 								
@@ -141,6 +146,8 @@ var AuthKeyInterface = class {
 								cryptokey.setKeyUUID(keyuuid);
 								cryptokey.setDescription(description);
 								
+								cryptokey.setOrigin(origin);
+
 								cryptokey.setPrivateKey(privatekey);
 								
 								session.addCryptoKeyObject(cryptokey);
@@ -228,6 +235,8 @@ var AuthKeyInterface = class {
 							var address = key['address'];
 							var rsapublickey = key['rsa_public_key'];
 							var description = key['description'];
+
+							var origin = key['origin'];
 							
 							if (privatekey) {
 								
@@ -235,6 +244,8 @@ var AuthKeyInterface = class {
 								
 								cryptokey.setKeyUUID(keyuuid);
 								cryptokey.setDescription(description);
+								
+								cryptokey.setOrigin(origin);
 								
 								cryptokey.setPrivateKey(privatekey);
 								
