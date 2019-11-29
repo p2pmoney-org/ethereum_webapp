@@ -206,7 +206,13 @@ class Xtra_StorageAccess {
 						var origin = {storage: 'remote', url: rest_connection_url};
 						for (var i = 0; i < keysjson.length; i++) {
 							var key = keysjson[i];
-							key.origin = origin;
+							
+							if (!key.origin) {
+								key.origin = origin;
+							}
+							else {
+								Object.assign(key.origin, origin);
+							}
 						}
 						
 						var json = {keys: keysjson};
@@ -326,6 +332,132 @@ class Xtra_StorageAccess {
 						var accountuuid = res['account_uuid'];
 						
 						account.setAccountUUID(accountuuid);
+						
+						if (callback)
+							callback(null, res);
+						
+						return resolve(res);
+					}
+					else {
+						reject('rest error calling ' + resource + ' : ' + err);
+					}
+					
+				});
+			}
+			catch(e) {
+				reject('rest exception: ' + e);
+			}
+		});
+		
+		return promise;
+		
+	}
+	
+	user_reactivate_account(user, account, callback) {
+		console.log("StorageAccess.user_reactivate_account called");
+		
+		var self = this;
+		var session = this.session;
+		var global = session.getGlobalObject();
+
+		var promise = new Promise(function (resolve, reject) {
+			
+			try {
+				var resource = "/account/user/reactivate";
+				
+				var useruuid = user.getUserUUID();
+				
+				var accountuuid = account.getAccountUUID();
+				var postdata = [];
+				
+				postdata = {useruuid: useruuid, account_uuid: accountuuid};
+				
+				self.rest_put(resource, postdata, function (err, res) {
+					if (res) {
+						
+						if (callback)
+							callback(null, res);
+						
+						return resolve(res);
+					}
+					else {
+						reject('rest error calling ' + resource + ' : ' + err);
+					}
+					
+				});
+			}
+			catch(e) {
+				reject('rest exception: ' + e);
+			}
+		});
+		
+		return promise;
+		
+	}
+	
+	user_deactivate_account(user, account, callback) {
+		console.log("StorageAccess.user_deactivate_account called");
+		
+		var self = this;
+		var session = this.session;
+		var global = session.getGlobalObject();
+
+		var promise = new Promise(function (resolve, reject) {
+			
+			try {
+				var resource = "/account/user/deactivate";
+				
+				var useruuid = user.getUserUUID();
+				
+				var accountuuid = account.getAccountUUID();
+				var postdata = [];
+				
+				postdata = {useruuid: useruuid, account_uuid: accountuuid};
+				
+				self.rest_put(resource, postdata, function (err, res) {
+					if (res) {
+						
+						if (callback)
+							callback(null, res);
+						
+						return resolve(res);
+					}
+					else {
+						reject('rest error calling ' + resource + ' : ' + err);
+					}
+					
+				});
+			}
+			catch(e) {
+				reject('rest exception: ' + e);
+			}
+		});
+		
+		return promise;
+		
+	}
+	
+	user_remove_account(user, account, callback) {
+		console.log("Xtra_StorageAccess.user_remove_account called");
+		
+		var self = this;
+		var session = this.session;
+		var global = session.getGlobalObject();
+
+		var promise = new Promise(function (resolve, reject) {
+			
+			try {
+				var resource = "/account/user/delete";
+				
+				var useruuid = user.getUserUUID();
+				
+				var accountuuid = account.getAccountUUID();
+				var postdata = [];
+				
+				postdata = {useruuid: useruuid, account_uuid: accountuuid};
+				
+				self.rest_put(resource, postdata, function (err, res) {
+					if (res) {
 						
 						if (callback)
 							callback(null, res);

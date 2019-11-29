@@ -373,6 +373,60 @@ class DataBasePersistor {
 		
 	}
 	
+	getUserKeyFromUserKeyUUID(useruuid, keyuuid) {
+		var global = this.global;
+		
+		var mysqlcon = global.getMySqlConnection();
+		
+		var usertablename = mysqlcon.getTableName('users');
+		var keystablename = mysqlcon.getTableName('keys');
+		var _useruuid = mysqlcon.escape(useruuid);
+		var _keyuuid = mysqlcon.escape(keyuuid);
+		
+		var sql = "SELECT * FROM " + usertablename;
+		sql += " INNER JOIN " + keystablename;
+		sql += " ON " + usertablename + ".UserId=" + keystablename + ".UserId";
+		sql += " WHERE "+ usertablename + ".UserUUID = " + _useruuid;
+		sql += " AND "+ keystablename + ".KeyUUID = " + _keyuuid + ";";
+		
+		// open connection
+		mysqlcon.open();
+		
+		// execute query
+		var result = mysqlcon.execute(sql);
+		
+		var key = [];
+		
+		if (result) {
+			var rows = (result['rows'] ? result['rows'] : []);
+			
+			var row = rows[0];
+			
+			key['id'] = row['KeyId'];
+			key['uuid'] = row['KeyUUID'];
+			key['keyid'] = row['KeyId'];
+			key['keyuuid'] = row['KeyUUID'];
+			key['useruuid'] = row['UserUUID'];
+			key['type'] = row['Type'];
+			key['private_key'] = row['PrivateKey'];
+			key['address'] = row['Address'];
+			key['public_key'] = row['PublicKey'];
+			key['rsa_public_key'] = row['RsaPublicKey'];
+			key['description'] = row['Description'];
+			
+		}
+		
+		
+		// close connection
+		mysqlcon.close();
+			
+			
+		return key;
+		
+	}
+
+
+	
 	putUserKey(useruuid, keyuuid, privatekey, publickey, address, rsapublickey, type, description) {
 		var global = this.global;
 		
@@ -442,6 +496,7 @@ class DataBasePersistor {
 		
 		var tablename = mysqlcon.getTableName('keys');
 		var _keyuuid = mysqlcon.escape(keyuuid);
+		var _description = mysqlcon.escape(description);
 		
 		var sql;
 		
@@ -449,7 +504,95 @@ class DataBasePersistor {
 		mysqlcon.open();
 		
 		sql = `UPDATE ` +  tablename + ` SET
-		  Description = '` + description + `'
+		  Description = ` + _description + `
+				WHERE UserId = ` + _userarray['id'] + ` AND ` + tablename + `.KeyUUID = ` + _keyuuid + `;`;;
+		
+		
+		// execute query
+		var result = mysqlcon.execute(sql);
+		
+		// close connection
+		mysqlcon.close();
+	}
+	
+	deactivateUserKey(useruuid, keyuuid) {
+		var global = this.global;
+		
+		var _userarray = this.getUserArrayFromUUID(useruuid);
+		
+		if ((!_userarray) || (!_userarray['id']))
+			throw new Error('could not find user with uuid ' + useruuid);
+		
+		var _userkey = this.getUserKeyFromUserKeyUUID(useruuid, keyuuid);
+		
+		switch(_userkey['type']) {
+			case 0:
+				_userkey['type'] = -10;
+				break;
+			case 1:
+				_userkey['type'] = -11;
+				break;
+			default:
+				return;
+		}
+
+		
+		var mysqlcon = global.getMySqlConnection();
+		
+		var tablename = mysqlcon.getTableName('keys');
+		var _keyuuid = mysqlcon.escape(keyuuid);
+		
+		var sql;
+		
+		// open connection
+		mysqlcon.open();
+		
+		sql = `UPDATE ` +  tablename + ` SET
+		  Type = '` + _userkey['type'] + `'
+				WHERE UserId = ` + _userarray['id'] + ` AND ` + tablename + `.KeyUUID = ` + _keyuuid + `;`;;
+		
+		
+		// execute query
+		var result = mysqlcon.execute(sql);
+		
+		// close connection
+		mysqlcon.close();
+	}
+	
+	reactivateUserKey(useruuid, keyuuid) {
+		var global = this.global;
+		
+		var _userarray = this.getUserArrayFromUUID(useruuid);
+		
+		if ((!_userarray) || (!_userarray['id']))
+			throw new Error('could not find user with uuid ' + useruuid);
+		
+		var _userkey = this.getUserKeyFromUserKeyUUID(useruuid, keyuuid);
+		
+		switch(_userkey['type']) {
+			case -10:
+				_userkey['type'] = 0;
+				break;
+			case -11:
+				_userkey['type'] = 1;
+				break;
+			default:
+				return;
+		}
+
+		
+		var mysqlcon = global.getMySqlConnection();
+		
+		var tablename = mysqlcon.getTableName('keys');
+		var _keyuuid = mysqlcon.escape(keyuuid);
+		
+		var sql;
+		
+		// open connection
+		mysqlcon.open();
+		
+		sql = `UPDATE ` +  tablename + ` SET
+		  Type = '` + _userkey['type'] + `'
 				WHERE UserId = ` + _userarray['id'] + ` AND ` + tablename + `.KeyUUID = ` + _keyuuid + `;`;;
 		
 		

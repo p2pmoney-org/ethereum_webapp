@@ -5,6 +5,11 @@
 
 
 class CryptoKey {
+	static get ENCRYPTION_KEY() { return 0;}
+	static get TRANSACTION_KEY() { return 1;}
+	static get DEACTIVATED_ENCRYPTION_KEY() { return -10;}
+	static get DEACTIVATED_TRANSACTION_KEY() { return -11;}
+
 	constructor() {
 		this.keyuuid = null;
 		

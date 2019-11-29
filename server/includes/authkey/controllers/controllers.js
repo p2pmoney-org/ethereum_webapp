@@ -403,6 +403,7 @@ class AuthKeyControllers {
 		}
 		catch(e) {
 			global.log("exception in session_getAccountKeys for sessiontoken " + sessionuuid + ": " + e);
+
 			jsonresult = {status: 0, error: "exception could not retrieve keys"};
 		}
 
@@ -440,7 +441,7 @@ class AuthKeyControllers {
 			if (!session.isAnonymous()) {
 				var user = authenticationserver.getUserFromUUID(session, useruuid);
 				
-				var type = 1; // ethereum account
+				var type = 1; // ethereum transaction account
 				var keyuuid = session.guid();
 				
 				var cryptokey = authkeyservice.createBlankCryptoKeyInstance();
@@ -466,6 +467,7 @@ class AuthKeyControllers {
 		}
 		catch(e) {
 			global.log("exception in user_addAccount for sessiontoken " + sessionuuid + ": " + e);
+
 			jsonresult = {status: 0, error: "exception could add account"};
 		}
 
@@ -528,6 +530,7 @@ class AuthKeyControllers {
 		}
 		catch(e) {
 			global.log("exception in user_updateAccount for sessiontoken " + sessionuuid + ": " + e);
+
 			jsonresult = {status: 0, error: "exception could not update account"};
 		}
 
@@ -535,6 +538,165 @@ class AuthKeyControllers {
 	  	res.json(jsonresult);
 	}
 
+	user_reactivateAccount(req, res) {
+		// PUT
+		var global = this.global;
+		var sessionuuid = req.get("sessiontoken");
+		
+		global.log("user_reactivateAccount called for sessiontoken " + sessionuuid);
+		
+		var useruuid  = req.body.useruuid;
+		
+		var accountuuid  = req.body.account_uuid;
+		
+		var authkeyservice = global.getServiceInstance('authkey');
+		var authenticationserver = authkeyservice.getAuthenticationServerInstance();
+
+		var commonservice = global.getServiceInstance('common');
+		var Session = commonservice.Session;
+
+		var jsonresult;
+		
+		try {
+			var session = Session.getSession(global, sessionuuid);
+			
+			if (!session.isAnonymous()) {
+				var user = authenticationserver.getUserFromUUID(session, useruuid);
+				
+				// we ask getUserKeyFromUUID because deactivate account won't show in getUserAccountKeyFromUUID
+				var cryptokey = authenticationserver.getUserKeyFromUUID(session, accountuuid);
+				
+				if (cryptokey) {
+					// we deactivate the key
+					authenticationserver.reactivateUserKey(session, useruuid, cryptokey);
+					
+					jsonresult = {status: 1, useruuid: useruuid, account_uuid: accountuuid}
+					
+				}
+				else {
+					jsonresult = {status: 0, error: "could not find account " + accountuuid};
+				}
+
+			}
+			else {
+				jsonresult = {status: 0, error: "session is anonymous"};
+			}
+		}
+		catch(e) {
+			global.log("exception in user_reactivateAccount for sessiontoken " + sessionuuid + ": " + e);
+
+			jsonresult = {status: 0, error: "exception could not activate account"};
+		}
+
+		
+	  	res.json(jsonresult);
+	}
+
+	user_deactivateAccount(req, res) {
+		// PUT
+		var global = this.global;
+		var sessionuuid = req.get("sessiontoken");
+		
+		global.log("user_deactivateAccount called for sessiontoken " + sessionuuid);
+		
+		var useruuid  = req.body.useruuid;
+		
+		var accountuuid  = req.body.account_uuid;
+		
+		var authkeyservice = global.getServiceInstance('authkey');
+		var authenticationserver = authkeyservice.getAuthenticationServerInstance();
+
+		var commonservice = global.getServiceInstance('common');
+		var Session = commonservice.Session;
+
+		var jsonresult;
+		
+		try {
+			var session = Session.getSession(global, sessionuuid);
+			
+			if (!session.isAnonymous()) {
+				var user = authenticationserver.getUserFromUUID(session, useruuid);
+				
+				var cryptokey = authenticationserver.getUserAccountKeyFromUUID(session, accountuuid);
+
+				if (cryptokey) {
+					// we deactivate the key
+					authenticationserver.deactivateUserKey(session, useruuid, cryptokey);
+					
+					jsonresult = {status: 1, useruuid: useruuid, account_uuid: accountuuid}
+					
+				}
+				else {
+					jsonresult = {status: 0, error: "could not find account " + accountuuid};
+				}
+
+			}
+			else {
+				jsonresult = {status: 0, error: "session is anonymous"};
+			}
+		}
+		catch(e) {
+			global.log("exception in user_deactivateAccount for sessiontoken " + sessionuuid + ": " + e);
+
+			jsonresult = {status: 0, error: "exception could not deactivate account"};
+		}
+
+		
+	  	res.json(jsonresult);
+	}
+
+	user_removeAccount(req, res) {
+		// PUT
+		var global = this.global;
+		var sessionuuid = req.get("sessiontoken");
+		
+		global.log("user_removeAccount called for sessiontoken " + sessionuuid);
+		
+		var useruuid  = req.body.useruuid;
+		
+		var accountuuid  = req.body.account_uuid;
+		
+		var authkeyservice = global.getServiceInstance('authkey');
+		var authenticationserver = authkeyservice.getAuthenticationServerInstance();
+
+		var commonservice = global.getServiceInstance('common');
+		var Session = commonservice.Session;
+
+		var jsonresult;
+		
+		try {
+			var session = Session.getSession(global, sessionuuid);
+			
+			if (!session.isAnonymous()) {
+				var user = authenticationserver.getUserFromUUID(session, useruuid);
+				
+				var cryptokey = authenticationserver.getUserAccountKeyFromUUID(session, accountuuid);
+				
+				if (cryptokey) {
+					// we deactivate the key
+					authenticationserver.removeUserKey(session, useruuid, cryptokey);
+					
+					jsonresult = {status: 1, useruuid: useruuid, account_uuid: accountuuid}
+					
+				}
+				else {
+					jsonresult = {status: 0, error: "could not find account " + accountuuid};
+				}
+				
+			}
+			else {
+				jsonresult = {status: 0, error: "session is anonymous"};
+			}
+		}
+		catch(e) {
+			global.log("exception in user_removeAccount for sessiontoken " + sessionuuid + ": " + e);
+
+			jsonresult = {status: 0, error: "exception could not remove account"};
+		}
+
+		
+	  	res.json(jsonresult);
+	}
 }
 
 module.exports = AuthKeyControllers;

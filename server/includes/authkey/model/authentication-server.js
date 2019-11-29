@@ -9,6 +9,8 @@ class AuthenticationServer {
 		this.service = service;
 		this.global = service.global;
 		
+		this.CryptoKey = require('./cryptokey');
+		
 		var Persistor = require('./interface/database-persistor.js');
 		
 		this.persistor =  new Persistor(service);
@@ -59,6 +61,25 @@ class AuthenticationServer {
 		return keys;
 	}
 	
+	_getCryptoKeyInstanceFromUserKey(key) {
+		var authkeyservice = this.service;
+		var cryptokey = authkeyservice.createBlankCryptoKeyInstance();
+
+		cryptokey.setKeyUUID(key['keyuuid']);
+		
+		cryptokey.setUserUUID(key['useruuid']);
+		cryptokey.setType(key['type']);
+		
+		cryptokey.setAddress(key['address']);
+		cryptokey.setPublicKey(key['public_key']);
+		cryptokey.setRsaPublicKey(key['rsa_public_key']);
+		cryptokey.setPrivateKey(key['private_key']);
+		
+		cryptokey.setDescription(key['description']);
+
+		return cryptokey;
+	}
+	
 	getUserKeys(session) {
 		var user = session.getUser();
 		
@@ -92,24 +113,25 @@ class AuthenticationServer {
 				key['address'] = pubkeys['address'];
 			}
 			
-			var cryptokey = authkeyservice.createBlankCryptoKeyInstance();
-
-			cryptokey.setKeyUUID(key['keyuuid']);
-			
-			cryptokey.setUserUUID(key['useruuid']);
-			cryptokey.setType(key['type']);
-			
-			cryptokey.setAddress(key['address']);
-			cryptokey.setPublicKey(key['public_key']);
-			cryptokey.setRsaPublicKey(key['rsa_public_key']);
-			cryptokey.setPrivateKey(key['private_key']);
-			
-			cryptokey.setDescription(key['description']);
+			var cryptokey = this._getCryptoKeyInstanceFromUserKey(key);
 
 			cryptokeys.push(cryptokey);
 		}
 		
 		return cryptokeys;
+	}
+	
+	getUserKeyFromUUID(session, keyuuid) {
+		var userkeys = this.getUserKeys(session);
+		
+		for (var i = 0; i < userkeys.length; i++) {
+			var userkey = userkeys[i];
+			
+			if (userkey['keyuuid'] == keyuuid) {
+				return userkey;
+			}
+			
+		}
 	}
 	
 	getUserCryptoKeys(session) {
@@ -120,7 +142,7 @@ class AuthenticationServer {
 		for (var i = 0; i < userkeys.length; i++) {
 			var userkey = userkeys[i];
 			
-			if (userkey['type'] == 0) {
+			if (userkey['type'] == this.CryptoKey.ENCRYPTION_KEY) {
 				usercryptokeys.push(userkey);
 			}
 			
@@ -130,16 +152,10 @@ class AuthenticationServer {
 	}
 	
 	getUserCryptoKeyFromUUID(session, keyuuid) {
-		var userkeys = this.getUserCryptoKeys(session);
+		var userkey = this.getUserKeyFromUUID(session, keyuuid);
 		
-		for (var i = 0; i < userkeys.length; i++) {
-			var userkey = userkeys[i];
-			
-			if (userkey['keyuuid'] == keyuuid) {
-				return userkey;
-			}
-			
-		}
+		if (userkey && (userkey['type'] == this.CryptoKey.ENCRYPTION_KEY))
+			return userkey;
 	}
 	
 	getUserAccountKeys(session) {
@@ -150,7 +166,7 @@ class AuthenticationServer {
 		for (var i = 0; i < userkeys.length; i++) {
 			var userkey = userkeys[i];
 			
-			if (userkey['type'] == 1) {
+			if (userkey['type'] == this.CryptoKey.TRANSACTION_KEY) {
 				useracountkeys.push(userkey);
 			}
 			
@@ -160,16 +176,10 @@ class AuthenticationServer {
 	}
 	
 	getUserAccountKeyFromUUID(session, keyuuid) {
-		var userkeys = this.getUserAccountKeys(session);
+		var userkey = this.getUserKeyFromUUID(session, keyuuid);
 		
-		for (var i = 0; i < userkeys.length; i++) {
-			var userkey = userkeys[i];
-			
-			if (userkey['keyuuid'] == keyuuid) {
-				return userkey;
-			}
-			
-		}
+		if (userkey && (userkey['type'] == this.CryptoKey.TRANSACTION_KEY))
+			return userkey;
 	}
 	
 	addUserKey(session, useruuid, cryptokey) {
@@ -198,11 +208,37 @@ class AuthenticationServer {
 		this.persistor.updateUserKey(useruuid, keyuuid, description);
 	}
 
-	removeUserKey(session, useruuid, keyuuid) {
-		// TODO: we should not delete a key, we should just put a flag telling is has been deleted
-		// we could use the Type and set it to -1
-		throw 'can not delete a key';
-		//this.persistor.removeUserKey(useruuid, keyuuid);
+	reactivateUserKey(session, useruuid, cryptokey) {
+		var keyuuid = cryptokey.getKeyUUID();
+		var sessionuseruuid = session.getUserUUID();
+		
+		if (sessionuseruuid != useruuid)
+			throw 'can not activate a key from another user';
+		
+		this.persistor.reactivateUserKey(useruuid, keyuuid);
+	}
+
+	
+	deactivateUserKey(session, useruuid, cryptokey) {
+		var keyuuid = cryptokey.getKeyUUID();
+		var sessionuseruuid = session.getUserUUID();
+		
+		if (sessionuseruuid != useruuid)
+			throw 'can not deactivate a key from another user';
+		
+		this.persistor.deactivateUserKey(useruuid, keyuuid);
+	}
+
+	
+	removeUserKey(session, useruuid, cryptokey) {
+		var keyuuid = cryptokey.getKeyUUID();
+		var sessionuseruuid = session.getUserUUID();
+		
+		if (sessionuseruuid != useruuid)
+			throw 'can not deactivate a key from another user';
+		
+		// we should not delete a key, we should just put a flag telling is has been deactivated
+		this.persistor.deactivateUserKey(useruuid, keyuuid);
 	}
 
 	

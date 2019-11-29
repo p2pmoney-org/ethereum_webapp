@@ -69,6 +69,12 @@ class AuthKeyRoutes {
 		.put(function(req, res) { controllers.user_addAccount(req, res); });
 		app.route(route_root_path + '/account/user/update')
 		.put(function(req, res) { controllers.user_updateAccount(req, res); });
+		app.route(route_root_path + '/account/user/reactivate')
+		.put(function(req, res) { controllers.user_reactivateAccount(req, res); });
+		app.route(route_root_path + '/account/user/deactivate')
+		.put(function(req, res) { controllers.user_deactivateAccount(req, res); });
+		app.route(route_root_path + '/account/user/remove')
+		.put(function(req, res) { controllers.user_removeAccount(req, res); });
 		
 	}
 	
