@@ -58,6 +58,16 @@ class ClientContainerRoutes {
 
 		app.route(route_root_path + '/clicont/localstorage/set')
 		  .post(function(req, res) { controllers.clicont_localstorage_set(req, res); });
+		
+		// vaults
+		app.route(route_root_path + '/clicont/vaults/create')
+		  .post(function(req, res) { controllers.clicont_vaults_create(req, res); });
+		app.route(route_root_path + '/clicont/vaults/open')
+		  .post(function(req, res) { controllers.clicont_vaults_open(req, res); });
+		app.route(route_root_path + '/clicont/vaults/value/get')
+		  .post(function(req, res) { controllers.clicont_vaults_value_get(req, res); });
+		app.route(route_root_path + '/clicont/vaults/value/put')
+		  .post(function(req, res) { controllers.clicont_vaults_value_put(req, res); });
 
 		// web3
 		app.route(route_root_path + '/clicont/web3')
@@ -80,6 +90,21 @@ class ClientContainerRoutes {
 		
 		app.route(route_root_path + '/clicont/erc20/token/import/:id')
 		.get(function(req, res) { controllers.clicont_erc20_token_import(req, res); });
+
+		// authkey
+		app.route(route_root_path + '/clicont/account/session/keys')
+		.post(function(req, res) { controllers.clicont_session_getAccountKeys(req, res); });
+		
+		app.route(route_root_path + '/clicont/account/user/add')
+		.put(function(req, res) { controllers.clicont_user_addAccount(req, res); });
+		app.route(route_root_path + '/clicont/account/user/update')
+		.put(function(req, res) { controllers.clicont_user_updateAccount(req, res); });
+		app.route(route_root_path + '/clicont/account/user/reactivate')
+		.put(function(req, res) { controllers.clicont_user_reactivateAccount(req, res); });
+		app.route(route_root_path + '/clicont/account/user/deactivate')
+		.put(function(req, res) { controllers.clicont_user_deactivateAccount(req, res); });
+		app.route(route_root_path + '/clicont/account/user/remove')
+		.put(function(req, res) { controllers.clicont_user_removeAccount(req, res); });
 
 	}
 	

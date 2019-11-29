@@ -19,11 +19,17 @@ class ClientContainer {
 		
 		// load interfaces
 
-		var CryptoKeyClient = require('./interface/ethereum-cryptokey.js');
+		var CryptoKeyClient = require('./interface/common-cryptokey.js');
 		this.clientinterfaces['cryptokey'] = new CryptoKeyClient(this);
 
-		var LocalStorageClient = require('./interface/ethereum-localstorage.js');
+		var LocalStorageClient = require('./interface/common-localstorage.js');
 		this.clientinterfaces['localstorage'] = new LocalStorageClient(this);
+
+		var AuthKeyClient = require('./interface/authkey-core.js');
+		this.clientinterfaces['authkey'] = new AuthKeyClient(this);
+
+		var VaultsClient = require('./interface/common-vaults.js');
+		this.clientinterfaces['vaults'] = new VaultsClient(this);
 
 		var Web3Client = require('./interface/ethereum-web3.js');
 		this.clientinterfaces['web3'] = new Web3Client(this);
@@ -63,6 +69,16 @@ class ClientContainer {
 			clientsession = clientcommonmodule.createBlankSessionObject();
 			
 			clientsession.setSessionUUID(sessionuuid);
+			
+			if (!serversession.isAnonymous()) {
+				var useruuid = serversession.getUserUUID();
+				
+				var clientsessionuser = clientcommonmodule.createBlankUserObject(clientsession);
+				
+				clientsessionuser.setUserUUID(useruuid);
+				
+				clientsession.impersonateUser(clientsessionuser);
+			}
 		}
 		
 		return clientsession;

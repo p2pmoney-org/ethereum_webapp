@@ -23,7 +23,7 @@ if (process.env.ETHEREUM_WEBAPP_EXEC_DIR) {
 //instantiating global object
 var global = Global.getGlobalInstance();
 
-global.current_version = "0.12.2.2019.12.05";
+global.current_version = "0.12.3.2019.12.05";
 global.version_support = ["0.12", "0.11", "0.10.0"];
 
 
@@ -75,8 +75,12 @@ try {
 	Service = require('./includes/ethnode/service.js');
 	global.registerServiceInstance(new Service());
 	
-	Service = require('./includes/cli-cont/service.js');
-	global.registerServiceInstance(new Service());
+	if (global.config['activate_cli_cont'] === true) {
+		// cli_cont handle a lot of anonymous requests
+		// activate only if necessary
+		Service = require('./includes/cli-cont/service.js');
+		global.registerServiceInstance(new Service());
+	}
 	
 	Service = require('./includes/crypto/service.js');
 	global.registerServiceInstance(new Service());

@@ -693,6 +693,465 @@ class ClientContainerControllers {
 	  	res.json(jsonresult);
 	}
 
+	//
+	// authkey
+	//
+	
+	clicont_session_getAccountKeys(req, res) {
+		// POST
+		var global = this.global;
+		var sessionuuid = req.get("sessiontoken");
+		
+		global.log("clicont_session_getAccountKeys called for sessiontoken " + sessionuuid);
+		
+		var cryptokeyuuid  = req.body.cryptokey_uuid;
+		var cryptoprivatekey  = req.body.cryptokey_private_key;
+
+		var jsonresult = {status: 0, error: "can not use this route"};
+		
+		try {
+			var commonservice = global.getServiceInstance('common');
+			var Session = commonservice.Session;
+			var session = Session.getSession(global, sessionuuid);
+			
+			var clicontservice = global.getServiceInstance('client-container');
+			
+			var clientcontainer = clicontservice.getClientContainer(session);
+			var localstorageinterface = clientcontainer.getClientInterface('localstorage');
+
+			// get user details
+			var userkeys = localstorageinterface.user_account_keys(session, cryptokeyuuid, cryptoprivatekey);
+		
+			
+			var keysjson = [];
+			
+			for (var i = 0; i < userkeys.length; i++) {
+				var userkey = userkeys[i];
+				
+				var json = {uuid: userkey['uuid'], 
+						owner_uuid: userkey['owneruuid'],  
+						key_uuid: userkey['key_uuid'],
+						private_key: userkey['private_key'], 
+						public_key: userkey['public_key'], 
+						rsa_public_key: userkey['rsa_public_key'], 
+						address: userkey['address'],
+						origin: userkey['origin'],
+						description:  userkey['description']};
+				
+				keysjson.push(json);
+			}
+			
+			jsonresult = {status: 1, keys: keysjson};
+			//global.log("session_getAccountKeys called for sessiontoken "+ sessionuuid + " jsonresult is " + JSON.stringify(jsonresult));
+		}
+		catch(e) {
+			global.log("exception in clicont_session_getAccountKeys for sessiontoken " + sessionuuid + ": " + e);
+
+			jsonresult = {status: 0, error: "exception could not retrieve keys"};
+		}
+
+		
+	  	res.json(jsonresult);
+	}
+
+	clicont_user_addAccount(req, res) {
+		// PUT
+		var global = this.global;
+		var sessionuuid = req.get("sessiontoken");
+		
+		global.log("clicont_user_addAccount called for sessiontoken " + sessionuuid);
+		
+		var useruuid  = req.body.useruuid;
+		
+		var accountprivatekey  = req.body.account_private_key;
+		var accountdescription  = req.body.account_description;
+		
+		var cryptokeyuuid  = req.body.cryptokey_uuid;
+		var cryptoprivatekey  = req.body.cryptokey_private_key;
+
+		var jsonresult = {status: 0, error: "can not use this route"};
+		
+		try {
+			var commonservice = global.getServiceInstance('common');
+			var Session = commonservice.Session;
+			var session = Session.getSession(global, sessionuuid);
+			
+			var clicontservice = global.getServiceInstance('client-container');
+			
+			var clientcontainer = clicontservice.getClientContainer(session);
+			var localstorageinterface = clientcontainer.getClientInterface('localstorage');
+
+			var result = localstorageinterface.user_add_account(session, useruuid, accountprivatekey, accountdescription, cryptokeyuuid, cryptoprivatekey);
+			
+			if (result) {
+				var accountuuid  = result.getAccountUUID();
+				jsonresult = {status: 1, useruuid: useruuid, account_uuid: accountuuid};
+			}
+			else {
+				jsonresult = {status: 0, error: "could not add account"};
+			}
+			
+		}
+		catch(e) {
+			global.log("exception in user_addAccount for sessiontoken " + sessionuuid + ": " + e);
+
+			jsonresult = {status: 0, error: "exception could not add account"};
+		}
+
+		
+	  	res.json(jsonresult);
+	}
+
+	clicont_user_updateAccount(req, res) {
+		// PUT
+		var global = this.global;
+		var sessionuuid = req.get("sessiontoken");
+		
+		global.log("clicont_user_updateAccount called for sessiontoken " + sessionuuid);
+		
+		var useruuid  = req.body.useruuid;
+		
+		var accountuuid  = req.body.account_uuid;
+		var accountprivatekey  = req.body.account_private_key;
+		var accountdescription  = req.body.account_description;
+		
+		var cryptokeyuuid  = req.body.cryptokey_uuid;
+		var cryptoprivatekey  = req.body.cryptokey_private_key;
+		
+		var jsonresult = {status: 0, error: "can not use this route"};
+		
+		try {
+			var commonservice = global.getServiceInstance('common');
+			var Session = commonservice.Session;
+			var session = Session.getSession(global, sessionuuid);
+			
+			var clicontservice = global.getServiceInstance('client-container');
+			
+			var clientcontainer = clicontservice.getClientContainer(session);
+			var localstorageinterface = clientcontainer.getClientInterface('localstorage');
+
+			var result = localstorageinterface.user_update_account(session, useruuid, accountuuid, accountdescription, cryptokeyuuid, cryptoprivatekey);
+			
+			if (result) {
+				jsonresult = {status: 1, useruuid: useruuid, account_uuid: accountuuid};
+			}
+			else {
+				jsonresult = {status: 0, error: "could not update account"};
+			}		
+		}
+		catch(e) {
+			global.log("exception in clicont_user_updateAccount for sessiontoken " + sessionuuid + ": " + e);
+
+			jsonresult = {status: 0, error: "exception could not update account"};
+		}
+
+		
+	  	res.json(jsonresult);
+	}
+
+	clicont_user_reactivateAccount(req, res) {
+		// PUT
+		var global = this.global;
+		var sessionuuid = req.get("sessiontoken");
+		
+		global.log("clicont_user_reactivateAccount called for sessiontoken " + sessionuuid);
+		
+		var useruuid  = req.body.useruuid;
+		
+		var accountuuid  = req.body.account_uuid;
+		
+		var cryptokeyuuid  = req.body.cryptokey_uuid;
+		var cryptoprivatekey  = req.body.cryptokey_private_key;
+		
+		var jsonresult = {status: 0, error: "can not use this route"};
+		
+		try {
+			var commonservice = global.getServiceInstance('common');
+			var Session = commonservice.Session;
+			var session = Session.getSession(global, sessionuuid);
+			
+			var clicontservice = global.getServiceInstance('client-container');
+			
+			var clientcontainer = clicontservice.getClientContainer(session);
+			var localstorageinterface = clientcontainer.getClientInterface('localstorage');
+
+			var result = localstorageinterface.user_reactivate_account(session, useruuid, accountuuid, cryptokeyuuid, cryptoprivatekey);
+			
+			if (result) {
+				jsonresult = {status: 1, useruuid: useruuid, account_uuid: accountuuid};
+			}
+			else {
+				jsonresult = {status: 0, error: "could not reactivate account"};
+			}		
+		}
+		catch(e) {
+			global.log("exception in clicont_user_reactivateAccount for sessiontoken " + sessionuuid + ": " + e);
+
+			jsonresult = {status: 0, error: "exception could not activate account"};
+		}
+
+		
+	  	res.json(jsonresult);
+	}
+
+	clicont_user_deactivateAccount(req, res) {
+		// PUT
+		var global = this.global;
+		var sessionuuid = req.get("sessiontoken");
+		
+		global.log("clicont_user_deactivateAccount called for sessiontoken " + sessionuuid);
+		
+		var useruuid  = req.body.useruuid;
+		
+		var accountuuid  = req.body.account_uuid;
+		
+		var cryptokeyuuid  = req.body.cryptokey_uuid;
+		var cryptoprivatekey  = req.body.cryptokey_private_key;
+		
+		var jsonresult = {status: 0, error: "can not use this route"};
+		
+		try {
+			var commonservice = global.getServiceInstance('common');
+			var Session = commonservice.Session;
+			var session = Session.getSession(global, sessionuuid);
+			
+			var clicontservice = global.getServiceInstance('client-container');
+			
+			var clientcontainer = clicontservice.getClientContainer(session);
+			var localstorageinterface = clientcontainer.getClientInterface('localstorage');
+
+			var result = localstorageinterface.user_deactivate_account(session, useruuid, accountuuid, cryptokeyuuid, cryptoprivatekey);
+			
+			if (result) {
+				jsonresult = {status: 1, useruuid: useruuid, account_uuid: accountuuid};
+			}
+			else {
+				jsonresult = {status: 0, error: "could not deactivate account"};
+			}		
+		}
+		catch(e) {
+			global.log("exception in clicont_user_deactivateAccount for sessiontoken " + sessionuuid + ": " + e);
+
+			jsonresult = {status: 0, error: "exception could not deactivate account"};
+		}
+
+		
+	  	res.json(jsonresult);
+	}
+
+	clicont_user_removeAccount(req, res) {
+		// PUT
+		var global = this.global;
+		var sessionuuid = req.get("sessiontoken");
+		
+		global.log("clicont_user_removeAccount called for sessiontoken " + sessionuuid);
+		
+		var useruuid  = req.body.useruuid;
+		
+		var accountuuid  = req.body.account_uuid;
+		
+		var cryptokeyuuid  = req.body.cryptokey_uuid;
+		var cryptoprivatekey  = req.body.cryptokey_private_key;
+		
+		var jsonresult = {status: 0, error: "can not use this route"};
+		
+		try {
+			var commonservice = global.getServiceInstance('common');
+			var Session = commonservice.Session;
+			var session = Session.getSession(global, sessionuuid);
+			
+			var clicontservice = global.getServiceInstance('client-container');
+			
+			var clientcontainer = clicontservice.getClientContainer(session);
+			var localstorageinterface = clientcontainer.getClientInterface('localstorage');
+
+			var result = localstorageinterface.user_remove_account(session, useruuid, accountuuid, cryptokeyuuid, cryptoprivatekey);
+			
+			if (result) {
+				jsonresult = {status: 1, useruuid: useruuid, account_uuid: accountuuid};
+			}
+			else {
+				jsonresult = {status: 0, error: "could not remove account"};
+			}		
+		}
+		catch(e) {
+			global.log("exception in clicont_user_removeAccount for sessiontoken " + sessionuuid + ": " + e);
+
+			jsonresult = {status: 0, error: "exception could not remove account"};
+		}
+
+		
+	  	res.json(jsonresult);
+	}
+	
+	//
+	// vaults
+	//
+	
+	clicont_vaults_create(req, res) {
+		// POST
+		var global = this.global;
+		var sessionuuid = req.get("sessiontoken");
+		
+		global.log("clicont_vaults_create called for sessiontoken " + sessionuuid);
+		
+		var vaultname  = req.body.vault_name;
+		var vaultpassword  = req.body.vault_password;
+		var vaulttype  = req.body.vault_type;
+
+		var jsonresult = {status: 0, error: "can not use this route"};
+		
+		try {
+			var commonservice = global.getServiceInstance('common');
+			var Session = commonservice.Session;
+			var session = Session.getSession(global, sessionuuid);
+			
+			var clicontservice = global.getServiceInstance('client-container');
+			
+			var clientcontainer = clicontservice.getClientContainer(session);
+			var vaultsinterface = clientcontainer.getClientInterface('vaults');
+
+			// get user details
+			var result = vaultsinterface.vaults_create(session, vaultname, vaultpassword, vaulttype);
+		
+			
+			jsonresult = {status: 1, result: result};
+		}
+		catch(e) {
+			global.log("exception in clicont_vaults_create for sessiontoken " + sessionuuid + ": " + e);
+
+			var error = "exception could not create vault " + vaultname;
+			jsonresult = {status: 0, error: error};
+		}
+
+		
+	  	res.json(jsonresult);
+	}
+
+	clicont_vaults_open(req, res) {
+		// POST
+		var global = this.global;
+		var sessionuuid = req.get("sessiontoken");
+		
+		global.log("clicont_vaults_open called for sessiontoken " + sessionuuid);
+		
+		var vaultname  = req.body.vault_name;
+		var vaultpassword  = req.body.vault_password;
+		var vaulttype  = req.body.vault_type;
+
+		var jsonresult = {status: 0, error: "can not use this route"};
+		
+		try {
+			var commonservice = global.getServiceInstance('common');
+			var Session = commonservice.Session;
+			var session = Session.getSession(global, sessionuuid);
+			
+			var clicontservice = global.getServiceInstance('client-container');
+			
+			var clientcontainer = clicontservice.getClientContainer(session);
+			var vaultsinterface = clientcontainer.getClientInterface('vaults');
+
+			// get user details
+			var result = vaultsinterface.vaults_open(session, vaultname, vaultpassword, vaulttype);
+		
+			
+			jsonresult = {status: 1, result: result};
+		}
+		catch(e) {
+			global.log("exception in clicont_vaults_open for sessiontoken " + sessionuuid + ": " + e);
+
+			var error = "exception could not open vault " + vaultname;
+			jsonresult = {status: 0, error: error};
+		}
+
+		
+	  	res.json(jsonresult);
+	}
+
+	clicont_vaults_value_get(req, res) {
+		// POST
+		var global = this.global;
+		var sessionuuid = req.get("sessiontoken");
+		
+		global.log("clicont_vaults_value_get called for sessiontoken " + sessionuuid);
+		
+		var key = req.body.key;
+		
+		var vaultname  = req.body.vault_name;
+		var vaultpassword  = req.body.vault_password;
+		var vaulttype  = req.body.vault_type;
+
+		var jsonresult = {status: 0, error: "can not use this route"};
+		
+		try {
+			var commonservice = global.getServiceInstance('common');
+			var Session = commonservice.Session;
+			var session = Session.getSession(global, sessionuuid);
+			
+			var clicontservice = global.getServiceInstance('client-container');
+			
+			var clientcontainer = clicontservice.getClientContainer(session);
+			var vaultsinterface = clientcontainer.getClientInterface('vaults');
+
+			// get user details
+			var result = vaultsinterface.vaults_get(session, vaultname, vaultpassword, vaulttype, key);
+		
+			
+			jsonresult = {status: 1, result: result};
+		}
+		catch(e) {
+			global.log("exception in clicont_vaults_value_get for sessiontoken " + sessionuuid + ": " + e);
+
+			var error = "exception could not get value for vault " + vaultname;
+			jsonresult = {status: 0, error: error};
+		}
+
+		
+	  	res.json(jsonresult);
+	}
+
+	clicont_vaults_value_put(req, res) {
+		// POST
+		var global = this.global;
+		var sessionuuid = req.get("sessiontoken");
+		
+		global.log("clicont_vaults_value_put called for sessiontoken " + sessionuuid);
+		
+		var key = req.body.key;
+		var value = req.body.value;
+		
+		var vaultname  = req.body.vault_name;
+		var vaultpassword  = req.body.vault_password;
+		var vaulttype  = req.body.vault_type;
+
+		var jsonresult = {status: 0, error: "can not use this route"};
+		
+		try {
+			var commonservice = global.getServiceInstance('common');
+			var Session = commonservice.Session;
+			var session = Session.getSession(global, sessionuuid);
+			
+			var clicontservice = global.getServiceInstance('client-container');
+			
+			var clientcontainer = clicontservice.getClientContainer(session);
+			var vaultsinterface = clientcontainer.getClientInterface('vaults');
+
+			// get user details
+			var result = vaultsinterface.vaults_put(session, vaultname, vaultpassword, vaulttype, key, value);
+		
+			
+			jsonresult = {status: 1, result: result};
+		}
+		catch(e) {
+			global.log("exception in clicont_vaults_value_put for sessiontoken " + sessionuuid + ": " + e);
+
+			var error = "exception could not get value for vault " + vaultname;
+			jsonresult = {status: 0, error: error};
+		}
+
+		
+	  	res.json(jsonresult);
+	}
 
 }
 
