@@ -265,7 +265,7 @@ var Module = class {
 								console.log('error while loading user from server: ' + err);
 							}
 						})
-						.then(function(res) {
+						.then((res) => {
 							var authenticated = (res['status'] == '1' ? true : false);
 							
 							console.log("authentication is " + authenticated);

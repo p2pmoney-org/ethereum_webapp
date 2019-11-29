@@ -29,12 +29,16 @@ class StorageRoutes {
 		
 		var route_root_path = global.route_root_path + '/storage';
 
+		//
+		// User storage API
+		//
 		app.route(route_root_path + '/user')
 		.post(function(req, res) { controllers.user_storage(req, res); });
 		app.route(route_root_path + '/user')
 		.put(function(req, res) { controllers.put_user_storage(req, res); });
 		app.route(route_root_path + '/user')
 		.delete(function(req, res) { controllers.delete_user_storage(req, res); });
+		
 		
 	}
 	

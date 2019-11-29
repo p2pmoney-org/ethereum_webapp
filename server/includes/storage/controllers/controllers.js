@@ -13,6 +13,10 @@ class StorageControllers {
 	//
 	// storage API
 	//
+
+	//
+	// User storage API
+	//
 	user_storage(req, res) {
 		// POST
 		var global = this.global;
@@ -90,7 +94,6 @@ class StorageControllers {
 		}
 		catch(e) {
 			global.log("exception in put_user_storage for sessiontoken " + sessionuuid + ": " + e);
-			//global.log(e.stack);
 			
 			jsonresult = {status: 0, error: "exception could not retrieve content"};
 		}
@@ -141,6 +144,8 @@ class StorageControllers {
 	  	
 	  	res.json(jsonresult);
 	}
+	
+
 }
 
 module.exports = StorageControllers;

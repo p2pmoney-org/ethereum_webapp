@@ -379,7 +379,13 @@ class AuthKeyServerAccess {
 						var origin = {storage: 'remote', url: rest_connection_url};
 						for (var i = 0; i < keysjson.length; i++) {
 							var key = keysjson[i];
-							key.origin = origin;
+							
+							if (!key.origin) {
+								key.origin = origin;
+							}
+							else {
+								Object.assign(key.origin, origin);
+							}
 						}
 						
 						if (callback)
