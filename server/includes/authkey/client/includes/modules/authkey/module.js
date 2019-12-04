@@ -109,6 +109,7 @@ var Module = class {
 
 		// vaults
 		global.registerHook('handleOpenVaultSubmit_hook', this.name, this.handleOpenVaultSubmit_hook);
+		global.registerHook('handleCreateVaultSubmit_hook', this.name, this.handleCreateVaultSubmit_hook);
 	}
 	
 	postRegisterModule() {
@@ -689,7 +690,6 @@ var Module = class {
 			}
 			else {
 				var error = global.t('Could not open vault') + ' ' + vaultname;
-				alert(global.t(error));
 				
 				if (callback)
 					callback(error, null);
@@ -710,13 +710,15 @@ var Module = class {
 		var session = params[1];
 		
 		var vaultname = this.getFormValue("vaultname");
+		var vaulttype = $scope.vaulttype.text;
 		var password = this.getFormValue("password");
-		
-		var vaulttype = 0;
 		
 		if (!session.isAnonymous()) {
 			// open vault
 			this._openVault(session, vaultname, password, vaulttype, (err, res) => {
+				if (err)
+					alert(err);
+				
 				app.refreshDisplay();
 				
 				var mvcmodule = global.getModuleObject('mvc');
@@ -730,6 +732,89 @@ var Module = class {
 		}
 		else {
 			var error = 'You must first log in to open a vault'
+			alert(global.t(error));
+		}
+		
+		
+		result.push({module: this.name, handled: true});
+		
+		return true;
+	}
+
+	_createVault(session, vaultname, passphrase, vaulttype, callback) {
+		var global = this.global;
+		var app = this._getAppObject();
+		var commonmodule = global.getModuleObject('common');
+		
+		commonmodule.createVault(session, vaultname, passphrase, vaulttype, (err, res) => {
+			if (!err) {
+				// open vault 
+				this._openVault(session, vaultname, passphrase, vaulttype, (err, res) => {
+					var vault = res;
+					
+					if (vault) {
+						if (app) app.refreshDisplay();
+						
+						if (callback)
+							callback(null, vault);
+					}
+					else {
+					}
+				});
+			}
+			else {
+				var error = global.t('Could not create vault') + ' ' + vaultname;
+				
+				if (callback)
+					callback(error, null);
+			}
+		});
+		
+	}
+	
+	handleCreateVaultSubmit_hook(result, params) {
+		console.log('handleCreateVaultSubmit_hook called for ' + this.name);
+		
+		// we overload handleCreateVaultSubmit_hook to prevent session.impersonateUser(user)
+		// in Controllers._openVault
+		
+		var global = this.global;
+		var app = this._getAppObject();
+
+		var $scope = params[0];
+		var session = params[1];
+		
+		var vaultname = this.getFormValue("vaultname");
+		var vaulttype = $scope.vaulttype.text;
+		var password = this.getFormValue("password");
+		var passwordconfirm = this.getFormValue("passwordconfirm");
+		
+		if (!session.isAnonymous()) {
+			if (password == passwordconfirm) {
+				// create vault
+				this._createVault(session, vaultname, password, vaulttype, (err, res) => {
+					if (err)
+						alert(err);
+					
+					app.refreshDisplay();
+					
+					var mvcmodule = global.getModuleObject('mvc');
+					
+					var mvccontroller = mvcmodule.getControllersObject();
+					
+					if (mvccontroller && mvccontroller.gotoHome) {
+						mvccontroller.gotoHome();
+					}
+				});
+			}
+			else {
+				var error = global.t('passwords do not match');
+				alert(error);
+			}
+
+		}
+		else {
+			var error = 'You must first log in to create a vault'
 			alert(global.t(error));
 		}
 		

@@ -655,6 +655,11 @@ class Session {
 	static getSession(global, sessionuuid) {
 		var session;
 		
+		if (!sessionuuid) {
+			// create on-the-fly a new session object
+			return new Session(global);
+		}
+		
 		if (global.areSessionsSticky()) {
 			var sessionmap = Session.getSessionMap(global);
 			

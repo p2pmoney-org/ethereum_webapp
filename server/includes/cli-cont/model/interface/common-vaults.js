@@ -53,6 +53,32 @@ class VaultsClient {
 		return result;
 	}
 	
+	_impersonateVault(clientsession, vault) {
+		if ((!clientsession) || (!vault))
+			return;
+		
+		var clientcontainer = this.clientcontainer;
+		var global = clientcontainer.getServerGlobal();
+		
+		var commonmodule = clientcontainer.getModuleObject('common');
+		
+		var vaultname = vault.getName();
+		var cryptokey = vault.getCryptoKeyObject();
+		
+		// impersonate with vault's name and crypto key uuid
+		var clientuser = commonmodule.createBlankUserObject(clientsession);
+
+		clientuser.setUserName(vaultname);
+		clientuser.setUserUUID(cryptokey.getKeyUUID());
+		
+		clientsession.impersonateUser(clientuser);
+		
+		// add crypto key to session and user
+		clientuser.addCryptoKeyObject(cryptokey);
+		clientsession.addCryptoKeyObject(cryptokey);
+		
+	}
+	
 	vaults_get(serversession, vaultname, vaultpassword, vaulttype, key) {
 		var clientcontainer = this.clientcontainer;
 		var clientsession = clientcontainer.getClientSession(serversession);
@@ -67,10 +93,26 @@ class VaultsClient {
 			var vault = res;
 			
 			if (vault) {
-				result = vault.getValue(key);
+				if (clientsession.isAnonymous()) {
+					// we impersonate the vault in the client session
+					this._impersonateVault(clientsession, vault);
+					
+					// we refresh the readValues before reading result
+					vault.readValues((err, res) => {
+						result = vault.getValue(key);
+						finished = true;
+					});
+				}
+				else {
+					result = vault.getValue(key);
+					finished = true;
+				}
+
+			}
+			else {
+				finished = true;
 			}
 			
-			finished = true;
 		});
 		
 		// wait to turn into synchronous call
@@ -94,6 +136,11 @@ class VaultsClient {
 			var vault = res;
 			
 			if (vault) {
+				if (clientsession.isAnonymous()) {
+					// we impersonate the vault in the client session
+					this._impersonateVault(clientsession, vault);
+				}
+				
 				vault.putValue(key, value, (err, res) => {
 					result = res;
 					finished = true;
