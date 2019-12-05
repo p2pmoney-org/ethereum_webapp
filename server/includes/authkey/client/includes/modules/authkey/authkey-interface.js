@@ -88,6 +88,16 @@ var AuthKeyInterface = class {
 				
 			}
 			
+			if (cryptokeyarray.length > 0) {
+				var user = session.getSessionUserObject();
+				
+				if (user) {
+					for (var i = 0; i < cryptokeyarray.length; i++ ) {
+						user.addCryptoKeyObject(cryptokeyarray[i]);
+					}
+				}
+			}
+			
 			if (callback)
 				callback(null, cryptokeyarray);
 		});	
@@ -119,11 +129,15 @@ var AuthKeyInterface = class {
 			
 			return authenticated;
 		})
-		.then(function(authenticated) {
+		.then((authenticated) => {
 			if (authenticated) {
 				
 				// load crypto keys
-				return authkeyserveraccess.key_session_keys( function(err, res) {
+				return this.read_cryptokeys(session, (err, res) =>{
+					if (callback)
+						callback(null, user);
+				});
+				/*return authkeyserveraccess.key_session_keys( function(err, res) {
 					
 					if (res && res['keys']) {
 						var keys = res['keys'];
@@ -164,7 +178,7 @@ var AuthKeyInterface = class {
 						callback(null, user);
 
 			
-				});
+				});*/
 				
 			}
 			else {
@@ -217,11 +231,15 @@ var AuthKeyInterface = class {
 			
 			return authenticated;
 		})
-		.then(function(authenticated) {
+		.then((authenticated) => {
 			if (authenticated) {
 				
 				// load crypto keys
-				return authkeyserveraccess.key_session_keys( function(err, res) {
+				return this.read_cryptokeys(session, (err, res) =>{
+					if (callback)
+						callback(null, user);
+				});
+				/*return authkeyserveraccess.key_session_keys( function(err, res) {
 					
 					if (res && res['keys']) {
 						var keys = res['keys'];
@@ -258,7 +276,7 @@ var AuthKeyInterface = class {
 						}
 						
 					}
-				});
+				});*/
 				
 			}
 			else {

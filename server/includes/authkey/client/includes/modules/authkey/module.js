@@ -63,7 +63,7 @@ var Module = class {
 
 		modulescriptloader.push_script( moduleroot + '/model/user.js');
 		
-		modulescriptloader.load_scripts(function() { self.init(); if (callback) callback(null, self); });
+		modulescriptloader.load_scripts( () => { this.init(); if (callback) callback(null, this); });
 		
 		return modulescriptloader;
 	}
@@ -119,9 +119,9 @@ var Module = class {
 			var self = this;
 			var rootscriptloader = global.getRootScriptLoader();
 			
-			this.loadModule(rootscriptloader, function() {
-				if (self.registerHooks)
-				self.registerHooks();
+			this.loadModule(rootscriptloader, () => {
+				if (this.registerHooks)
+				this.registerHooks();
 			});
 		}
 	}
@@ -218,7 +218,7 @@ var Module = class {
 		console.log('checking session status on server for ' + session.getSessionUUID());
 		console.log('currentanonymousflag is ' + currentanonymousflag);
 		
-		authkeyinterface.session_status(session, function(err, sessionstatus) {
+		authkeyinterface.session_status(session, (err, sessionstatus) => {
 			if (sessionstatus) {
 				if (sessionstatus['isauthenticated'] == false) {
 					console.log('session ' + session.getSessionUUID() + ' is not authenticated on the server');
@@ -248,7 +248,7 @@ var Module = class {
 						// session bootstrapped from external call
 						console.log('connecting user');
 
-						authkeyinterface.load_user_in_session(session, function(err, sessionstatus) {
+						authkeyinterface.load_user_in_session(session, (err, sessionstatus) => {
 							if (!err) {
 								console.log('user loaded from server');
 								
@@ -290,7 +290,7 @@ var Module = class {
 							}
 							
 						})
-						.catch(function (err) {
+						.catch( (err) => {
 							alert(err);
 						});
 					}
@@ -323,9 +323,9 @@ var Module = class {
 		var session = params[0];
 		
 		var nextget = result.get;
-		result.get = function(err, keyarray) {
+		result.get = (err, keyarray) => {
 
-			authkeyinterface.read_cryptokeys(session, function(err, mykeyarray) {
+			authkeyinterface.read_cryptokeys(session, (err, mykeyarray) => {
 				var newkeyarray = (mykeyarray && (mykeyarray.length > 0) ? keyarray.concat(mykeyarray) : keyarray);
 				
 				if (!err) {
@@ -360,7 +360,7 @@ var Module = class {
 		var localstorageaccess = session.getLocalStorageAccessInstance();
 
 		var nextget = result.get;
-		result.get = function(err, keyarray) {
+		result.get = (err, keyarray) => {
 
 			localstorageaccess.account_session_keys((err, res) => {
 				var mykeyarray;
@@ -382,7 +382,7 @@ var Module = class {
 						nextget(err, null);
 				}
 			})
-			.catch(function (err) {
+			.catch( (err) => {
 				console.log('error in getAccountObjects_hook: ' + err);
 			});;
 			
@@ -501,7 +501,7 @@ var Module = class {
 				}
 				
 			})
-			.catch(function (err) {
+			.catch( (err) => {
 				alert(err);
 				
 				if (callback)
@@ -531,7 +531,7 @@ var Module = class {
 			var authkeyinterface = authkeymodule.getAuthKeyInterface();
 			
 			authkeyinterface.logout(session)
-			.then(function(res) {
+			.then((res) => {
 				var loggedout = (res['status'] == '1' ? true : false);
 				
 				if (loggedout) {
@@ -544,7 +544,7 @@ var Module = class {
 				}
 				
 			})
-			.catch(function (err) {
+			.catch( (err) => {
 				alert(err);
 			});
 			
