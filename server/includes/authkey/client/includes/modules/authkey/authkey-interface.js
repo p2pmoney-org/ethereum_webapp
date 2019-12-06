@@ -88,14 +88,20 @@ var AuthKeyInterface = class {
 				
 			}
 			
+			// we add cryptokeys to the session
+			// and to the user if session is not anonymous
 			if (cryptokeyarray.length > 0) {
 				var user = session.getSessionUserObject();
 				
-				if (user) {
-					for (var i = 0; i < cryptokeyarray.length; i++ ) {
+				for (var i = 0; i < cryptokeyarray.length; i++ ) {
+					session.addCryptoKeyObject(cryptokeyarray[i]);
+					
+					if (user) {
 						user.addCryptoKeyObject(cryptokeyarray[i]);
 					}
 				}
+
+				
 			}
 			
 			if (callback)
