@@ -33,6 +33,8 @@ class Global {
 		
 		this.globalscope = global; // nodejs global
 		
+		this.execution_variables_map = Object.create(null);
+		
 		// overload console.log
 		this.overrideConsoleLog();
 
@@ -100,7 +102,7 @@ class Global {
 		this.client_env = (config && (typeof config["client_env"] != 'undefined') ? config["client_env"] : 'prod');
 		this.execution_env = this.server_env;
 		
-		this.sticky_session = (config && (typeof config["sticky_session"] != 'undefined') && (config["sticky_session"] === false) ? false : true);
+		this.sticky_session = (config && (typeof config["sticky_session"] != 'undefined') && (config["sticky_session"] === 0) ? false : true);
 		
 		// logging
 		this.enable_log = (config && (typeof config["enable_log"] != 'undefined') ? config["enable_log"] : 1);
@@ -262,8 +264,24 @@ class Global {
 		return global; // nodejs global
 	}
 	
+	getExecutionVariable(key) {
+		if (key in this.execution_variables_map) {
+			return this.execution_variables_map[key];
+		}
+	}
+	
+	setExecutionVariable(key, value) {
+		this.execution_variables_map[key] = value;
+	}
+	
 	areSessionsSticky() {
 		return this.sticky_session;
+	}
+	
+	createCacheObject(name) {
+		var CacheObject = require('./model/cacheobject.js');
+		
+		return new CacheObject(this, name);
 	}
 	
 	readJson(jsonname) {
