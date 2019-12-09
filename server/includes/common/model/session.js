@@ -786,7 +786,7 @@ class Session {
 				/// create a latch to start unstacking calls once one of them has finished the initialization
 				var sessionlatch = _SessionInitLatch.get(session);
 				
-				global.log('session sessionlatch retrieved for stikcy session ' + sessionuuid);
+				global.log('session sessionlatch retrieved for sticky session ' + sessionuuid);
 				
 				var promise = new Promise(function _initStickySessionObject(resolve, reject) {
 					try {

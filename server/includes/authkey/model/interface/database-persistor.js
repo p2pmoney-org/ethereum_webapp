@@ -108,6 +108,9 @@ class DataBasePersistor {
 	getUserArray(username) {
 		var global = this.global;
 		
+		if (!username)
+			return;
+		
 		var mysqlcon = global.getMySqlConnection();
 		
 		var tablename = mysqlcon.getTableName('users');
@@ -156,6 +159,10 @@ class DataBasePersistor {
 		var global = this.global;
 		
 		var useruuid = array['useruuid'];
+		
+		if (!useruuid)
+			return;
+		
 		var username = array['username'];
 		var useremail = array['useremail'];
 		
@@ -224,6 +231,9 @@ class DataBasePersistor {
 	putUserPassword(useruuid, array) {
 		var global = this.global;
 		
+		if (!useruuid)
+			return;
+		
 		var password = array['password'];
 		var hashmethod = array['hashmethod'];
 		var salt = array['salt'];
@@ -262,6 +272,11 @@ class DataBasePersistor {
 	getUserKeysFromUserUUID(useruuid) {
 		var global = this.global;
 		
+		var keys = [];
+		
+		if (!useruuid)
+			return keys;
+		
 		var mysqlcon = global.getMySqlConnection();
 		
 		var tablename = mysqlcon.getTableName('users');
@@ -279,8 +294,6 @@ class DataBasePersistor {
 		// execute query
 		var result = mysqlcon.execute(sql);
 		
-		
-		var keys = [];
 		
 		
 		if (result) {
@@ -318,6 +331,9 @@ class DataBasePersistor {
 
 	getUserKeysFromUserName(username) {
 		var global = this.global;
+		
+		if (!username)
+			return;
 		
 		var mysqlcon = global.getMySqlConnection();
 		
@@ -376,6 +392,9 @@ class DataBasePersistor {
 	getUserKeyFromUserKeyUUID(useruuid, keyuuid) {
 		var global = this.global;
 		
+		if (!useruuid)
+			return;
+		
 		var mysqlcon = global.getMySqlConnection();
 		
 		var usertablename = mysqlcon.getTableName('users');
@@ -429,6 +448,9 @@ class DataBasePersistor {
 	
 	putUserKey(useruuid, keyuuid, privatekey, publickey, address, rsapublickey, type, description) {
 		var global = this.global;
+		
+		if (!useruuid)
+			return;
 		
 		var _userarray = this.getUserArrayFromUUID(useruuid);
 		

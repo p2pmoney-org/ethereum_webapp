@@ -102,7 +102,7 @@ class Global {
 		this.client_env = (config && (typeof config["client_env"] != 'undefined') ? config["client_env"] : 'prod');
 		this.execution_env = this.server_env;
 		
-		this.sticky_session = (config && (typeof config["sticky_session"] != 'undefined') && (config["sticky_session"] === 0) ? false : true);
+		this.sticky_session = (config && (typeof config["sticky_session"] != 'undefined') && (config["sticky_session"] == 0) ? false : true);
 		
 		// logging
 		this.enable_log = (config && (typeof config["enable_log"] != 'undefined') ? config["enable_log"] : 1);

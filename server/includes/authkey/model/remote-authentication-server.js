@@ -79,7 +79,7 @@ class RemoteAuthenticationServer {
 		
 		var userdetails = userdetailcache.getValue(key);
 		
-		if (userdetails)
+		if ((userdetails) && (userdetails['useruuid']))
 			return userdetails;
 		
 		// not in cache (or dimmed obsolete)
@@ -114,6 +114,7 @@ class RemoteAuthenticationServer {
 		{global.deasync().runLoopOnce();}
 		
 		// put in cache
+		if ((userdetails) && (userdetails['useruuid']))
 		userdetailcache.putValue(key, userdetails);
 		
 		return userdetails;

@@ -270,6 +270,9 @@ class AuthenticationServer {
 	}
 	
 	userExistsFromUUID(useruuid) {
+		if (!useruuid)
+			return false;
+		
 		var global = this.global;
 		var userdetails = this.persistor.getUserArrayFromUUID(useruuid);
 		
