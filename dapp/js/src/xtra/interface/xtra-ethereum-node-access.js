@@ -1230,12 +1230,14 @@ class Xtra_EthereumNodeAccess {
 							
 							return resolve(contractproxy);
 						}
+						
+						var artifactpath = artifact.getArtifactPath();
 
 						var resource = "/web3/contract/load";
 						
 						var postdata = [];
 						
-						postdata = {artifactuuid: artifact.artifactuuid};
+						postdata = {artifactuuid: artifact.artifactuuid, artifactpath: artifactpath};
 						
 						self.rest_post(resource, postdata, function (err, res) {
 							if (res) {
@@ -1494,6 +1496,9 @@ class Xtra_EthereumNodeAccess {
 				
 				
 				try {
+					var artifact = web3contract.getArtifact();
+					var artifactpath = artifact.getArtifactPath();
+					
 					var contractuuid = web3contract.contractuuid;
 					
 					var resource = "/web3/contract/new";
@@ -1508,7 +1513,8 @@ class Xtra_EthereumNodeAccess {
 					var time = (credentials['from'] ? credentials['from'] : null);
 					var duration = (credentials['during'] ? credentials['during'] : null);
 					
-					postdata = {contractuuid: contractuuid, 
+					postdata = {contractuuid: contractuuid,
+								artifactpath: artifactpath,
 								walletaddress: walletaddress,
 								password: password,
 								time: time,
@@ -1630,6 +1636,9 @@ class Xtra_EthereumNodeAccess {
 		var session = this.session;
 		var ethereumnodeaccessmodule = this.ethereumnodeaccessmodule;
 		
+		var artifact = web3contract.getArtifact();
+		var artifactpath = artifact.getArtifactPath();
+		
 		var contractuuid = web3contract.contractuuid;
 
 		var promise = new Promise(function (resolve, reject) {
@@ -1639,7 +1648,7 @@ class Xtra_EthereumNodeAccess {
 				
 				var postdata = [];
 				
-				postdata = {contractuuid: contractuuid, address: address};
+				postdata = {contractuuid: contractuuid, artifactpath: artifactpath, address: address};
 				
 				var promise2 = self.rest_post(resource, postdata, function (err, res) {
 					if (res) {
@@ -1682,6 +1691,9 @@ class Xtra_EthereumNodeAccess {
 		var promise = new Promise(function (resolve, reject) {
 			
 			try {
+				var artifact = web3_contract.getArtifact();
+				var artifactpath = artifact.getArtifactPath();
+				
 				var address = web3_contract.getAddress();
 				var contractinstanceuuid = web3_contract.contractinstanceuuid;
 				var abidefjsonstring = JSON.stringify(abidef);
@@ -1691,6 +1703,7 @@ class Xtra_EthereumNodeAccess {
 				var postdata = [];
 				
 				postdata = {contractinstanceuuid: contractinstanceuuid, 
+							artifactpath: artifactpath,
 							abidef: abidefjsonstring, 
 							params: JSON.stringify(params)};
 				
@@ -1728,14 +1741,20 @@ class Xtra_EthereumNodeAccess {
 		var promise = new Promise(function (resolve, reject) {
 			
 			try {
+				var web3contract = web3_contract_instance.getContract();
+				var artifact = web3contract.getArtifact();
+				
 				var address = web3_contract_instance.getAddress();
 				var contractinstanceuuid = web3_contract_instance.contractinstanceuuid;
-				
+
+				var artifactpath = artifact.getArtifactPath();
+
 				var resource = "/web3/contract/" + address + "/call";
 				
 				var postdata = [];
 				
-				postdata = {contractinstanceuuid: contractinstanceuuid, 
+				postdata = {contractinstanceuuid: contractinstanceuuid,
+							artifactpath: artifactpath,
 							methodname: methodname, 
 							params: JSON.stringify(params)};
 				
@@ -1822,8 +1841,13 @@ class Xtra_EthereumNodeAccess {
 			var promise = new Promise(function (resolve, reject) {
 				
 				try {
+					var web3contract = web3_contract_instance.getContract();
+					var artifact = web3contract.getArtifact();
+					
 					var address = web3_contract_instance.getAddress();
 					var contractinstanceuuid = web3_contract_instance.contractinstanceuuid;
+
+					var artifactpath = artifact.getArtifactPath();
 					
 					var resource = "/web3/contract/" + address + "/send";
 					
@@ -1837,7 +1861,8 @@ class Xtra_EthereumNodeAccess {
 					var time = (credentials['from'] ? credentials['from'] : null);
 					var duration = (credentials['during'] ? credentials['during'] : null);
 					
-					postdata = {contractinstanceuuid: contractinstanceuuid, 
+					postdata = {contractinstanceuuid: contractinstanceuuid,
+								artifactpath: artifactpath, 
 								walletaddress: walletaddress,
 								password: password,
 								time: time,
@@ -1881,7 +1906,7 @@ class Xtra_EthereumNodeAccess {
 
 		
 	//
-	// Truffle
+	// Truffle (obsolete, should use directly web3_ methods)
 	//
 	truffle_loadArtifact(artifactpath, callback) {
 		console.log("Xtra_EthereumNodeAccess.truffle_loadArtifact called for " + artifactpath);
