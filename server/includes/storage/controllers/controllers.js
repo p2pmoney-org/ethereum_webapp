@@ -32,7 +32,8 @@ class StorageControllers {
 		var jsonresult;
 		
 		try {
-			var session = Session.getSession(global, sessionuuid);
+			var section = Session.openSessionSection(global, sessionuuid, 'user_storage');
+			var session = section.getSession();
 			
 			if (session.isAuthenticated()) {
 				var storageservice = global.getServiceInstance('storage');
@@ -56,6 +57,7 @@ class StorageControllers {
 
 		global.log("user_storage response is " + JSON.stringify(jsonresult));
 	  	
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 
@@ -75,7 +77,8 @@ class StorageControllers {
 		var jsonresult;
 		
 		try {
-			var session = Session.getSession(global, sessionuuid);
+			var section = Session.openSessionSection(global, sessionuuid, 'put_user_storage');
+			var session = section.getSession();
 			
 			if (session.isAuthenticated()) {
 				var storageservice = global.getServiceInstance('storage');
@@ -100,6 +103,7 @@ class StorageControllers {
 
 		//global.log("user_storage response is " + JSON.stringify(jsonresult));
 	  	
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 
@@ -118,7 +122,8 @@ class StorageControllers {
 		var jsonresult;
 		
 		try {
-			var session = Session.getSession(global, sessionuuid);
+			var section = Session.openSessionSection(global, sessionuuid, 'put_user_storage');
+			var session = section.getSession();
 			
 			if (session.isAuthenticated()) {
 				var storageservice = global.getServiceInstance('storage');
@@ -142,6 +147,7 @@ class StorageControllers {
 
 		//global.log("user_storage response is " + JSON.stringify(jsonresult));
 	  	
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 	

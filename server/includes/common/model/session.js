@@ -3,6 +3,81 @@
  */
 'use strict';
 
+var SessionSection = class {
+	constructor(global, sessionuuid, name) {
+		this.global = global;
+		this.sessionuuid = sessionuuid;
+		this.name = name;
+		
+		this.events = [];
+		
+		this.uuid = global.guid();
+
+		this.session = null;
+		
+		this.record('section_opened_on');
+		
+		global.log('opening session section ' + this.uuid + (this.name ? ' with name "' + this.name : '"'));
+		
+		if (typeof SessionSection.opensectionnum === "undefined") {
+			SessionSection.opensectionnum = 1;
+			SessionSection.opensectionmax = 1;
+		}
+		else
+			SessionSection.opensectionnum++;
+		
+		if (SessionSection.opensectionmax < SessionSection.opensectionnum)
+			SessionSection.opensectionmax = SessionSection.opensectionnum;
+		
+		global.log('number of concurrent session section = ' + SessionSection.opensectionnum + ' (max seen = ' + SessionSection.opensectionmax + ')');
+
+		
+	}
+	
+	getSession() {
+		if (this.session)
+			return this.session;
+		
+		var global = this.global;
+
+		var requested_on = Date.now();
+		this.record('session_requested_on');
+		
+		this.session = Session.getSession(this.global, this.sessionuuid);
+		
+		var retrieved_on = Date.now();
+		this.record('session_retrieved_on');
+		
+		global.log('retrieving session ' + (this.name ? 'for "' + this.name + '" ' : '') + 'took ' + (retrieved_on - requested_on) + ' ms');
+		
+		return this.session;
+	}
+	
+	record(eventname) {
+		var global = this.global;
+		var now = Date.now();
+
+		this.events.push({name: eventname, time: now});
+	}
+	
+	close() {
+		var global = this.global;
+
+		global.log('closing session section ' + this.uuid + (this.name ? ' with name "' + this.name + '"': ''));
+		
+		this.record('section_opened_on');
+		
+		var opened_on = this.events[0].time;
+		var closed_on = Date.now();
+		
+		global.log('session section ' +  (this.name ? '"' +this.name + '" ' : '') + 'stayed open for ' + (closed_on - opened_on) + ' ms');
+			
+		SessionSection.opensectionnum--;
+		
+		global.log('number of concurrent session section = ' + SessionSection.opensectionnum);	}
+	
+};
+
 var _SessionInitLatch = class {
 	
 	constructor(global, session) {
@@ -61,7 +136,7 @@ var _SessionInitLatch = class {
 		
 		return _SessionInitLatch.map[key];
 	}
-}
+};
 
 
 class SessionMap {
@@ -199,6 +274,18 @@ class Session {
 	// persistence
 	isSticky() {
 		return (this.issticky !== false);
+	}
+	
+	openSection(name) {
+		var global = this.global;
+		var sessionuuid = this.sessionuuid;
+		var section = Session.openSessionSection(global, sessionuuid);
+		
+		section.session = this;
+	}
+	
+	closeSection(section) {
+		section.close();
 	}
 	
 	/*_acquiremutex(mutextype) {
@@ -483,6 +570,7 @@ class Session {
 		
 		// invoke hooks to let services interact with the session object
 		var orgisauthenticated = this.isauthenticated;
+		var orguseruuid = this.useruuid;
 		
 		var result = [];
 		
@@ -496,7 +584,8 @@ class Session {
 			global.log('isSessionAuthenticated_hook result is ' + JSON.stringify(result));
 		}
 		
-		var newisauthenticated  = this.useruuid;
+		var newisauthenticated  = this.isauthenticated;
+		var newuseruuid = this.useruuid;
 		
 		if (orgisauthenticated != newisauthenticated) {
 			// a hook changed the authentication flag
@@ -661,6 +750,7 @@ class Session {
 		}
 		
 		if (global.areSessionsSticky()) {
+			// sticky sessions (stateful server mode)
 			var sessionmap = Session.getSessionMap(global);
 			
 			var key = sessionuuid.toString();
@@ -688,7 +778,7 @@ class Session {
 			if (session.isready === false) {
 				session.initializationfinished = false;
 				
-				global.log('creating session initialization promise for session ' + sessionuuid);
+				global.log('creating session initialization promise for sticky session ' + sessionuuid);
 				
 				// we may go through this section several times because of issues with re-entrance
 				// and nodejs/javascript mono-threaded approach of stacking execution bits
@@ -696,11 +786,11 @@ class Session {
 				/// create a latch to start unstacking calls once one of them has finished the initialization
 				var sessionlatch = _SessionInitLatch.get(session);
 				
-				global.log('session sessionlatch retrieved for session ' + sessionuuid);
+				global.log('session sessionlatch retrieved for stikcy session ' + sessionuuid);
 				
-				var promise = new Promise(function (resolve, reject) {
+				var promise = new Promise(function _initStickySessionObject(resolve, reject) {
 					try {
-						global.log('starting initialization of session object for ' + sessionuuid);
+						global.log('starting initialization of sticky session object for ' + sessionuuid);
 
 						// check to see if it's in the persistence layer
 						var array = Session._sessionRecord(global, sessionuuid);
@@ -728,7 +818,7 @@ class Session {
 						
 						session.isready = true; // end of pseudo lock on session initialization
 						
-						global.log('session ' + sessionuuid + ' is now ready!');
+						global.log('sticky session ' + sessionuuid + ' is now ready!');
 
 						resolve(true);
 					}
@@ -766,20 +856,24 @@ class Session {
 			
 		}
 		else {
+			// non sticky session (stateless server mode)
+			// we don't keep sessions in memory beyond each call
 			var calluuid = global.guid();
 			
 			// create a new session object
 			session = new Session(global);
 			session.session_uuid = sessionuuid;
 			
+			session._calluuid = calluuid;
+			
 			global.log('creating non sticky session object for ' + sessionuuid + ' call ' + calluuid);
 			
 			var initializationfinished = false;
 			
-			global.log('creating session initialization promise for session ' + sessionuuid + ' call ' + calluuid);
-			var initializationpromise = new Promise(function (resolve, reject) {
+			global.log('creating session initialization promise for non sticky session ' + sessionuuid + ' call ' + calluuid);
+			var initializationpromise = new Promise(function _initTransientSessionObject(resolve, reject) {
 				try {
-					global.log('starting initialization of session object for ' + sessionuuid + ' call ' + calluuid);
+					global.log('starting initialization of non sticky session object for ' + sessionuuid + ' call ' + calluuid);
 
 					// check to see if it's in the persistence layer
 					var array = Session._sessionRecord(global, sessionuuid);
@@ -807,6 +901,8 @@ class Session {
 					
 					session.isready = true;
 					
+					global.log('non sticky session object for ' + sessionuuid + ' call ' + calluuid + ' is ready');
+
 					resolve(true);
 				}
 				catch(e) {
@@ -816,12 +912,12 @@ class Session {
 					reject(error);
 				}
 			})
-			.then(function (res) {
+			.then( (res) => {
 				global.log('session ' + sessionuuid + ' is now ready!');
 
 				initializationfinished = true;
 			})
-			.catch(function (err) {
+			.catch( (err) => {
 				console.log("error in session initialization for sessionuuid " + sessionuuid + ": " + err);
 				
 				initializationfinished = true;
@@ -850,6 +946,11 @@ class Session {
 		
 		sessionmap.pushSession(session);
 	}
+	
+	static openSessionSection(global, sessionuuid, sectionname) {
+		return new SessionSection(global, sessionuuid, sectionname);
+	}
+
 }
 
 

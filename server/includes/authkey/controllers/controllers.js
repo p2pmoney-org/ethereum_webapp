@@ -54,7 +54,8 @@ class AuthKeyControllers {
 			var commonservice = global.getServiceInstance('common');
 			var Session = commonservice.Session;
 
-			var session = Session.getSession(global, sessionuuid);
+			var section = Session.openSessionSection(global, sessionuuid, 'session_status');
+			var session = section.getSession();
 
 			if (session) {
 				var isanonymous = session.isAnonymous();
@@ -74,7 +75,8 @@ class AuthKeyControllers {
 
 		global.log("session_status response is " + JSON.stringify(jsonresult));
 	  	
-	  	res.json(jsonresult);
+	  	if (section) section.close();
+		res.json(jsonresult);
 	}
 
 	
@@ -99,7 +101,8 @@ class AuthKeyControllers {
 				var commonservice = global.getServiceInstance('common');
 				var Session = commonservice.Session;
 
-				var session = Session.getSession(global, sessionuuid);
+				var section = Session.openSessionSection(global, sessionuuid, 'session_authenticate');
+				var session = section.getSession();
 				
 				var user = authenticationserver.getUser(session, username);
 				
@@ -119,6 +122,7 @@ class AuthKeyControllers {
 
 		global.log("session_authenticate response is " + JSON.stringify(jsonresult));
 	  	
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 
@@ -140,7 +144,8 @@ class AuthKeyControllers {
 			var commonservice = global.getServiceInstance('common');
 			var Session = commonservice.Session;
 
-			var session = Session.getSession(global, sessionuuid);
+			var section = Session.openSessionSection(global, sessionuuid, 'session_logout');
+			var session = section.getSession();
 			var user = (session ? session.getUser() : null);
 
 			if (user && (user.getUserUUID() == useruuid)) {
@@ -160,6 +165,7 @@ class AuthKeyControllers {
 
 		global.log("session_logout response is " + JSON.stringify(jsonresult));
 	  	
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 
@@ -183,7 +189,8 @@ class AuthKeyControllers {
 				var commonservice = global.getServiceInstance('common');
 				var Session = commonservice.Session;
 
-				var session = Session.getSession(global, sessionuuid);
+				var section = Session.openSessionSection(global, sessionuuid, 'session_getUser');
+				var session = section.getSession();
 				
 				if (!session.isAnonymous()) {
 					var user = session.getUser();
@@ -205,6 +212,7 @@ class AuthKeyControllers {
 		}
 		
 	  	
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 
@@ -227,7 +235,8 @@ class AuthKeyControllers {
 		var jsonresult;
 		
 		try {
-			var session = Session.getSession(global, sessionuuid);
+			var section = Session.openSessionSection(global, sessionuuid, 'session_getCryptoKeys');
+			var session = section.getSession();
 			
 			if (!session.isAnonymous()) {
 				// get user details
@@ -285,6 +294,7 @@ class AuthKeyControllers {
 		}
 
 		
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 	
@@ -313,7 +323,8 @@ class AuthKeyControllers {
 		var jsonresult;
 		
 		try {
-			var session = Session.getSession(global, sessionuuid);
+			var section = Session.openSessionSection(global, sessionuuid, 'user_addKey');
+			var session = section.getSession();
 			
 			if (!session.isAnonymous()) {
 				var user = authenticationserver.getUserFromUUID(session, useruuid);
@@ -348,6 +359,7 @@ class AuthKeyControllers {
 		}
 
 		
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 
@@ -370,7 +382,8 @@ class AuthKeyControllers {
 		var jsonresult;
 		
 		try {
-			var session = Session.getSession(global, sessionuuid);
+			var section = Session.openSessionSection(global, sessionuuid, 'session_getAccountKeys');
+			var session = section.getSession();
 			
 			if (!session.isAnonymous()) {
 				// get user details
@@ -408,6 +421,7 @@ class AuthKeyControllers {
 		}
 
 		
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 
@@ -436,7 +450,8 @@ class AuthKeyControllers {
 		var jsonresult;
 		
 		try {
-			var session = Session.getSession(global, sessionuuid);
+			var section = Session.openSessionSection(global, sessionuuid, 'user_addAccount');
+			var session = section.getSession();
 			
 			if (!session.isAnonymous()) {
 				var user = authenticationserver.getUserFromUUID(session, useruuid);
@@ -472,6 +487,7 @@ class AuthKeyControllers {
 		}
 
 		
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 
@@ -501,7 +517,8 @@ class AuthKeyControllers {
 		var jsonresult;
 		
 		try {
-			var session = Session.getSession(global, sessionuuid);
+			var section = Session.openSessionSection(global, sessionuuid, 'user_updateAccount');
+			var session = section.getSession();
 			
 			if (!session.isAnonymous()) {
 				var user = authenticationserver.getUserFromUUID(session, useruuid);
@@ -535,6 +552,7 @@ class AuthKeyControllers {
 		}
 
 		
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 
@@ -558,7 +576,8 @@ class AuthKeyControllers {
 		var jsonresult;
 		
 		try {
-			var session = Session.getSession(global, sessionuuid);
+			var section = Session.openSessionSection(global, sessionuuid, 'user_reactivateAccount');
+			var session = section.getSession();
 			
 			if (!session.isAnonymous()) {
 				var user = authenticationserver.getUserFromUUID(session, useruuid);
@@ -589,6 +608,7 @@ class AuthKeyControllers {
 		}
 
 		
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 
@@ -612,7 +632,8 @@ class AuthKeyControllers {
 		var jsonresult;
 		
 		try {
-			var session = Session.getSession(global, sessionuuid);
+			var section = Session.openSessionSection(global, sessionuuid, 'user_deactivateAccount');
+			var session = section.getSession();
 			
 			if (!session.isAnonymous()) {
 				var user = authenticationserver.getUserFromUUID(session, useruuid);
@@ -642,6 +663,7 @@ class AuthKeyControllers {
 		}
 
 		
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 
@@ -665,7 +687,8 @@ class AuthKeyControllers {
 		var jsonresult;
 		
 		try {
-			var session = Session.getSession(global, sessionuuid);
+			var section = Session.openSessionSection(global, sessionuuid, 'user_removeAccount');
+			var session = section.getSession();
 			
 			if (!session.isAnonymous()) {
 				var user = authenticationserver.getUserFromUUID(session, useruuid);
@@ -695,6 +718,7 @@ class AuthKeyControllers {
 		}
 
 		
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 }

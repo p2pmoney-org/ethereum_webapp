@@ -33,6 +33,7 @@ class ClientContainerControllers {
 			var commonservice = global.getServiceInstance('common');
 			var Session = commonservice.Session;
 			var session = Session.getSession(global, sessionuuid);
+			var section = session.openSection();
 			
 			console.log('dev environment');
 			
@@ -43,6 +44,7 @@ class ClientContainerControllers {
 			jsonresult = {status: 1}
 		}
 
+	  	if (section) section.close();
 		res.json(jsonresult);
 	}
 	
@@ -66,6 +68,7 @@ class ClientContainerControllers {
 			var commonservice = global.getServiceInstance('common');
 			var Session = commonservice.Session;
 			var session = Session.getSession(global, sessionuuid);
+			var section = session.openSection();
 			
 			var clicontservice = global.getServiceInstance('client-container');
 			
@@ -81,8 +84,8 @@ class ClientContainerControllers {
 			global.log(e.stack);
 		}
 
+	  	if (section) section.close();
 	  	res.json(jsonresult);
-	  	
 	}
 
 	// public keys from private key
@@ -101,6 +104,7 @@ class ClientContainerControllers {
 			var commonservice = global.getServiceInstance('common');
 			var Session = commonservice.Session;
 			var session = Session.getSession(global, sessionuuid);
+			var section = session.openSection();
 			
 			var clicontservice = global.getServiceInstance('client-container');
 			
@@ -118,6 +122,7 @@ class ClientContainerControllers {
 			jsonresult = {status: 0, error: "exception could not get public keys"};
 		}
 
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 
@@ -138,6 +143,7 @@ class ClientContainerControllers {
 			var commonservice = global.getServiceInstance('common');
 			var Session = commonservice.Session;
 			var session = Session.getSession(global, sessionuuid);
+			var section = session.openSection();
 			
 			var clicontservice = global.getServiceInstance('client-container');
 			
@@ -155,6 +161,7 @@ class ClientContainerControllers {
 			jsonresult = {status: 0, error: "exception could not encrypt text"};
 		}
 
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 
@@ -175,6 +182,7 @@ class ClientContainerControllers {
 			var commonservice = global.getServiceInstance('common');
 			var Session = commonservice.Session;
 			var session = Session.getSession(global, sessionuuid);
+			var section = session.openSection();
 			
 			var clicontservice = global.getServiceInstance('client-container');
 			
@@ -192,6 +200,7 @@ class ClientContainerControllers {
 			jsonresult = {status: 0, error: "exception could not decrypt text"};
 		}
 
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 	
@@ -213,6 +222,7 @@ class ClientContainerControllers {
 			var commonservice = global.getServiceInstance('common');
 			var Session = commonservice.Session;
 			var session = Session.getSession(global, sessionuuid);
+			var section = session.openSection();
 			
 			var clicontservice = global.getServiceInstance('client-container');
 			
@@ -230,6 +240,7 @@ class ClientContainerControllers {
 			jsonresult = {status: 0, error: "exception could not encrypt text"};
 		}
 
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 
@@ -251,6 +262,7 @@ class ClientContainerControllers {
 			var commonservice = global.getServiceInstance('common');
 			var Session = commonservice.Session;
 			var session = Session.getSession(global, sessionuuid);
+			var section = session.openSection();
 			
 			var clicontservice = global.getServiceInstance('client-container');
 			
@@ -268,6 +280,7 @@ class ClientContainerControllers {
 			jsonresult = {status: 0, error: "exception could not decrypt text"};
 		}
 
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 	
@@ -289,6 +302,7 @@ class ClientContainerControllers {
 			var commonservice = global.getServiceInstance('common');
 			var Session = commonservice.Session;
 			var session = Session.getSession(global, sessionuuid);
+			var section = session.openSection();
 			
 			var clicontservice = global.getServiceInstance('client-container');
 			
@@ -306,6 +320,7 @@ class ClientContainerControllers {
 			jsonresult = {status: 0, error: "exception could get value"};
 		}
 
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 	
@@ -325,6 +340,7 @@ class ClientContainerControllers {
 			var commonservice = global.getServiceInstance('common');
 			var Session = commonservice.Session;
 			var session = Session.getSession(global, sessionuuid);
+			var section = session.openSection();
 			
 			var clicontservice = global.getServiceInstance('client-container');
 			
@@ -342,6 +358,7 @@ class ClientContainerControllers {
 			jsonresult = {status: 0, error: "exception could get value"};
 		}
 
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 	
@@ -368,6 +385,7 @@ class ClientContainerControllers {
 		
 		try {
 			var session = Session.getSession(global, sessionuuid);
+			var section = session.openSection();
 			
 			var clicontservice = global.getServiceInstance('client-container');
 			
@@ -399,6 +417,7 @@ class ClientContainerControllers {
 			jsonresult = {status: 0, error: "could not retrieve web3 information"};
 		}
 	  	
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 
@@ -421,6 +440,7 @@ class ClientContainerControllers {
 		
 		try {
 			var session = Session.getSession(global, sessionuuid);
+			var section = session.openSection();
 			
 			var clicontservice = global.getServiceInstance('client-container');
 			
@@ -444,6 +464,7 @@ class ClientContainerControllers {
 			jsonresult = {status: 0, error: "could not retrieve web3 information"};
 		}
 	  	
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 	
@@ -463,6 +484,7 @@ class ClientContainerControllers {
 
 		try {
 			var session = Session.getSession(global, sessionuuid);
+			var section = session.openSection();
 			
 			var clicontservice = global.getServiceInstance('client-container');
 			
@@ -490,6 +512,7 @@ class ClientContainerControllers {
 			jsonresult = {status: 0, error: "exception: " + e};
 		}
 		
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 	
@@ -509,6 +532,7 @@ class ClientContainerControllers {
 
 		try {
 			var session = Session.getSession(global, sessionuuid);
+			var section = session.openSection();
 			
 			var clicontservice = global.getServiceInstance('client-container');
 			
@@ -536,6 +560,7 @@ class ClientContainerControllers {
 			jsonresult = {status: 0, error: "exception: " + e};
 		}
 		
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 
@@ -560,6 +585,7 @@ class ClientContainerControllers {
 			var commonservice = global.getServiceInstance('common');
 			var Session = commonservice.Session;
 			var session = Session.getSession(global, sessionuuid);
+			var section = session.openSection();
 			
 			var clicontservice = global.getServiceInstance('client-container');
 			
@@ -581,8 +607,8 @@ class ClientContainerControllers {
 			jsonresult = {status: 0, error: "could not retrieve node information"};
 		}
 	  	
+	  	if (section) section.close();
 	  	res.json(jsonresult);
-	  	
 	}
 
 
@@ -602,6 +628,7 @@ class ClientContainerControllers {
 			var commonservice = global.getServiceInstance('common');
 			var Session = commonservice.Session;
 			var session = Session.getSession(global, sessionuuid);
+			var section = session.openSection();
 			
 			var clicontservice = global.getServiceInstance('client-container');
 			
@@ -617,8 +644,8 @@ class ClientContainerControllers {
 			global.log(e.stack);
 		}
 
+	  	if (section) section.close();
 	  	res.json(jsonresult);
-	  	
 	}
 
 	
@@ -642,6 +669,7 @@ class ClientContainerControllers {
 			var commonservice = global.getServiceInstance('common');
 			var Session = commonservice.Session;
 			var session = Session.getSession(global, sessionuuid);
+			var section = session.openSection();
 			
 			var clicontservice = global.getServiceInstance('client-container');
 			
@@ -657,6 +685,7 @@ class ClientContainerControllers {
 			global.log(e.stack);
 		}
 
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 	
@@ -675,6 +704,7 @@ class ClientContainerControllers {
 			var commonservice = global.getServiceInstance('common');
 			var Session = commonservice.Session;
 			var session = Session.getSession(global, sessionuuid);
+			var section = session.openSection();
 			
 			var clicontservice = global.getServiceInstance('client-container');
 			
@@ -690,6 +720,7 @@ class ClientContainerControllers {
 			global.log(e.stack);
 		}
 
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 
@@ -713,6 +744,7 @@ class ClientContainerControllers {
 			var commonservice = global.getServiceInstance('common');
 			var Session = commonservice.Session;
 			var session = Session.getSession(global, sessionuuid);
+			var section = session.openSection();
 			
 			var clicontservice = global.getServiceInstance('client-container');
 			
@@ -751,6 +783,7 @@ class ClientContainerControllers {
 		}
 
 		
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 
@@ -775,6 +808,7 @@ class ClientContainerControllers {
 			var commonservice = global.getServiceInstance('common');
 			var Session = commonservice.Session;
 			var session = Session.getSession(global, sessionuuid);
+			var section = session.openSection();
 			
 			var clicontservice = global.getServiceInstance('client-container');
 			
@@ -799,6 +833,7 @@ class ClientContainerControllers {
 		}
 
 		
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 
@@ -824,6 +859,7 @@ class ClientContainerControllers {
 			var commonservice = global.getServiceInstance('common');
 			var Session = commonservice.Session;
 			var session = Session.getSession(global, sessionuuid);
+			var section = session.openSection();
 			
 			var clicontservice = global.getServiceInstance('client-container');
 			
@@ -846,6 +882,7 @@ class ClientContainerControllers {
 		}
 
 		
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 
@@ -869,6 +906,7 @@ class ClientContainerControllers {
 			var commonservice = global.getServiceInstance('common');
 			var Session = commonservice.Session;
 			var session = Session.getSession(global, sessionuuid);
+			var section = session.openSection();
 			
 			var clicontservice = global.getServiceInstance('client-container');
 			
@@ -891,6 +929,7 @@ class ClientContainerControllers {
 		}
 
 		
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 
@@ -914,6 +953,7 @@ class ClientContainerControllers {
 			var commonservice = global.getServiceInstance('common');
 			var Session = commonservice.Session;
 			var session = Session.getSession(global, sessionuuid);
+			var section = session.openSection();
 			
 			var clicontservice = global.getServiceInstance('client-container');
 			
@@ -936,6 +976,7 @@ class ClientContainerControllers {
 		}
 
 		
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 
@@ -959,6 +1000,7 @@ class ClientContainerControllers {
 			var commonservice = global.getServiceInstance('common');
 			var Session = commonservice.Session;
 			var session = Session.getSession(global, sessionuuid);
+			var section = session.openSection();
 			
 			var clicontservice = global.getServiceInstance('client-container');
 			
@@ -981,6 +1023,7 @@ class ClientContainerControllers {
 		}
 
 		
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 	
@@ -1005,6 +1048,7 @@ class ClientContainerControllers {
 			var commonservice = global.getServiceInstance('common');
 			var Session = commonservice.Session;
 			var session = Session.getSession(global, sessionuuid);
+			var section = session.openSection();
 			
 			var clicontservice = global.getServiceInstance('client-container');
 			
@@ -1025,6 +1069,7 @@ class ClientContainerControllers {
 		}
 
 		
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 
@@ -1045,6 +1090,7 @@ class ClientContainerControllers {
 			var commonservice = global.getServiceInstance('common');
 			var Session = commonservice.Session;
 			var session = Session.getSession(global, sessionuuid);
+			var section = session.openSection();
 			
 			var clicontservice = global.getServiceInstance('client-container');
 			
@@ -1065,6 +1111,7 @@ class ClientContainerControllers {
 		}
 
 		
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 
@@ -1087,6 +1134,7 @@ class ClientContainerControllers {
 			var commonservice = global.getServiceInstance('common');
 			var Session = commonservice.Session;
 			var session = Session.getSession(global, sessionuuid);
+			var section = session.openSection();
 			
 			var clicontservice = global.getServiceInstance('client-container');
 			
@@ -1107,6 +1155,7 @@ class ClientContainerControllers {
 		}
 
 		
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 
@@ -1130,6 +1179,7 @@ class ClientContainerControllers {
 			var commonservice = global.getServiceInstance('common');
 			var Session = commonservice.Session;
 			var session = Session.getSession(global, sessionuuid);
+			var section = session.openSection();
 			
 			var clicontservice = global.getServiceInstance('client-container');
 			
@@ -1150,6 +1200,7 @@ class ClientContainerControllers {
 		}
 
 		
+	  	if (section) section.close();
 	  	res.json(jsonresult);
 	}
 
