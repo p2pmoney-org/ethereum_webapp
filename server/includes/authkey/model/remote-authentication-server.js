@@ -65,9 +65,26 @@ class RemoteAuthenticationServer {
 		var rest_server_url = this.rest_server_url;
 		var	rest_server_api_path = this.rest_server_api_path;
 		
+		// look if it is in cache
+		var cachename = 'authkey_remoteuserdetails';
+		var userdetailcache = global.getExecutionVariable(cachename);
+		
+		if (!userdetailcache) {
+			userdetailcache = global.createCacheObject(cachename);
+			userdetailcache.setValidityLimit(300000); // 5 mn
+			global.setExecutionVariable(cachename, userdetailcache);
+		}
+
+		var key = sessionuuid + '@' + rest_server_url + rest_server_api_path;
+		
+		var userdetails = userdetailcache.getValue(key);
+		
+		if (userdetails)
+			return userdetails;
+		
+		// not in cache (or dimmed obsolete)
 		var restcon = session.getRestConnection(rest_server_url, rest_server_api_path);
 		
-		var userdetails;
 		var finished = false;
 		
 		try {
@@ -95,6 +112,9 @@ class RemoteAuthenticationServer {
 		// wait to turn into synchronous call
 		while(!finished)
 		{global.deasync().runLoopOnce();}
+		
+		// put in cache
+		userdetailcache.putValue(key, userdetails);
 		
 		return userdetails;
 	}
