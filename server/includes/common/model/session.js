@@ -254,9 +254,10 @@ class Session {
 		this.isauthenticated = false;
 		
 		// object map
-		this.objectmap = Object.create(null);
+		this.objectmap = Object.create(null); // only in memory
 		
-		this.sessionvar = {}; // saved in persistence layer
+		// variables
+		this.sessionvar = Object.create(null); // saved in persistence layer
 	}
 	
 	getGlobalInstance() {
@@ -473,7 +474,8 @@ class Session {
 	
 
 
-	// session var
+	// transient variable (that do not outlive session object,
+	// sticky or not)
 	pushObject(key, object) {
 		var keystring = key.toString().toLowerCase();
 		this.objectmap[keystring] = object;
@@ -489,7 +491,10 @@ class Session {
 		var keystring = key.toString().toLowerCase();
 		delete this.map[key];
 	}
-	
+
+
+	// session variables (saved in database
+	// session table)
 	setSessionVariable(key, value) {
 		var global = this.global;
 		

@@ -380,8 +380,12 @@ class Service {
 	_getSessionTransientContext(session) {
 		var name = 'service-' + this.name;
 		
-		if (!session[name]) session[name] = {};
-		var sessioncontext = session[name];
+		var sessioncontext = session.getObject(name);
+		
+		if (!sessioncontext) {
+			sessioncontext = {};
+			session.pushObject(name, sessioncontext);
+		}
 		
 		return sessioncontext;
 	}

@@ -1384,14 +1384,11 @@ class EthereumNode {
 		if (!contractartifact)
 			throw 'EthereumNode::putWeb3ContractArtifact passed a null value for contractartifactuuid ' + contractartifactuuid;
 		
-		if (!session.isSticky())
-			return;
-		
 		try {
 			contractartifact.artifactuuid = contractartifactuuid;
 			session.pushObject(contractartifactuuid, contractartifact);
 			
-			if (contractartifact) {
+			if (false && session.isSticky()) { // section to delete
 				global.log("EthereumNode.putWeb3ContractArtifact saving artifact in session variables for " + contractartifactuuid);
 				
 				var artifactpath = contractartifact.artifactpath;
@@ -1428,12 +1425,12 @@ class EthereumNode {
 	getWeb3ContractArtifact(artifactuuid, artifactpath) {
 		var global = this.session.getGlobalInstance();
 		var session = this.session;
-
-		if (session.isSticky()) {
-			// look in memory from artifactuuid or reconstruct from session's variables
-			var contractartifact = session.getObject(artifactuuid);
-			
-			if (!contractartifact) {
+		
+		// look in memory from artifactuuid or reconstruct from session's variables
+		var contractartifact = session.getObject(artifactuuid);
+		
+		if (!contractartifact) {
+			if (false && session.isSticky()) { // section to delete
 				global.log("EthereumNode.getWeb3ContractArtifact looking for artifact in session variables for " + artifactuuid);
 				
 				var value = session.getSessionVariable(artifactuuid);
@@ -1448,12 +1445,17 @@ class EthereumNode {
 					global.log("EthereumNode.getWeb3ContractArtifact could not find artifact in session variables for " + artifactuuid);
 				}
 			}
+			else {
+				// create on the fly instance with parameters passed
+				var contractartifact = this.web3_loadArtifact(artifactpath);
+				
+				if (contractartifact)
+				this.putWeb3ContractArtifact(artifactuuid, contractartifact);
+			}
 		}
 		else {
-			// create on the fly instance with parameters passed
-			var contractartifact = this.web3_loadArtifact(artifactpath);
+			global.log("EthereumNode.getWeb3ContractArtifact artifact in session.getObject for " + artifactuuid);
 		}
-		
 		
 		return contractartifact;
 	}
@@ -1482,14 +1484,11 @@ class EthereumNode {
 		if (!web3contract)
 			throw 'EthereumNode::putWeb3Contract passed a null value for contractuuid ' + contractuuid;
 		
-		if (!session.isSticky())
-			return;
-		
 		try {
 			web3contract.contractuuid = contractuuid;
 			session.pushObject(contractuuid, web3contract);
-
-			if (web3contract) {
+			
+			if (false && session.isSticky()) { // section to delete
 				global.log("EthereumNode.putWeb3Contract saving contract in session variables for " + contractuuid);
 				
 				var artifactuuid = web3contract.artifactuuid;
@@ -1498,6 +1497,7 @@ class EthereumNode {
 				var value = {artifactuuid: artifactuuid};
 				session.setSessionVariable(contractuuid, value);
 			}
+
 		}
 		catch(e) {
 			global.log("exception in EthereumNode.putWeb3Contract: " + e);
@@ -1537,12 +1537,12 @@ class EthereumNode {
 	getWeb3Contract(contractuuid, artifactpath) {
 		var global = this.session.getGlobalInstance();
 		var session = this.session;
-
-		if (session.isSticky()) {
-			// look in memory from contractuuid or reconstruct from session's variables
-			var web3contract = this.session.getObject(contractuuid);
-			
-			if (!web3contract) {
+		
+		// look in memory from contractuuid or reconstruct from session's variables
+		var web3contract = this.session.getObject(contractuuid);
+		
+		if (!web3contract) {
+			if (false && session.isSticky()) { // section to delete
 				global.log("EthereumNode.getWeb3Contract looking for contract in session variables for " + contractuuid);
 				
 				var value = session.getSessionVariable(contractuuid);
@@ -1557,13 +1557,18 @@ class EthereumNode {
 					global.log("EthereumNode.getWeb3Contract could not find contract in session variables for " + contractuuid);
 				}
 			}
+			else {
+				// create on the fly instance with parameters passed
+				var contractartifact = this.web3_loadArtifact(artifactpath);
+				var web3contract = this.web3_contract_load(contractartifact);
+				
+				if (web3contract)
+				this.putWeb3Contract(contractuuid, web3contract);
+			}
 		}
 		else {
-			// create on the fly instance with parameters passed
-			var contractartifact = this.web3_loadArtifact(artifactpath);
-			var web3contract = this.web3_contract_load(contractartifact);
+			global.log("EthereumNode.getWeb3Contract contract found session.getObject for " + contractuuid);
 		}
-		
 		
 		return web3contract;
 	}
@@ -1763,14 +1768,11 @@ class EthereumNode {
 		if (!contractinstance)
 			throw 'EthereumNode::putWeb3ContractInstance passed a null value for contractinstanceuuid ' + contractinstanceuuid;
 		
-		if (!session.isSticky())
-			return;
-		
 		try {
-			if (contractinstance) {
-				contractinstance.contractinstanceuuid = contractinstanceuuid;
-				session.pushObject(contractinstanceuuid, contractinstance);
-				
+			contractinstance.contractinstanceuuid = contractinstanceuuid;
+			session.pushObject(contractinstanceuuid, contractinstance);
+			
+			if (false && session.isSticky()) { // section to delete
 				global.log("EthereumNode.putWeb3ContractInstance saving instance in session variables for " + contractinstanceuuid);
 				
 				var contractuuid = contractinstance.getContractUUID();
@@ -1786,11 +1788,6 @@ class EthereumNode {
 				global.log("EthereumNode.putWeb3ContractInstance value is " + JSON.stringify(value));
 
 				session.setSessionVariable(contractinstanceuuid, value);
-			}
-			else {
-				global.log("EthereumNode.putWeb3ContractInstance trying to push null contractinstancet for contractinstanceuuid " + contractinstanceuuid);
-			
-				global.log(e.stack);
 			}
 		}
 		catch(e) {
@@ -1842,11 +1839,11 @@ class EthereumNode {
 		var global = this.session.getGlobalInstance();
 		var session = this.session;
 		
-		if (session.isSticky()) {
-			// look in memory from contractinstanceuuid or reconstruct from session's variables
-			var contractinstance = this.session.getObject(contractinstanceuuid);
-			
-			if (!contractinstance)  {
+		// look in memory from contractinstanceuuid or reconstruct from session's variables
+		var contractinstance = this.session.getObject(contractinstanceuuid);
+		
+		if (!contractinstance)  {
+			if (false && session.isSticky()) { // section to delete
 				global.log("EthereumNode.getWeb3ContractInstance looking instance in session variables for " + contractinstanceuuid);
 				
 				var value = session.getSessionVariable(contractinstanceuuid);
@@ -1862,13 +1859,18 @@ class EthereumNode {
 					global.log("EthereumNode.getWeb3ContractInstance could not find instance in session variables for " + contractinstanceuuid);
 				}
 			}
-			
+			else {
+				// create on the fly instance with parameters passed
+				var contractartifact = this.web3_loadArtifact(artifactpath);
+				var web3contract = this.web3_contract_load(contractartifact);
+				var contractinstance = this.web3_contract_at(web3contract, address);
+				
+				if (contractinstance)
+					this.putWeb3ContractInstance(contractinstanceuuid, contractinstance);
+			}
 		}
 		else {
-			// create on the fly instance with parameters passed
-			var contractartifact = this.web3_loadArtifact(artifactpath);
-			var web3contract = this.web3_contract_load(contractartifact);
-			var contractinstance = this.web3_contract_at(web3contract, address);
+			global.log("EthereumNode.getWeb3ContractInstance instance found in session.getObject for " + contractinstanceuuid);
 		}
 
 		return contractinstance;

@@ -174,10 +174,15 @@ class MySqlConnection {
 		var finished = false;
 
 		this.connection.query(queryString, function(err, rows, fields) {
-		    if (err) throw err;
+		   // if (err) throw err;
 		    
-		    result['rows'] = rows;
-		    result['fields'] = fields;
+			if (!err) {
+				result['rows'] = rows;
+			    result['fields'] = fields;
+			}
+			else {
+				global.log("error in MySqlConnection.execute: " + err);
+			}
 		    
 		    finished = true;
 		    
@@ -195,8 +200,8 @@ class MySqlConnection {
 		if (!this.connection)
 			this._connect();
 		
-		if (!this.connectionactive)
-			return val;
+		/*if (!this.connectionactive)
+			return val;*/
 		
 		return this.connection.escape(val);
 	}
@@ -205,8 +210,8 @@ class MySqlConnection {
 		if (!this.connection)
 			this._connect();
 		
-		if (!this.connectionactive)
-			return id;
+		/*if (!this.connectionactive)
+			return id;*/
 		
 		return this.connection.escapeId(id);
 	}

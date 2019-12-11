@@ -60,6 +60,10 @@ class DataBasePersistor {
 	
 	getUserArrayFromUUID(useruuid) {
 		var global = this.global;
+		var array = {};
+		
+		if (!useruuid)
+			return array;
 		
 		var mysqlcon = global.getMySqlConnection();
 		
@@ -74,8 +78,6 @@ class DataBasePersistor {
 		// execute query
 		var result = mysqlcon.execute(sql);
 		
-		
-		var array = {};
 		
 		if (result) {
 			var rows = (result['rows'] ? result['rows'] : []);
