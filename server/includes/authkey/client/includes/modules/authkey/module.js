@@ -26,6 +26,11 @@ var Module = class {
 		}
 	}
 	
+	isActivated() {
+		return this.activated;
+	}
+	
+	
 	init() {
 		console.log('module init called for ' + this.name);
 		
@@ -455,6 +460,12 @@ var Module = class {
 		if (session instanceof SessionClass !== true)
 			throw 'must pass a session object as first parameter!';
 		
+		if (this.activated === false) {
+			if (callback)
+				callback(global.t('authkey module is not activated'), null);
+			return;
+		}
+
 		var global = session.getGlobalObject();
 		
 		var app = this._getAppObject();
@@ -522,6 +533,9 @@ var Module = class {
 		
 		var global = session.getGlobalObject();
 		
+		if (this.activated === false)
+			return false;
+
 		var app = this._getAppObject();
 		
 		var commonmodule = global.getModuleObject('common');
@@ -557,6 +571,9 @@ var Module = class {
 	alterLoginForm_hook(result, params) {
 		console.log('alterLoginForm_hook called for ' + this.name);
 		
+		if (this.activated === false)
+			return false;
+
 		var global = this.global;
 
 		var $scope = params[0];
@@ -621,6 +638,9 @@ var Module = class {
 	handleLoginSubmit_hook(result, params) {
 		console.log('handleLoginSubmit_hook called for ' + this.name);
 
+		if (this.activated === false)
+			return false;
+
 		var $scope = params[0];
 		var session = params[1];
 		
@@ -637,6 +657,9 @@ var Module = class {
 	alterLogoutForm_hook(result, params) {
 		console.log('alterLogoutForm_hook called for ' + this.name);
 		
+		if (this.activated === false)
+			return false;
+
 		var $scope = params[0];
 		var logoutform = params[1];
 		var session = params[2];
@@ -645,6 +668,9 @@ var Module = class {
 	handleLogoutSubmit_hook(result, params) {
 		console.log('handleLogoutSubmit_hook called for ' + this.name);
 		
+		if (this.activated === false)
+			return false;
+
 		var $scope = params[0];
 		var session = params[1];
 		
@@ -658,6 +684,14 @@ var Module = class {
 	// vaults
 	_openVault(session, vaultname, passphrase, vaulttype, callback) {
 		var global = this.global;
+		
+		if (this.activated === false) {
+			if (callback)
+				callback(global.t('authkey module is not activated'), null);
+			return;
+		}
+
+
 		var app = this._getAppObject();
 		var commonmodule = global.getModuleObject('common');
 		
@@ -743,6 +777,13 @@ var Module = class {
 
 	_createVault(session, vaultname, passphrase, vaulttype, callback) {
 		var global = this.global;
+		
+		if (this.activated === false) {
+			if (callback)
+				callback(global.t('authkey module is not activated'), null);
+			return;
+		}
+
 		var app = this._getAppObject();
 		var commonmodule = global.getModuleObject('common');
 		

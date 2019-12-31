@@ -33,6 +33,10 @@ class XtraConfigModule {
 		}
 	}
 	
+	isActivated() {
+		return this.activated;
+	}
+	
 	overloadEthereumNodeAccess(choice) {
 		if (choice === false) {
 			this.overload_ethereum_node_access = false;
@@ -42,6 +46,10 @@ class XtraConfigModule {
 		}
 	}
 	
+	isEthereumNodeAccessOverloaded() {
+		return this.overload_ethereum_node_access;
+	}
+	
 	overloadStorageAccess(choice) {
 		if (choice === false) {
 			this.overload_storage_access = false;
@@ -49,6 +57,10 @@ class XtraConfigModule {
 		else if (this.overload_storage_access === false) {
 			this.overload_storage_access = true;
 		}
+	}
+	
+	isStorageAccessOverloaded() {
+		return this.overload_storage_access;
 	}
 	
 	registerAdditionalModules() {
