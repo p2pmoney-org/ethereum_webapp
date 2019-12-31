@@ -12,10 +12,12 @@ class Service {
 		
 		this.EthereumNode = require('./model/ethnode.js');
 		
-		this.contracts = {};
+		this.contracts = null;
 		
 		this.web3_provider_url = null; // default
 		this.web3_provider_port= null;
+		
+		this.web3_providers = null;
 	}
 	
 	loadService() {
@@ -24,6 +26,8 @@ class Service {
 		global.log('loadService called for service ' + this.name);
 		
 		this.contracts = global.readJson('contracts');
+		
+		this.web3_providers = global.readJson('web3providers');
 		
 		var config = global.config;
 		this.web3_provider_url = (config && (typeof config["web3_provider_url"] != 'undefined') ? config["web3_provider_url"] : 'http://localhost');
@@ -247,20 +251,20 @@ class Service {
 	}
 	
 	_getBuiltInContractMap() {
-		if (this.uuidmap)
-			return this.uuidmap;
+		if (this.contractuuidmap)
+			return this.contractuuidmap;
 		
-		this.uuidmap = Object.create(null);
+		this.contractuuidmap = Object.create(null);
 		
 		var contracts = this.contracts;
 		
 		for (var i = 0; i < contracts.length; i++) {
 			var contract = contracts[i];
 			var contractuuid = contract.uuid;
-			this.uuidmap[contractuuid] = contract;
+			this.contractuuidmap[contractuuid] = contract;
 		}
 		
-		return this.uuidmap;
+		return this.contractuuidmap;
 	}
 	
 	putUserContent_hook(result, params) {
@@ -314,10 +318,6 @@ class Service {
 		var providerurl;
 		var key ;
 		
-		// map of providers
-		var session_web3_provider_map = (session.web3_provider_map ? session.web3_provider_map : session.web3_provider_map = Object.create(null));
-
-
 		if (!web3providerurl) {
 			// asking for default
 			if (session.ethereum_node)
@@ -326,10 +326,11 @@ class Service {
 			providerurl = this.getWeb3ProviderFullUrl(session);
 		}
 		else {
-			key = web3providerurl.toLowerCase();
+			// look if we have already created a web3provider
+			var web3provider = this.getWeb3ProviderInstance(session, web3providerurl);
 				
-			if (session_web3_provider_map[key])
-				return session_web3_provider_map[key].getEthereumNodeInstance();
+			if (web3provider)
+				return web3provider.getEthereumNodeInstance();
 			
 			providerurl = web3providerurl;
 		}
@@ -351,16 +352,11 @@ class Service {
 			global.log('createEthereumNodeInstance_hook result is ' + JSON.stringify(result));
 		}
 		
-		key = providerurl.toLowerCase();
-
-		if (!session_web3_provider_map[key]) {
-			// put in map
-			var Web3Provider = require('./model/web3provider.js');
-			var web3provider = new Web3Provider(session, providerurl, ethereum_node);
-			
-			session_web3_provider_map[key] = web3provider;
-		}
-
+		// create provider
+		var web3provider = this.createWeb3ProviderInstance(session, providerurl, ethereum_node);
+		
+		// and put in map
+		this.putWeb3ProviderInstance(session, web3provider);
 		
 		if (!web3providerurl) {
 			// put in default
@@ -369,6 +365,80 @@ class Service {
 		
 		
 		return ethereum_node;
+	}
+	
+	// web providers
+	_findBuiltInWeb3Provider(url) {
+		if (!this.web3_providers)
+			return;
+		
+		var web3providers = this.web3_providers;
+		
+		for (var i = 0; i < web3providers.length; i++) {
+			var web3provider = web3providers[i];
+			var web3providerurl = web3provider.url;
+			
+			if (web3providerurl == url)
+			return web3provider;
+		}
+	}
+	
+
+	getWeb3ProviderInstance(session, providerurl) {
+		var key = providerurl.toLowerCase();
+
+		// map of providers
+		var session_web3_provider_map = (session.web3_provider_map ? session.web3_provider_map : session.web3_provider_map = Object.create(null));
+
+		return session_web3_provider_map[key];
+	}
+	
+	putWeb3ProviderInstance(session, web3provider) {
+		var providerurl = web3provider.getWeb3ProviderUrl();
+		var key = providerurl.toLowerCase();
+
+		// map of providers
+		var session_web3_provider_map = (session.web3_provider_map ? session.web3_provider_map : session.web3_provider_map = Object.create(null));
+
+		session_web3_provider_map[key] = web3provider;
+	}
+
+	
+	createWeb3ProviderInstance(session, providerurl, ethereum_node) {
+		var global = this.global;
+		
+		// create instance
+		var Web3Provider = require('./model/web3provider.js');
+		var web3provider = new Web3Provider(session, providerurl, ethereum_node);
+		
+		// invoke hooks to let services interact with the new web3provider object
+		var result = [];
+		
+		var params = [];
+		
+		params.push(web3provider);
+
+		var ret = global.invokeHooks('createWeb3ProviderInstance_hook', result, params);
+		
+		// look if we have authentication info
+		var web3_provider_config = this._findBuiltInWeb3Provider(providerurl);
+		
+		if (web3_provider_config) {
+			var web3_provider_auth_basic_user = web3_provider_config.auth_basic_user;
+			var web3_provider_auth_basic_password = web3_provider_config.auth_basic_password;
+			
+			if ((web3_provider_auth_basic_user != null) && (web3_provider_auth_basic_password != null)) {
+				var auth_basic = {username: web3_provider_auth_basic_user, password: web3_provider_auth_basic_password};
+				
+				web3provider.setVariable('auth_basic', auth_basic);
+			}
+		}
+
+		
+		// put in map
+		this.putWeb3ProviderInstance(session, web3provider);
+		
+		return web3provider;
 	}
 	
 	buildWeb3ProviderUrl(web3_provider_url, web3_provider_port) {

@@ -10,8 +10,19 @@ class Web3Provider {
 		
 		this.uuid = session.guid();
 		
+		this.varmap = Object.create(null);
 		
 		this.ethereumnodeaccessinstance = ethereumnodeaccessinstance;
+	}
+	
+	setVariable(key, value) {
+		this.varmap[key] = value;
+	}
+	
+	getVariable(key) {
+		if (key in this.varmap) {
+			return this.varmap[key];
+		}
 	}
 	
 	getUUID() {

@@ -157,29 +157,34 @@ class EthereumNode {
 	setWeb3ProviderFullUrl(web3providerfullurl) {
 		this.web3providerurl = web3providerfullurl;
 		
-		/*var session = this.session;
-		var global = this.session.getGlobalInstance();
-		var ethnodeservice = global.getServiceInstance('ethnode');
-		
-		ethnodeservice.setWeb3ProviderFullUrl(session, web3providerfullurl);*/
-		
 		this.clearWeb3Instance();
 	}
 	
 	getWeb3ProviderFromUrl(web3providerfullurl) {
-		var global = this.session.getGlobalInstance();
-		
+		var session = this.session;
+		var global = session.getGlobalInstance();
 		var Web3 = global.require('web3');
-
-		/*if (this.web3_version == "1.0.x") {
-			var web3providerwsurl = "ws:" + web3providerfullurl.substring(5);
-			var web3Provider =   new Web3.providers.WebsocketProvider(web3providerwsurl);
+		
+		var options = {};
+		
+		options.headers = [];
+		
+		var ethnodeservice = global.getServiceInstance('ethnode');
+		
+		var _web3providerinstance = ethnodeservice.getWeb3ProviderInstance(session, web3providerfullurl);
+		
+		var auth_basic = (_web3providerinstance ? _web3providerinstance.getVariable('auth_basic') : null);
+		if (auth_basic) {
+			var username = auth_basic.username;
+			var password = auth_basic.password;
+			
+			var auth_value = "Basic " + Buffer.from(username + ":" + password).toString('base64')
+			
+			options.headers.push({name: "Authorization", value: auth_value});
+			
 		}
-		else {
-			var web3Provider =   new Web3.providers.HttpProvider(web3providerfullurl);
-		}*/
-	
-		var web3Provider =  new Web3.providers.HttpProvider(web3providerfullurl);
+
+		var web3Provider =  new Web3.providers.HttpProvider(web3providerfullurl, options);
 		
 		return web3Provider;
 	}
@@ -195,10 +200,6 @@ class EthereumNode {
 
 		var Web3 = global.require('web3');
 
-		/*if (this.web3_version == "1.0.x") {
-			Web3.providers.HttpProvider.prototype.sendAsync = Web3.providers.HttpProvider.prototype.send;
-		}*/
-		  
 		return new Web3(web3Provider);		
 	}
 	
@@ -215,10 +216,6 @@ class EthereumNode {
 		
 		var web3Provider = this.getWeb3Provider();
 		
-		/*if (this.web3_version == "1.0.x") {
-			Web3.providers.HttpProvider.prototype.sendAsync = Web3.providers.HttpProvider.prototype.send;
-		}*/
-		  
 		var web3instance = this.getWeb3InstanceFromProvider(web3Provider);
 		
 		this.setWeb3Instance(web3instance);
