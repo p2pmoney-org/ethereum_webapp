@@ -145,9 +145,35 @@ class Xtra_EthereumNodeAccess {
 	    var rest_server_url = this.session.getXtraConfigValue('rest_server_url');
 	    var rest_server_api_path = this.session.getXtraConfigValue('rest_server_api_path');
 
-	    this.rest_connection = this.session.createRestConnection(rest_server_url, rest_server_api_path);
+    	// we look in Config to potentially overload default
+		if (Config && (Config.get)  && (Config.get('ethnode_server_url')))
+    		rest_server_url = Config.get('ethnode_server_url');
+
+    	// api_path
+    	if (Config && (Config.get)  && (Config.get('ethnode_server_api_path')))
+    		rest_server_api_path = Config.get('ethnode_server_api_path');
+    	
+    	// we look at session's level to see if value has been overloaded at that level
+    	var ethnode_rest_server_url = this.session.getXtraConfigValue('ethnode_server_url');
+    	var ethnode_rest_server_api_path = this.session.getXtraConfigValue('ethnode_server_url');
+    	
+    	if (ethnode_rest_server_url && ethnode_rest_server_api_path) {
+    		rest_server_url = ethnode_rest_server_url;
+    		rest_server_api_path = ethnode_rest_server_api_path;
+    	}
+
+
+
+    	this.rest_connection = this.session.createRestConnection(rest_server_url, rest_server_api_path);
 		
 		return this.rest_connection;
+	}
+	
+	setRestConnection(restconnection) {
+		if (!restconnection)
+			return;
+		
+		this.rest_connection = restconnection;
 	}
 	
 	rest_get(resource, callback) {

@@ -30,6 +30,13 @@ class Xtra_StorageAccess {
 		return this.rest_connection;
 	}
 	
+	setRestConnection(restconnection) {
+		if (!restconnection)
+			return;
+		
+		this.rest_connection = restconnection;
+	}
+	
 	rest_get(resource, callback) {
 		var rest_connection = this.getRestConnection();
 		
