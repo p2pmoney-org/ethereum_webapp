@@ -203,6 +203,10 @@ var Module = class {
 		
 		var session = params[0];
 		
+		// look if session deactivates authkey
+		if (session.activate_authkey_server_access === false)
+			return false;
+		
 		if (!session[this.name]) session[this.name] = {};
 		var sessioncontext = session[this.name];
 		
@@ -327,6 +331,10 @@ var Module = class {
 
 		var session = params[0];
 		
+		// look if session deactivates authkey
+		if (session.activate_authkey_server_access === false)
+			return false;
+		
 		var nextget = result.get;
 		result.get = (err, keyarray) => {
 
@@ -361,6 +369,10 @@ var Module = class {
 		var self = this;
 		
 		var session = params[0];
+		
+		// look if session deactivates authkey
+		if (session.activate_authkey_server_access === false)
+			return false;
 		
 		var localstorageaccess = session.getLocalStorageAccessInstance();
 
@@ -466,6 +478,13 @@ var Module = class {
 			return;
 		}
 
+		// look if session deactivates authkey
+		if (session.activate_authkey_server_access === false) {
+			if (callback)
+				callback(global.t('authkey is de-activated at session level'), null);
+			return;
+		}
+		
 		var global = session.getGlobalObject();
 		
 		var app = this._getAppObject();
@@ -536,6 +555,10 @@ var Module = class {
 		if (this.activated === false)
 			return false;
 
+		// look if session deactivates authkey
+		if (session.activate_authkey_server_access === false)
+			return false;
+		
 		var app = this._getAppObject();
 		
 		var commonmodule = global.getModuleObject('common');
@@ -578,7 +601,12 @@ var Module = class {
 
 		var $scope = params[0];
 		var logoutform = params[1];
+		var session = params[2];
 
+		// look if session deactivates authkey
+		if (session.activate_authkey_server_access === false)
+			return false;
+		
 		// remove private key input
 		var privkeyspan = document.getElementById('privkey-span');
 		
@@ -644,6 +672,10 @@ var Module = class {
 		var $scope = params[0];
 		var session = params[1];
 		
+		// look if session deactivates authkey
+		if (session.activate_authkey_server_access === false)
+			return false;
+		
 		var username = this.getFormValue("username");
 		var password = this.getFormValue("password");
 		
@@ -663,6 +695,11 @@ var Module = class {
 		var $scope = params[0];
 		var logoutform = params[1];
 		var session = params[2];
+		
+		// look if session deactivates authkey
+		if (session.activate_authkey_server_access === false)
+			return false;
+		
 	}
 	
 	handleLogoutSubmit_hook(result, params) {
@@ -691,6 +728,13 @@ var Module = class {
 			return;
 		}
 
+
+		// look if session deactivates authkey
+		if (session.activate_authkey_server_access === false) {
+			if (callback)
+				callback(global.t('authkey is de-activated at session level'), null);
+			return;
+		}
 
 		var app = this._getAppObject();
 		var commonmodule = global.getModuleObject('common');
@@ -737,11 +781,18 @@ var Module = class {
 	handleOpenVaultSubmit_hook(result, params) {
 		console.log('handleOpenVaultSubmit_hook called for ' + this.name);
 		
+		if (this.activated === false)
+			return false;
+
 		var global = this.global;
 		var app = this._getAppObject();
 
 		var $scope = params[0];
 		var session = params[1];
+		
+		// look if session deactivates authkey
+		if (session.activate_authkey_server_access === false)
+			return false;
 		
 		var vaultname = this.getFormValue("vaultname");
 		var vaulttype = $scope.vaulttype.text;
@@ -784,6 +835,14 @@ var Module = class {
 			return;
 		}
 
+
+		// look if session deactivates authkey
+		if (session.activate_authkey_server_access === false) {
+			if (callback)
+				callback(global.t('authkey is de-activated at session level'), null);
+			return;
+		}
+		
 		var app = this._getAppObject();
 		var commonmodule = global.getModuleObject('common');
 		
@@ -816,6 +875,9 @@ var Module = class {
 	handleCreateVaultSubmit_hook(result, params) {
 		console.log('handleCreateVaultSubmit_hook called for ' + this.name);
 		
+		if (this.activated === false)
+			return false;
+
 		// we overload handleCreateVaultSubmit_hook to prevent session.impersonateUser(user)
 		// in Controllers._openVault
 		
@@ -824,6 +886,10 @@ var Module = class {
 
 		var $scope = params[0];
 		var session = params[1];
+		
+		// look if session deactivates authkey
+		if (session.activate_authkey_server_access === false)
+			return false;
 		
 		var vaultname = this.getFormValue("vaultname");
 		var vaulttype = $scope.vaulttype.text;
