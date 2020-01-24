@@ -382,8 +382,9 @@ class AdminServer {
 
 		var config = {};
 		
-		config.service_name="ethereum webapp";
+		config.service_name="ethereum_webapp";
 		config.server_listening_port=8000;
+		config.service_uuid=global.guid();
 
 		config.route_root_path="/api";
 		config.rest_server_url=inputs.rest_server_url;
