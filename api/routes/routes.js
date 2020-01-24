@@ -19,6 +19,10 @@ module.exports = function(app, global) {
 
 	app.route(route_root_path + '/config')
 	.get(Controller.config);
+	app.route(route_root_path + '/config/network')
+	.get(Controller.config_network);
+	
+	
 	app.route(route_root_path + '/version')
 	.get(Controller.version);
 	app.route(route_root_path + '/version/support')

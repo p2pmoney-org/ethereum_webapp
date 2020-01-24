@@ -32,11 +32,23 @@ exports.config = function(req, res) {
 		config.rest_server_url = globalconfig.rest_server_url;
 		config.rest_server_api_path = globalconfig.rest_server_api_path;
 	}
-  	
+	
 	var jsonresult = {status: 1, config:  config};
 
 	res.json(jsonresult);
 }
+
+exports.config_network = function(req, res) {
+	// GET
+	var network_config = global.getNetworkConfig();
+	
+	var jsonresult = {status: 1, config:  network_config};
+
+	res.json(jsonresult);
+}
+
+
+
 
 exports.version = function(req, res) {
 	// GET
@@ -61,12 +73,12 @@ exports.version = function(req, res) {
 			var interfaces = os.networkInterfaces();
 			var addresses = [];
 			for (var k in interfaces) {
-			    for (var k2 in interfaces[k]) {
-			        var address = interfaces[k][k2];
-			        if (address.family === 'IPv4' && !address.internal) {
-			            addresses.push(address.address);
-			        }
-			    }
+				for (var k2 in interfaces[k]) {
+					var address = interfaces[k][k2];
+					if (address.family === 'IPv4' && !address.internal) {
+						addresses.push(address.address);
+					}
+				}
 			}
 			
 			jsonresult.hostaddress = addresses;
@@ -113,5 +125,16 @@ exports.get_logs_server_tail = function(req, res) {
   	
 }
 
+
+// network
+exports.web3_get_network_config = function(req, res) {
+	// GET
+	var sessionuuid = req.get("sessiontoken");
+	
+	var global = this.global;
+	var commonservice = global.getServiceInstance('common');
+	var Session = commonservice.Session;
+	
+}
 
 

@@ -47,6 +47,8 @@ class Service {
 
 		global.registerHook('registerRoutes_hook', this.name, this.registerRoutes_hook);
 
+		global.registerHook('config_network_hook', this.name, this.config_network_hook);
+
 		global.registerHook('getUserContent_hook', this.name, this.getUserContent_hook);
 		global.registerHook('putUserContent_hook', this.name, this.putUserContent_hook);
 	}
@@ -138,6 +140,49 @@ class Service {
 		
 		result.push({service: this.name, handled: true});
 	}
+	
+	config_network_hook(result, params) {
+		var global = this.global;
+
+		global.log('config_network_hook called for ' + this.name);
+		
+		// compute config
+		var rest_server_url = global.getConfigValue('rest_server_url');
+		var rest_server_api_path = global.getConfigValue('rest_server_api_path');
+
+		var ethnode_server_url = global.getConfigValue('ethnode_server_url');
+		var ethnode_server_api_path = global.getConfigValue('ethnode_server_api_path');
+		
+		if (!ethnode_server_url) {
+			ethnode_server_url = rest_server_url;
+		}
+
+		if (!ethnode_server_api_path) {
+			ethnode_server_api_path = rest_server_api_path;
+		}
+		
+		var web3_provider_url = global.getConfigValue('web3_provider_url');
+		var web3_provider_port = global.getConfigValue('web3_provider_port');
+		var web3_provider_full_url = this.buildWeb3ProviderUrl(web3_provider_url, web3_provider_port);
+
+
+		
+		// fill ethnode
+		var network_config = params[0];
+		
+		network_config.ethnode = {};
+		
+		network_config.ethnode.activate = true;
+		network_config.ethnode.rest_server_url = ethnode_server_url;
+		network_config.ethnode.rest_server_api_path = ethnode_server_api_path;
+		
+		if (!network_config.ethnode.activate)
+		network_config.ethnode.web3_provider_url = web3_provider_full_url;
+		
+		
+		result.push({service: this.name, handled: true});
+	}
+
 	
 	copyDappFiles_hook(result, params) {
 		var global = this.global;

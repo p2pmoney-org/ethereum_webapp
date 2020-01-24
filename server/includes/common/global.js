@@ -163,6 +163,7 @@ class Global {
 		
 		// configuration parameters
 		this.service_name = (config && (typeof config["service_name"] != 'undefined') ? config["service_name"] : 'ethereum_webapp');
+		this.service_uuid = (config && (typeof config["service_uuid"] != 'undefined') ? config["service_uuid"] : this.guid());
 		this.server_listening_port = (config && (typeof config["server_listening_port"] != 'undefined') ? config["server_listening_port"] : 8000);
 		this.route_root_path = (config && (typeof config["route_root_path"] != 'undefined') ? config["route_root_path"] : '/api');
 
@@ -863,6 +864,102 @@ class Global {
 	
 	getVersionSupported() {
 		return (this.version_support ? this.version_support : [this.getCurrentVersion()]);
+	}
+	
+	getNetworkConfig() {
+		var global = this;
+		
+		// compute url and path
+		
+		// main rest (e.g. storage)
+		var rest_server_url = global.getConfigValue('rest_server_url');
+		var rest_server_api_path = global.getConfigValue('rest_server_api_path');
+
+		// authkey
+		var authkey_server_url = global.getConfigValue('authkey_server_url');
+		var authkey_server_api_path = global.getConfigValue('authkey_server_api_path');
+		
+		var auth_server_url = global.getConfigValue('auth_server_url');
+		var auth_server_api_path = global.getConfigValue('auth_server_api_path');
+		
+		var key_server_url = global.getConfigValue('key_server_url');
+		var key_server_api_path = global.getConfigValue('key_server_api_path');
+		
+		
+		// auth
+		if (!auth_server_url) {
+			if (authkey_server_url)
+				auth_server_url = authkey_server_url;
+			else
+				auth_server_url = rest_server_url;
+		}
+		
+		if (!auth_server_api_path) {
+			if (authkey_server_api_path)
+				auth_server_api_path = authkey_server_api_path;
+			else
+				auth_server_api_path = rest_server_api_path;
+		}
+
+		// key
+		if (!key_server_url) {
+			if (authkey_server_url)
+				key_server_url = authkey_server_url;
+			else
+				key_server_url = rest_server_url;
+		}
+		
+		if (!key_server_api_path) {
+			if (authkey_server_api_path)
+				key_server_api_path = authkey_server_api_path;
+			else
+				key_server_api_path = rest_server_api_path;
+		}
+		
+		// ethnode
+		var ethnode_server_url = global.getConfigValue('ethnode_server_url');
+		var ethnode_server_api_path = global.getConfigValue('ethnode_server_api_path');
+		
+		if (!ethnode_server_url)
+			ethnode_server_url = rest_server_url;
+		
+		if (!ethnode_server_api_path)
+			ethnode_server_api_path = rest_server_api_path;
+
+
+		
+		// fill network_config
+		var network_config = {};
+		
+		network_config.name = global.getConfigValue('service_name');
+		network_config.uuid = global.getConfigValue('service_uuid');
+		
+		network_config.restserver = {};
+		network_config.restserver.activate = true;
+		network_config.restserver.rest_server_url = rest_server_url;
+		network_config.restserver.rest_server_api_path = rest_server_api_path;
+		
+		network_config.authserver = {};
+		network_config.authserver.activate = true;
+		network_config.authserver.rest_server_url = auth_server_url;
+		network_config.authserver.rest_server_api_path = auth_server_api_path;
+		
+		network_config.keyserver = {};
+		network_config.keyserver.activate = true;
+		network_config.keyserver.rest_server_url = key_server_url;
+		network_config.keyserver.rest_server_api_path = key_server_api_path;
+		
+		
+		// invoke hook to let services put their config
+		var result = [];
+		
+		var params = [];
+		
+		params.push(network_config);
+
+		var ret = global.invokeHooks('config_network_hook', result, params);
+		
+		return network_config;
 	}
 	
 	// services
