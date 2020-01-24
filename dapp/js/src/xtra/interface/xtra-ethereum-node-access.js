@@ -146,6 +146,11 @@ class Xtra_EthereumNodeAccess {
 	    var rest_server_api_path = this.session.getXtraConfigValue('rest_server_api_path');
 
     	// we look in Config to potentially overload default
+	    var session = this.session;
+	    var global = session.getGlobalObject();
+		var _globalscope = global.getExecutionGlobalScope();
+		var Config = _globalscope.simplestore.Config;
+
 		if (Config && (Config.get)  && (Config.get('ethnode_server_url')))
     		rest_server_url = Config.get('ethnode_server_url');
 
