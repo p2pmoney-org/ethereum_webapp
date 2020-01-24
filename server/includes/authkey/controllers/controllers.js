@@ -238,7 +238,7 @@ class AuthKeyControllers {
 			var section = Session.openSessionSection(global, sessionuuid, 'session_getCryptoKeys');
 			var session = section.getSession();
 			
-			if (!session.isAnonymous()) {
+			if (session.isAuthenticated()) {
 				// get user details
 				var userkeys = authenticationserver.getUserCryptoKeys(session);
 				
@@ -285,7 +285,7 @@ class AuthKeyControllers {
 				//global.log("session_getCryptoKeys called for sessiontoken "+ sessionuuid + " jsonresult is " + JSON.stringify(jsonresult));
 			}
 			else {
-				jsonresult = {status: 0, error: "session is anonymous"};
+				jsonresult = {status: 0, error: "session is not authenticated"};
 			}
 		}
 		catch(e) {
@@ -326,7 +326,7 @@ class AuthKeyControllers {
 			var section = Session.openSessionSection(global, sessionuuid, 'user_addKey');
 			var session = section.getSession();
 			
-			if (!session.isAnonymous()) {
+			if (session.isAuthenticated()) {
 				var user = authenticationserver.getUserFromUUID(session, useruuid);
 				
 				var type = 0; // crypto key
@@ -350,7 +350,7 @@ class AuthKeyControllers {
 				//global.log("session_getKeys called for sessiontoken "+ sessionuuid + " jsonresult is " + JSON.stringify(jsonresult));
 			}
 			else {
-				jsonresult = {status: 0, error: "session is anonymous"};
+				jsonresult = {status: 0, error: "session is not authenticated"};
 			}
 		}
 		catch(e) {
@@ -385,7 +385,7 @@ class AuthKeyControllers {
 			var section = Session.openSessionSection(global, sessionuuid, 'session_getAccountKeys');
 			var session = section.getSession();
 			
-			if (!session.isAnonymous()) {
+			if (session.isAuthenticated()) {
 				// get user details
 				var userkeys = authenticationserver.getUserAccountKeys(session);
 			
@@ -411,7 +411,7 @@ class AuthKeyControllers {
 				//global.log("session_getAccountKeys called for sessiontoken "+ sessionuuid + " jsonresult is " + JSON.stringify(jsonresult));
 			}
 			else {
-				jsonresult = {status: 0, error: "session is anonymous"};
+				jsonresult = {status: 0, error: "session is not authenticated"};
 			}
 		}
 		catch(e) {
@@ -453,7 +453,7 @@ class AuthKeyControllers {
 			var section = Session.openSessionSection(global, sessionuuid, 'user_addAccount');
 			var session = section.getSession();
 			
-			if (!session.isAnonymous()) {
+			if (session.isAuthenticated()) {
 				var user = authenticationserver.getUserFromUUID(session, useruuid);
 				
 				var type = 1; // ethereum transaction account
@@ -477,7 +477,7 @@ class AuthKeyControllers {
 				//global.log("session_getKeys called for sessiontoken "+ sessionuuid + " jsonresult is " + JSON.stringify(jsonresult));
 			}
 			else {
-				jsonresult = {status: 0, error: "session is anonymous"};
+				jsonresult = {status: 0, error: "session is not authenticated"};
 			}
 		}
 		catch(e) {
@@ -520,7 +520,7 @@ class AuthKeyControllers {
 			var section = Session.openSessionSection(global, sessionuuid, 'user_updateAccount');
 			var session = section.getSession();
 			
-			if (!session.isAnonymous()) {
+			if (session.isAuthenticated()) {
 				var user = authenticationserver.getUserFromUUID(session, useruuid);
 				
 				var cryptokey = authenticationserver.getUserAccountKeyFromUUID(session, accountuuid);
@@ -542,7 +542,7 @@ class AuthKeyControllers {
 				//global.log("session_getKeys called for sessiontoken "+ sessionuuid + " jsonresult is " + JSON.stringify(jsonresult));
 			}
 			else {
-				jsonresult = {status: 0, error: "session is anonymous"};
+				jsonresult = {status: 0, error: "session is not authenticated"};
 			}
 		}
 		catch(e) {
@@ -579,7 +579,7 @@ class AuthKeyControllers {
 			var section = Session.openSessionSection(global, sessionuuid, 'user_reactivateAccount');
 			var session = section.getSession();
 			
-			if (!session.isAnonymous()) {
+			if (session.isAuthenticated()) {
 				var user = authenticationserver.getUserFromUUID(session, useruuid);
 				
 				// we ask getUserKeyFromUUID because deactivate account won't show in getUserAccountKeyFromUUID
@@ -598,7 +598,7 @@ class AuthKeyControllers {
 
 			}
 			else {
-				jsonresult = {status: 0, error: "session is anonymous"};
+				jsonresult = {status: 0, error: "session is not authenticated"};
 			}
 		}
 		catch(e) {
@@ -635,7 +635,7 @@ class AuthKeyControllers {
 			var section = Session.openSessionSection(global, sessionuuid, 'user_deactivateAccount');
 			var session = section.getSession();
 			
-			if (!session.isAnonymous()) {
+			if (session.isAuthenticated()) {
 				var user = authenticationserver.getUserFromUUID(session, useruuid);
 				
 				var cryptokey = authenticationserver.getUserAccountKeyFromUUID(session, accountuuid);
@@ -653,7 +653,7 @@ class AuthKeyControllers {
 
 			}
 			else {
-				jsonresult = {status: 0, error: "session is anonymous"};
+				jsonresult = {status: 0, error: "session is not authenticated"};
 			}
 		}
 		catch(e) {
@@ -690,7 +690,7 @@ class AuthKeyControllers {
 			var section = Session.openSessionSection(global, sessionuuid, 'user_removeAccount');
 			var session = section.getSession();
 			
-			if (!session.isAnonymous()) {
+			if (session.isAuthenticated()) {
 				var user = authenticationserver.getUserFromUUID(session, useruuid);
 				
 				var cryptokey = authenticationserver.getUserAccountKeyFromUUID(session, accountuuid);
@@ -708,7 +708,7 @@ class AuthKeyControllers {
 				
 			}
 			else {
-				jsonresult = {status: 0, error: "session is anonymous"};
+				jsonresult = {status: 0, error: "session is not authenticated"};
 			}
 		}
 		catch(e) {
