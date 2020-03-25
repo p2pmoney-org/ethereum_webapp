@@ -39,6 +39,10 @@ class StorageRoutes {
 		app.route(route_root_path + '/user')
 		.delete(function(req, res) { controllers.delete_user_storage(req, res); });
 		
+		app.route(route_root_path + '/user/import')
+		.put(function(req, res) { controllers.user_import(req, res); });
+		app.route(route_root_path + '/user/export')
+		.post(function(req, res) { controllers.user_export(req, res); });
 		
 	}
 	

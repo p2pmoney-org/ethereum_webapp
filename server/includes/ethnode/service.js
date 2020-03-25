@@ -170,14 +170,14 @@ class Service {
 		// fill ethnode
 		var network_config = params[0];
 		
-		network_config.ethnode = {};
+		network_config.ethnodeserver = {};
 		
-		network_config.ethnode.activate = true;
-		network_config.ethnode.rest_server_url = ethnode_server_url;
-		network_config.ethnode.rest_server_api_path = ethnode_server_api_path;
+		network_config.ethnodeserver.activate = true;
+		network_config.ethnodeserver.rest_server_url = ethnode_server_url;
+		network_config.ethnodeserver.rest_server_api_path = ethnode_server_api_path;
 		
-		if (!network_config.ethnode.activate)
-		network_config.ethnode.web3_provider_url = web3_provider_full_url;
+		if (!network_config.ethnodeserver.activate)
+		network_config.ethnodeserver.web3_provider_url = web3_provider_full_url;
 		
 		
 		result.push({service: this.name, handled: true});
@@ -469,6 +469,8 @@ class Service {
 		var web3_provider_config = this._findBuiltInWeb3Provider(providerurl);
 		
 		if (web3_provider_config) {
+			web3provider.setConfig(web3_provider_config);
+			
 			var web3_provider_auth_basic_user = web3_provider_config.auth_basic_user;
 			var web3_provider_auth_basic_password = web3_provider_config.auth_basic_password;
 			
@@ -515,6 +517,75 @@ class Service {
 		// check if ethereum_node_instance needs to be reset
 		if (session.ethereum_node)
 			session.ethereum_node = null;
+	}
+	
+	// faucet
+	topAccount(session, web3providerurl, address) {
+		var global = this.global;
+
+		var _web3providerurl = (web3providerurl ? web3providerurl : this.getWeb3ProviderFullUrl(session));
+		var _ethereumnodeinstance = this.getEthereumNodeInstance(session, _web3providerurl);
+		var _web3providerinstance = this.getWeb3ProviderInstance(session, _web3providerurl);
+		
+		var config = _web3providerinstance.getConfig();
+		
+		if (!config.faucet_account)
+			return null;
+		
+		if (!config.faucet_privatekey)
+			return null;
+		
+		var top = (config.top_balance ? parseInt(config.top_balance) : 0);
+		var web3balance = _ethereumnodeinstance.web3_getAccountBalance(address);
+		var balance = parseInt(web3balance);
+		
+		// TODO: refill does not control for muliple simultaneous request
+		// would need a mutex to prevent going over the top
+		var topinfo = {balance: balance, top: top};
+		
+		if (balance < top) {
+			var refill = top - balance;
+			
+			var web3faucet_balance = _ethereumnodeinstance.web3_getAccountBalance(config.faucet_account);
+			var faucet_balance = parseInt(web3faucet_balance);
+			
+			topinfo.refill = refill;
+			
+			if (faucet_balance > refill) {
+				var ethtransaction = _ethereumnodeinstance.createEthereumTransactionInstance();
+				
+				ethtransaction.setFromAddress(config.faucet_account);
+				ethtransaction.setFromPrivateKey(config.faucet_privatekey);
+				
+				ethtransaction.setToAddress(address);
+				
+				ethtransaction.setValue(refill);
+				
+				var gasLimit = global.getConfigValue('defaultgaslimit');
+				var gasPrice = global.getConfigValue('defaultgasprice');
+				
+				ethtransaction.setGas(gasLimit);
+				ethtransaction.setGasPrice(gasPrice);
+				
+				var signed = _ethereumnodeinstance.signEthereumTransaction(ethtransaction);
+				
+				if (signed) {
+					_ethereumnodeinstance.web3_sendRawTransaction(ethtransaction);
+					
+					topinfo.sent = true;
+				}
+			}
+			else {
+				global.log('WARNING: faucet account has not longer enough funds to top accounts!!!');
+				
+				topinfo.error = 'faucet account has not longer enough funds to top accounts!!!';
+			}
+		}
+		else {
+			topinfo.error = 'account has funds higher than top balance!'
+		}
+		
+		return topinfo;
 	}
 
 }

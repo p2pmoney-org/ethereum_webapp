@@ -1293,7 +1293,7 @@ class Xtra_EthereumNodeAccess {
 						});
 					}
 					catch(e) {
-						console.log("error during loading of artifact: " + err);
+						console.log("error during loading of artifact: " + e);
 
 						if (callback)
 							callback(null);
@@ -1335,11 +1335,15 @@ class Xtra_EthereumNodeAccess {
 	
 	_mustBeSigned(params) {
 		var session = this.session;
+		var global = session.getGlobalObject();
+		var _globalscope = global.getExecutionGlobalScope();
 		
+		var EthereumTransactionClass = (typeof EthereumTransaction !== 'undefined' ? EthereumTransaction : _globalscope.simplestore.EthereumTransaction);
+
 		let txjson = params[params.length - 1];
 		let args = params.slice(0,-1);
 
-		if (txjson instanceof EthereumTransaction) {
+		if (txjson instanceof EthereumTransactionClass) {
 			var ethereumtransaction = params[params.length - 1];
 			var fromaccount = ethereumtransaction.getFromAccount();
 		}

@@ -60,7 +60,7 @@ exports.version = function(req, res) {
 	
 	
 	var jsonresult = {status: 1, version:  version, versioninfo: versioninfo, servertime: nowstring};
-  	
+	
 	try {
 		if (global.config.server_env === 'dev') {
 			var hostname = 'unknown';
@@ -88,8 +88,8 @@ exports.version = function(req, res) {
 	catch(e) {
 	}
 	
-  	res.json(jsonresult);
-  	
+	res.json(jsonresult);
+	
 }
 
 exports.version_support = function(req, res) {
@@ -120,20 +120,8 @@ exports.get_logs_server_tail = function(req, res) {
 	}
 	
 	var jsonresult = {status: 1, lines:  lines};
-  	
-  	res.json(jsonresult);
-  	
-}
-
-
-// network
-exports.web3_get_network_config = function(req, res) {
-	// GET
-	var sessionuuid = req.get("sessiontoken");
 	
-	var global = this.global;
-	var commonservice = global.getServiceInstance('common');
-	var Session = commonservice.Session;
+	res.json(jsonresult);
 	
 }
 

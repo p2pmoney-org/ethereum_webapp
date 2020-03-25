@@ -132,10 +132,132 @@ class EthereumNode {
 		this.web3instance = null;
 	}
 	
-	createEthereumTransactionInstance(session) {
+	getEthereumJsClass() {
+		var ethereumjs;
+		
+		ethereumjs = require('ethereum.js');
+		ethereumjs.Util = require('ethereumjs-util');
+		ethereumjs.Wallet = require('ethereumjs-wallet');
+		
+		ethereumjs.Tx = require('ethereumjs-tx');
+
+		ethereumjs.Buffer = {};
+		ethereumjs.Buffer.Buffer = Buffer.from;
+		ethereumjs.Buffer.Buffer.from = Buffer.from;
+		
+		return ethereumjs;
+	}
+	
+	createEthereumTransactionInstance() {
+		var session = this.session
 		var EthereumTransaction = require('./ethereumtransaction.js');
 		
 		return new EthereumTransaction(session);
+	}
+	
+	signEthereumTransaction(ethtransaction) {
+		var session = this.session
+		var global = session.getGlobalInstance();
+
+		var result;
+		var finished = false;
+		
+		new Promise((resolve, reject) => {
+			
+			var web3 = this.getWeb3Instance();
+
+			var fromaddress = ethtransaction.getFromAddress();
+			var toaddress = ethtransaction.getToAddress();
+			
+			var amount = ethtransaction.getValue();
+			var gas = ethtransaction.getGas();
+			var gasPrice = ethtransaction.getGasPrice();
+			
+			var txdata = ethtransaction.getData();
+			var nonce = ethtransaction.getNonce();
+
+			
+			var txjson = ethtransaction.getTxJson();
+			
+			
+			if (ethtransaction.canSignTransaction()) {
+				// signing the transaction
+				var ethereumjs = this.getEthereumJsClass();
+				
+				var hexprivkey = ethtransaction.getFromPrivateKey();
+				
+				var privkey = hexprivkey.substring(2);
+				var bufprivkey = ethereumjs.Buffer.Buffer.from(privkey, 'hex');
+
+				
+				// signing
+				if (this.web3_version == "1.0.x") {
+					// Web3 > 1.0
+
+					// turn gas, gasprice and value to hex
+					// not to receive "insufficient funds for gas * price + value"
+					txjson.gas = web3.utils.toHex(gas.toString());
+					txjson.gasPrice = web3.utils.toHex(gasPrice.toString());
+					txjson.value = web3.utils.toHex((txjson.value ? txjson.value.toString() : 0));
+					
+				}
+				else {
+					// Web3 == 0.20.x
+
+					// turn gas, gasprice and value to hex
+					// not to receive "insufficient funds for gas * price + value"
+					txjson.gas = web3.toHex(gas.toString());
+					txjson.gasPrice = web3.toHex(gasPrice.toString());
+					txjson.value = web3.toHex(txjson.value.toString());
+					
+				}
+				
+				var tx = new ethereumjs.Tx(txjson);
+				
+				
+				web3.eth.getTransactionCount(fromaddress, (err, count) => {
+					
+					if (!err) {
+						txjson.nonce = (nonce ? nonce : count);
+						
+						var tx = new ethereumjs.Tx(txjson);
+						
+						tx.sign(bufprivkey);
+
+						var raw = '0x' + tx.serialize().toString('hex');
+						
+						ethtransaction.setRawData(raw);
+						
+						resolve(raw);
+					}
+					else {
+						reject(err, null);
+					}
+				});
+			}
+			else {
+				throw 'transaction can not be signed';
+			}
+		})
+		.then((res) => {
+			result = true;
+			
+			finished = true;
+		})
+		.catch(err => {
+			global.log('error in EthereumNode.signEthereumTransaction: ' + err);
+			
+			result = false;
+					
+			finished = true;
+		});
+		
+		// wait to turn into synchronous call
+		while(!finished)
+		{global.deasync().runLoopOnce();}
+
+		return result;
+
 	}
 	
 	//
@@ -871,7 +993,7 @@ class EthereumNode {
 				// first time for this transactionuuid
 				// create array for transaction and put it in map
 				//var tx = [];
-				var tx = this.createEthereumTransactionInstance(session);
+				var tx = this.createEthereumTransactionInstance();
 				
 				tx['transactionuuid'] = transactionuuid;
 				

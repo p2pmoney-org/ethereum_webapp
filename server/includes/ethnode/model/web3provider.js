@@ -8,11 +8,21 @@ class Web3Provider {
 		this.session = session;
 		this.web3providerurl = web3providerurl;
 		
+		this.config = {};
+		
 		this.uuid = session.guid();
 		
 		this.varmap = Object.create(null);
 		
 		this.ethereumnodeaccessinstance = ethereumnodeaccessinstance;
+	}
+	
+	getConfig() {
+		return this.config;
+	}
+	
+	setConfig(config) {
+		this.config = config;
 	}
 	
 	setVariable(key, value) {

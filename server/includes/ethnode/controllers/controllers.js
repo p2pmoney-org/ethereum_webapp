@@ -72,9 +72,9 @@ class EthNodeControllers {
 		else {
 			jsonresult = {status: 0, error: "could not retrieve web3 information"};
 		}
-	  	
-	  	if (section) section.close();
-	  	res.json(jsonresult);
+		
+		if (section) section.close();
+		res.json(jsonresult);
 	}
 	
 	// providers
@@ -123,9 +123,9 @@ class EthNodeControllers {
 		else {
 			jsonresult = {status: 0, error: "could not retrieve web3 information"};
 		}
-	  	
-	  	if (section) section.close();
-	  	res.json(jsonresult);
+		
+		if (section) section.close();
+		res.json(jsonresult);
 	}
 	
 	web3_add_provider(req, res) {
@@ -178,8 +178,8 @@ class EthNodeControllers {
 			jsonresult = {status: 0, error: "exception: " + e};
 		}
 		
-	  	if (section) section.close();
-	  	res.json(jsonresult);
+		if (section) section.close();
+		res.json(jsonresult);
 	}
 	
 	web3_set_provider(req, res) {
@@ -232,8 +232,8 @@ class EthNodeControllers {
 			jsonresult = {status: 0, error: "exception: " + e};
 		}
 		
-	  	if (section) section.close();
-	  	res.json(jsonresult);
+		if (section) section.close();
+		res.json(jsonresult);
 	}
 	
 	// node
@@ -281,9 +281,9 @@ class EthNodeControllers {
 		else {
 			jsonresult = {status: 0, error: "could not retrieve node information"};
 		}
-	  	
-	  	if (section) section.close();
-	  	res.json(jsonresult);
+		
+		if (section) section.close();
+		res.json(jsonresult);
 	}
 
 
@@ -320,9 +320,9 @@ class EthNodeControllers {
 		else {
 			jsonresult = {status: 0, error: "could not retrieve balance"};
 		}
-	  	
-	  	if (section) section.close();
-	  	res.json(jsonresult);
+		
+		if (section) section.close();
+		res.json(jsonresult);
 	}
 
 	web3_account_code(req, res) {
@@ -356,9 +356,9 @@ class EthNodeControllers {
 		else {
 			jsonresult = {status: 0, error: "could not retrieve code"};
 		}
-	  	
-	  	if (section) section.close();
-	  	res.json(jsonresult);
+		
+		if (section) section.close();
+		res.json(jsonresult);
 	}
 	
 	web3_account_transaction_count(req, res) {
@@ -392,9 +392,9 @@ class EthNodeControllers {
 		else {
 			jsonresult = {status: 0, error: "could not retrieve count"};
 		}
-	  	
-	  	if (section) section.close();
-	  	res.json(jsonresult);
+		
+		if (section) section.close();
+		res.json(jsonresult);
 	}
 	
 	// blocks
@@ -428,9 +428,9 @@ class EthNodeControllers {
 		else {
 			jsonresult = {status: 0, error: "could not retrieve current block number"};
 		}
-	  	
-	  	if (section) section.close();
-	  	res.json(jsonresult);
+		
+		if (section) section.close();
+		res.json(jsonresult);
 	}
 
 	web3_block(req, res) {
@@ -466,9 +466,9 @@ class EthNodeControllers {
 		else {
 			jsonresult = {status: 0, error: "could not retrieve block with id " + blockid};
 		}
-	  	
-	  	if (section) section.close();
-	  	res.json(jsonresult);
+		
+		if (section) section.close();
+		res.json(jsonresult);
 	}
 
 	web3_block_and_transactions(req, res) {
@@ -503,9 +503,9 @@ class EthNodeControllers {
 		else {
 			jsonresult = {status: 0, error: "could not retrieve block with id " + blockid};
 		}
-	  	
-	  	if (section) section.close();
-	  	res.json(jsonresult);
+		
+		if (section) section.close();
+		res.json(jsonresult);
 	}
 
 	// transactions
@@ -542,9 +542,9 @@ class EthNodeControllers {
 		else {
 			jsonresult = {status: 0, error: "could not retrieve transaction with hash " + txhash};
 		}
-	  	
-	  	if (section) section.close();
-	  	res.json(jsonresult);
+		
+		if (section) section.close();
+		res.json(jsonresult);
 	}
 
 	web3_transaction_receipt(req, res) {
@@ -579,9 +579,9 @@ class EthNodeControllers {
 		else {
 			jsonresult = {status: 0, error: "could not retrieve transaction receipt for " + txhash};
 		}
-	  	
-	  	if (section) section.close();
-	  	res.json(jsonresult);
+		
+		if (section) section.close();
+		res.json(jsonresult);
 	}
 
 	web3_find_transaction(req, res) {
@@ -620,9 +620,9 @@ class EthNodeControllers {
 		else {
 			jsonresult = {status: 0, error: "could not find transaction " + transactionuuid};
 		}
-	  	
-	  	if (section) section.close();
-	  	res.json(jsonresult);
+		
+		if (section) section.close();
+		res.json(jsonresult);
 	}
 
 	web3_user_transactions(req, res) {
@@ -683,9 +683,9 @@ class EthNodeControllers {
 		else {
 			jsonresult = {status: 0, error: "could not find transactions for user " + useruuid};
 		}
-	  	
-	  	if (section) section.close();
-	  	res.json(jsonresult);
+		
+		if (section) section.close();
+		res.json(jsonresult);
 	}
 
 
@@ -804,9 +804,9 @@ class EthNodeControllers {
 		else {
 			jsonresult = {status: 0, error: "could not send transaction " + transactionuuid};
 		}
-	  	
-	  	if (section) section.close();
-	  	res.json(jsonresult);
+		
+		if (section) section.close();
+		res.json(jsonresult);
 	}
 
 
@@ -858,9 +858,9 @@ class EthNodeControllers {
 			jsonresult = {status: 0, error: "could not load artifact at path " + artifactpath};
 		}
 
-	  	
-	  	if (section) section.close();
-	  	res.json(jsonresult);
+		
+		if (section) section.close();
+		res.json(jsonresult);
 	}
 
 	web3_contract_load(req, res) {
@@ -905,9 +905,9 @@ class EthNodeControllers {
 		else {
 			jsonresult = {status: 0, error: "could not load artifact for " + artifactuid};
 		}
-	  	
-	  	if (section) section.close();
-	  	res.json(jsonresult);
+		
+		if (section) section.close();
+		res.json(jsonresult);
 	}
 
 	web3_contract_at(req, res) {
@@ -991,9 +991,9 @@ class EthNodeControllers {
 		if (!jsonresult) {
 			jsonresult = {status: 0, error: "exception in web3_contract_at for contract with uuid " + contractuuid};
 		}
-	  	
-	  	if (section) section.close();
-	  	res.json(jsonresult);
+		
+		if (section) section.close();
+		res.json(jsonresult);
 	}
 
 	web3_contract_new(req, res) {
@@ -1067,9 +1067,9 @@ class EthNodeControllers {
 		else {
 			jsonresult = {status: 0, error: "could not deploy contract " + contractinstanceuuid};
 		}
-	  	
-	  	if (section) section.close();
-	  	res.json(jsonresult);
+		
+		if (section) section.close();
+		res.json(jsonresult);
 	}
 
 	web3_contract_call(req, res) {
@@ -1131,9 +1131,9 @@ class EthNodeControllers {
 		else {
 			jsonresult = {status: 0, error: "could not get result for method " + methodname};
 		}
-	  	
-	  	if (section) section.close();
-	  	res.json(jsonresult);
+		
+		if (section) section.close();
+		res.json(jsonresult);
 	}
 
 	web3_contract_send(req, res) {
@@ -1210,9 +1210,52 @@ class EthNodeControllers {
 		else {
 			jsonresult = {status: 0, error: "could not get result for method " + methodname};
 		}
-	  	
-	  	if (section) section.close();
-	  	res.json(jsonresult);
+		
+		if (section) section.close();
+		res.json(jsonresult);
+	}
+
+	// faucet
+	faucet_top(req, res) {
+		// GET
+		var sessionuuid = req.get("sessiontoken");
+		var web3providerurl = req.get("calltoken");
+		var address = req.params.id;
+		
+		var global = this.global;
+		var commonservice = global.getServiceInstance('common');
+		var Session = commonservice.Session;
+
+		if (!sessionuuid) {
+			// we allow calls without a session
+			sessionuuid = global.guid(); // give a one-time sessionuuid
+		}
+		
+		global.log("faucet_top called for sessiontoken " + sessionuuid);
+		
+		try {
+			var section = Session.openSessionSection(global, sessionuuid, 'faucet_top');
+			var session = section.getSession();
+
+			var ethnodeservice = global.getServiceInstance('ethnode');
+			
+			var topinfo = ethnodeservice.topAccount(session, web3providerurl, address);
+		}
+		catch(e) {
+			global.log("exception in faucet_top for sessiontoken " + sessionuuid + " and address " + address + ": " + e);
+		}
+
+		var jsonresult;
+		
+		if (topinfo !== null) {
+			jsonresult = {status: 1, data: topinfo};
+		}
+		else {
+			jsonresult = {status: 0, error: "could not top account"};
+		}
+		
+		if (section) section.close();
+		res.json(jsonresult);
 	}
 
 }

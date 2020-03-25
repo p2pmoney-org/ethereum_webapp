@@ -11,6 +11,7 @@ class EthereumTransaction {
 		this.transactionHash = null;
 		
 		this.fromaddress = null;
+		this.fromprivatekey = null;
 		
 		this.toaddress = null;
 		
@@ -49,6 +50,14 @@ class EthereumTransaction {
 	
 	setFromAddress(address) {
 		this.fromaddress = address;
+	}
+	
+	getFromPrivateKey() {
+		return this.fromprivatekey;
+	}
+	
+	setFromPrivateKey(privatekey) {
+		this.fromprivatekey = privatekey;
 	}
 	
 	getToAddress() {
@@ -162,7 +171,7 @@ class EthereumTransaction {
 	}
 	
 	canSignTransaction() {
-		return this.sendingaccount.isPrivateKeyValid();
+		return (this.fromprivatekey != null);
 	}
 }
 

@@ -188,6 +188,23 @@ var Module = class {
 		if (global.getAppObject)
 			return global.getAppObject();
 	}
+	
+	_isValidURL(url) {
+		var pattern = new RegExp('^(https?:\\/\\/)?'+ // protocol
+					'((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+ // domain name
+					'((\\d{1,3}\\.){3}\\d{1,3}))'+ // OR ip (v4) address
+					'(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*'+ // port and path
+					'(\\?[;&a-z\\d%_.~+=-]*)?'+ // query string
+					'(\\#[-a-z\\d_]*)?$','i'); // fragment locator
+				
+		return !!pattern.test(url);
+	}
+	
+	_canHandleSession(session) {
+		var authkeyserveraccess = this.getAuthKeyServerAccessInstance(session);
+		
+		return authkeyserveraccess._isReady();
+	}
 
 	isSessionAnonymous_hook(result, params) {
 		console.log('isSessionAnonymous_hook called for ' + this.name);
@@ -205,6 +222,10 @@ var Module = class {
 		
 		// look if session deactivates authkey
 		if (session.activate_authkey_server_access === false)
+			return false;
+		
+		// check rest urls are ok
+		if (!this._canHandleSession(session))
 			return false;
 		
 		if (!session[this.name]) session[this.name] = {};
@@ -284,10 +305,6 @@ var Module = class {
 								
 								// authenticated (and crypto-keys have been loaded)
 								// we get list of accounts (that could be encrypted)
-								/*var localstorageaccess = session.getLocalStorageAccessInstance();
-								var user = session.getSessionUserObject();
-								
-								return localstorageaccess.account_session_keys( (err, res) => {*/
 								return this._initializeAccounts(session, (err, res) => {	
 									
 									if (app) app.refreshDisplay();
@@ -439,30 +456,56 @@ var Module = class {
 		// read first accounts from client storage
 		var clientstorageaccess = session.getClientStorageAccessInstance();
 		
-		clientstorageaccess.account_session_keys( (errc, resc) => {
-			
-			if (resc && resc['keys']) {
-				var keys = resc['keys'];
+		// we should fix clientstorageaccess.account_session_keys reject before
+		// cleaning the structure at this level
+		// and skipping the use of a promise to wrap-up calls for rejecting errors
+		return new Promise((resolve, reject) => {
+			return clientstorageaccess.account_session_keys( (errc, resc) => {
 				
-				session.readSessionAccountFromKeys(keys);
-			}
-			
-			var localstorageaccess = session.getLocalStorageAccessInstance();
-			
-			localstorageaccess.account_session_keys( (errl, resl) => {
-				
-				if (resl && resl['keys']) {
-					var keys = resl['keys'];
+				if (resc && resc['keys']) {
+					var keys = resc['keys'];
 					
 					session.readSessionAccountFromKeys(keys);
 				}
-		
-				if (callback)
-					callback((errc || errl ? 'errors: ' + (errc ? errc : ' none ') + ' & ' + (errl ? errl : ' none ') : null), session);
-			});
+				
+				var localstorageaccess = session.getLocalStorageAccessInstance();
+				
+				localstorageaccess.account_session_keys( (errl, resl) => {
+					
+					if (resl && resl['keys']) {
+						var keys = resl['keys'];
+						
+						session.readSessionAccountFromKeys(keys);
+					}
+					
+					if (errc || errl) {
+						reject('errors: ' + (errc ? errc : ' none ') + ' & ' + (errl ? errl : ' none '));
+					}
+					else {
+						resolve(session);
+					}
+				})
+				.catch(err => {
+					reject(err);
+				});
 
+			})
+			.catch(err => {
+				reject(err);
+			});
+		})
+		.then((res) => {
+			if (callback)
+				callback(null, res);
+			
+			return res;
+		})
+		.catch(err => {
+			if (callback)
+				callback(err, null);
+					
+			throw new Error(err);
 		});
-		
 	}
 	
 	_authenticate(session, username, password, callback) {
@@ -475,14 +518,14 @@ var Module = class {
 		if (this.activated === false) {
 			if (callback)
 				callback(global.t('authkey module is not activated'), null);
-			return;
+			return Promise.reject('authkey module is not activated');
 		}
 
 		// look if session deactivates authkey
 		if (session.activate_authkey_server_access === false) {
 			if (callback)
 				callback(global.t('authkey is de-activated at session level'), null);
-			return;
+			return Promise.reject('authkey is de-activated at session level');
 		}
 		
 		var global = session.getGlobalObject();
@@ -495,7 +538,7 @@ var Module = class {
 			var authkeymodule = global.getModuleObject('authkey');
 			var authkeyinterface = authkeymodule.getAuthKeyInterface();
 			
-			authkeyinterface.authenticate(session, username, password)
+			return authkeyinterface.authenticate(session, username, password)
 			.then((res) => {
 				var authenticated = (res['status'] == '1' ? true : false);
 				
@@ -505,41 +548,41 @@ var Module = class {
 					
 					// authenticated (and crypto-keys have been loaded)
 					// we get list of accounts (that could be encrypted)
-					/*var localstorageaccess = session.getLocalStorageAccessInstance();
-					var user = session.getSessionUserObject();
-					
-					return localstorageaccess.account_session_keys( (err, res) => {*/
 					return this._initializeAccounts(session, (err, res) => {	
-						/*if (res && res['keys']) {
-							var keys = res['keys'];
-							
-							session.readSessionAccountFromKeys(keys);
-						}*/
 				
 						if (app) app.refreshDisplay();
 						
-						if (callback)
-							callback(null, authenticated);
+						return true;
 					});
 					
 				}
 				else {
-					alert("Could not authenticate you with these credentials!");
-					
-					if (callback)
-						callback('could not authenticate user', false);
+					return Promise.reject('could not authenticate user');
 				}
 				
 			})
+			.then((res) => {
+				if (callback)
+					callback(null, res);
+				
+				return res;
+			})
 			.catch( (err) => {
-				alert(err);
+				alert("Could not authenticate you with these credentials!");
 				
 				if (callback)
 					callback(err, false);
+				
+				return false;
 			});
 			
 			
-		}	
+		}
+		else {
+			if (callback)
+				callback(global.t('user name is null'), null);
+			return Promise.reject('user name is null');
+		}
 		
 	}
 	
@@ -998,7 +1041,10 @@ var Module = class {
 		else {
 			//this.authkey_server_access_instance = new this.AuthKeyServerAccess(session);
 			// because load sequence of module and interface is not predictable
-			session.authkey_server_access_instance = new AuthKeyServerAccess(session);
+			var _globalscope = global.getExecutionGlobalScope();
+			var AuthKeyServerAccessClass = (typeof AuthKeyServerAccess !== 'undefined' ? AuthKeyServerAccess : _globalscope.simplestore.AuthKeyServerAccess);
+
+			session.authkey_server_access_instance = new AuthKeyServerAccessClass(session);
 		}
 
 		

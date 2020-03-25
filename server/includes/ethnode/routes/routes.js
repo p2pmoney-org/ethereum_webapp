@@ -95,7 +95,11 @@ class EthNodeRoutes {
 		.post(function(req, res) { controllers.web3_contract_call(req, res); });
 		app.route(route_root_path + '/truffle/contract/:id/send')
 		.post(function(req, res) { controllers.web3_contract_send(req, res); });
-}
+
+		// faucet
+		app.route(route_root_path + '/faucet/top/:id')
+		.get(function(req, res) { controllers.faucet_top(req, res); });
+	}
 	
 	
 }
