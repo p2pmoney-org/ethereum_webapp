@@ -52,6 +52,48 @@ class DataBasePersistor {
 		
 	}
 	
+	async getUserKeyContentAsync(useruuid, key) {
+		var global = this.global;
+		
+		var mysqlcon = global.getMySqlConnection();
+		
+		var tablename = mysqlcon.getTableName('storage_users');
+		var _useruuid = mysqlcon.escape(useruuid);
+		var _key = mysqlcon.escape(key);
+		
+		var sql = "SELECT * FROM " + tablename + " WHERE " + tablename + ".UserUUID=" + _useruuid + " AND " + tablename + ".Key=" + _key + ";";
+		
+		// open connection
+		mysqlcon.open();
+		
+		// execute query
+		var result = await mysqlcon.executeAsync(sql);
+		
+		
+		var array = [];
+		
+		if (result) {
+			var rows = (result['rows'] ? result['rows'] : []);
+			
+			if (rows[0]) {
+				var row = rows[0];
+				
+				array['useruuid'] = row.UserUUID;
+				array['key'] = row.Key;
+				array['content'] = row.Content;
+			}
+			
+		}
+		
+		
+		// close connection
+		mysqlcon.close();
+			
+			
+		return array;
+		
+	}
+	
 	putUserKeyContent(useruuid, key, content) {
 		var global = this.global;
 		

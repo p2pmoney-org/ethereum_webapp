@@ -189,17 +189,6 @@ var Module = class {
 			return global.getAppObject();
 	}
 	
-	_isValidURL(url) {
-		var pattern = new RegExp('^(https?:\\/\\/)?'+ // protocol
-					'((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+ // domain name
-					'((\\d{1,3}\\.){3}\\d{1,3}))'+ // OR ip (v4) address
-					'(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*'+ // port and path
-					'(\\?[;&a-z\\d%_.~+=-]*)?'+ // query string
-					'(\\#[-a-z\\d_]*)?$','i'); // fragment locator
-				
-		return !!pattern.test(url);
-	}
-	
 	_canHandleSession(session) {
 		var authkeyserveraccess = this.getAuthKeyServerAccessInstance(session);
 		
@@ -524,8 +513,14 @@ var Module = class {
 		// look if session deactivates authkey
 		if (session.activate_authkey_server_access === false) {
 			if (callback)
-				callback(global.t('authkey is de-activated at session level'), null);
-			return Promise.reject('authkey is de-activated at session level');
+				callback(global.t('authkey module is de-activated at session level'), null);
+			return Promise.reject('authkey module is de-activated at session level');
+		}
+		
+		if (!this._canHandleSession(session)) {
+			if (callback)
+				callback(global.t('authkey module can not handle this session'), null);
+			return Promise.reject('authkey module can not handle this session');
 		}
 		
 		var global = session.getGlobalObject();

@@ -259,6 +259,104 @@ class EthereumNode {
 		return result;
 
 	}
+
+	async signEthereumTransactionAsync(ethtransaction) {
+		var session = this.session
+		var global = session.getGlobalInstance();
+
+		var result;
+
+		return new Promise((resolve, reject) => {
+			
+			var web3 = this.getWeb3Instance();
+
+			var fromaddress = ethtransaction.getFromAddress();
+			var toaddress = ethtransaction.getToAddress();
+			
+			var amount = ethtransaction.getValue();
+			var gas = ethtransaction.getGas();
+			var gasPrice = ethtransaction.getGasPrice();
+			
+			var txdata = ethtransaction.getData();
+			var nonce = ethtransaction.getNonce();
+
+			
+			var txjson = ethtransaction.getTxJson();
+			
+			
+			if (ethtransaction.canSignTransaction()) {
+				// signing the transaction
+				var ethereumjs = this.getEthereumJsClass();
+				
+				var hexprivkey = ethtransaction.getFromPrivateKey();
+				
+				var privkey = hexprivkey.substring(2);
+				var bufprivkey = ethereumjs.Buffer.Buffer.from(privkey, 'hex');
+
+				
+				// signing
+				if (this.web3_version == "1.0.x") {
+					// Web3 > 1.0
+
+					// turn gas, gasprice and value to hex
+					// not to receive "insufficient funds for gas * price + value"
+					txjson.gas = web3.utils.toHex(gas.toString());
+					txjson.gasPrice = web3.utils.toHex(gasPrice.toString());
+					txjson.value = web3.utils.toHex((txjson.value ? txjson.value.toString() : 0));
+					
+				}
+				else {
+					// Web3 == 0.20.x
+
+					// turn gas, gasprice and value to hex
+					// not to receive "insufficient funds for gas * price + value"
+					txjson.gas = web3.toHex(gas.toString());
+					txjson.gasPrice = web3.toHex(gasPrice.toString());
+					txjson.value = web3.toHex(txjson.value.toString());
+					
+				}
+				
+				var tx = new ethereumjs.Tx(txjson);
+				
+				
+				web3.eth.getTransactionCount(fromaddress, (err, count) => {
+					
+					if (!err) {
+						txjson.nonce = (nonce ? nonce : count);
+						
+						var tx = new ethereumjs.Tx(txjson);
+						
+						tx.sign(bufprivkey);
+
+						var raw = '0x' + tx.serialize().toString('hex');
+						
+						ethtransaction.setRawData(raw);
+						
+						resolve(raw);
+					}
+					else {
+						reject(err, null);
+					}
+				});
+			}
+			else {
+				throw 'transaction can not be signed';
+			}
+		})
+		.then((res) => {
+			result = true;
+			
+			return result;
+		})
+		.catch(err => {
+			global.log('error in EthereumNode.signEthereumTransactionAsync: ' + err);
+			
+			result = false;
+			
+			return result;
+		});
+	}
+	
 	
 	//
 	// Web3
@@ -664,6 +762,35 @@ class EthereumNode {
 
 		
 		return balance;
+	}
+	
+	async web3_getAccountBalanceAsync(address) {
+		var global = this.session.getGlobalInstance();
+		
+		global.log("EthereumNode.web3_getAccountBalanceAsync called for " + address);
+		
+		var web3 = this.getWeb3Instance();
+		
+		var balance;
+		
+		return web3.eth.getBalance(address, function(error, result) {
+			
+			if (!error) {
+				balance = result;
+			} else {
+				balance = 'error: ' + error;
+				
+				global.log('Web3 error: ' + error);
+			}
+			
+			return balance
+		})
+		.then(() => {
+			return balance
+		})
+		.catch(err => {
+			return balance
+		});
 	}
 	
 	web3_getAccountCode(address) {
@@ -1190,7 +1317,7 @@ class EthereumNode {
 			var __transactioncallback = function(err, res) {
 				var transactionHash = res;
 				global.log('EthereumNode.web3_sendRawTransaction transactionHash is ' + transactionHash);
-		         
+				
 				if (!err) {
 					finished = true;
 					result = transactionHash;
@@ -1227,8 +1354,8 @@ class EthereumNode {
 		
 		})
 		.catch(function (err) {
-		     global.log("EthereumNode.web3_sendRawTransaction promise rejected: " + err);
-		     
+			global.log("EthereumNode.web3_sendRawTransaction promise rejected: " + err);
+			
 			// log exception of transaction
 			self._saveTransactionLog(ethereum_transaction_uuid, 'sendRawTransaction', -100, err);
 
@@ -1246,6 +1373,86 @@ class EthereumNode {
 		{global.deasync().runLoopOnce();}
 		
 		return result;
+	}
+	
+	async web3_sendRawTransactionAsync(ethtransaction) {
+		var global = this.session.getGlobalInstance();
+
+		global.log('EthereumNode.web3_sendRawTransactionAsync called');
+		
+		var self = this
+		var session = this.session;
+		
+		var result;
+		
+		var raw = ethtransaction.getRawData();
+		var ethereum_transaction_uuid = ((ethtransaction.getTransactionUUID() !== null) ? ethtransaction.getTransactionUUID() : session.guid());
+		
+		// log start of transaction
+		var web3providerurl = this.getWeb3ProviderFullUrl();
+		var logString = JSON.stringify({web3providerurl: web3providerurl, raw: raw});
+		
+		this._saveTransactionLog(ethereum_transaction_uuid, 'sendRawTransaction', 1, logString);
+
+		return new Promise( function(resolve, reject) {
+			var web3 = self.getWeb3Instance();
+
+			var __transactioncallback = function(err, res) {
+				var transactionHash = res;
+				global.log('EthereumNode.web3_sendRawTransactionAsync transactionHash is ' + transactionHash);
+		
+				if (!err) {
+					result = transactionHash;
+					
+					ethtransaction.setTransactionHash(transactionHash);
+					
+					// log success of transaction
+					self._saveTransactionLog(ethereum_transaction_uuid, 'sendRawTransaction', 1000, JSON.stringify(transactionHash), transactionHash);
+					
+					return resolve(transactionHash);
+				}
+				else {
+					result = null;
+					
+					// log error of transaction
+					self._saveTransactionLog(ethereum_transaction_uuid, 'sendRawTransaction', -500, err);
+	
+					var error = 'web3 error: ' + err;
+					global.log('error: ' + error);
+					
+					reject('web3 error: ' + err);
+				}
+			};
+			
+			if (self.web3_version == "1.0.x") {
+				// Web3 > 1.0
+				web3.eth.sendSignedTransaction(raw, __transactioncallback);
+			}
+			else {
+				// Web3 < 1.0
+				web3.eth.sendRawTransaction(raw, __transactioncallback);
+			}
+		
+		})
+		.then(() => {
+			return result;
+		})
+		.catch(function (err) {
+			global.log("EthereumNode.web3_sendRawTransactionAsync promise rejected: " + err);
+			
+			// log exception of transaction
+			self._saveTransactionLog(ethereum_transaction_uuid, 'sendRawTransaction', -100, err);
+
+			result = null;
+			
+			return result;
+		});
+		
+		
+		// log transaction pending
+		var jsonstring = JSON.stringify(ethtransaction.getTxJson());
+		this._saveTransactionLog(ethereum_transaction_uuid, 'sendRawTransaction', 500, jsonstring);
+		
 	}
 	
 	web3_sendTransaction(ethtransaction) {

@@ -312,6 +312,113 @@ class Service {
 		return this.contractuuidmap;
 	}
 	
+	_atomizeUserContentSync(user, key, usercontentarray) {
+		var global = this.global;
+
+		var result;
+		var finished = false;
+		
+		this._atomizeUserContentAsync(user, key, usercontentarray)
+		.then((res) => {
+			result = res;
+			finished = true;
+		})
+		.catch(err => {
+			result = usercontentarray;
+			finished = true;
+		});
+		
+		// wait to turn into synchronous call
+		while(!finished)
+		{global.deasync().runLoopOnce();}
+
+		return result;
+	}
+	
+	async _atomizeUserContentAsync(user, key, usercontentarray) {
+		var global = this.global;
+		var storageservice = global.getServiceInstance('storage');
+		var storageserverinstance = storageservice.getStorageServerInstance();
+		
+		var array;
+		var arr_remove = (arr1, arr2) => {
+			// we remove from arr1 elements in arr2
+			var arr = [];
+			var map = {};
+			
+			for (var i = 0; i < arr2.length; i++) {
+				var uuid = arr2[i].uuid;
+				map[uuid] = arr2[i];
+			}
+			
+			for (var i = 0; i < arr1.length; i++) {
+				var uuid = arr1[i].uuid;
+				if (!map[uuid])
+					arr.push(arr1[i]);
+			}
+			
+			return arr;
+		};
+
+
+		var useruuid = user.getUserUUID();
+		var keystring = key.toString();
+		
+		var sqlarray = await storageserverinstance.persistor.getUserKeyContentAsync(useruuid, keystring);
+		var persistedusercontentstring = (sqlarray && sqlarray['content'] ? sqlarray['content'] : null);
+		var persistedusercontentarray = (persistedusercontentstring && (persistedusercontentstring != '{}') ? JSON.parse(persistedusercontentstring) : []);
+		//global.log('ELEMENTS IN USER STORAGE: ' + (persistedusercontentarray ? persistedusercontentarray.length : 0));
+		//global.log('ELEMENTS IN USER CONTENT ARRAY: ' + (usercontentarray ? usercontentarray.length : 0));
+		
+		if (usercontentarray.length == persistedusercontentarray.length) {
+			//global.log('STORAGE AND USER HAVE SAME LENGTH');
+			var difference = arr_remove(persistedusercontentarray, usercontentarray);
+			
+			var difference = arr_remove(persistedusercontentarray, usercontentarray);
+			
+			if (difference.length == 0) {
+				//global.log('STORAGE AND USER ARE IDENTICAL');
+
+				// no change to storage
+				array = persistedusercontentarray;
+			}
+			else if (usercontentarray.length == 1) {
+				//global.log('SIMPLE ADDITION REQUESTED: ' + usercontentarray[0].description);
+				
+				// this is a simple addition
+				array = (persistedusercontentarray ? persistedusercontentarray : []).concat(usercontentarray);
+			}
+			else {
+				// too different, we do not change storage
+				//global.log('TOO DIFFERENT KEEP STORAGE AS IT IS');
+				array = persistedusercontentarray;
+			}
+		}
+		else {
+			array = persistedusercontentarray;
+			
+			if (persistedusercontentarray.length < usercontentarray.length) {
+				var addition = arr_remove(usercontentarray, persistedusercontentarray);
+				
+				if (addition.length == 1) {
+					array = usercontentarray;
+					//global.log('ADDING ONE ELEMENT: ' + addition[0].description);
+				}
+			}
+			else if (persistedusercontentarray.length > usercontentarray.length) {
+				var removal = arr_remove(persistedusercontentarray, usercontentarray);
+				
+				if (removal.length == 1) {
+					array = usercontentarray;
+					//global.log('REMOVING ONE ELEMENT: ' + removal[0].description);
+				}
+			}
+		}
+		
+		//global.log('RESULT ARRAY IS: ' + (array ? array.length : 0));
+		return array;
+	}
+	
 	putUserContent_hook(result, params) {
 		var global = this.global;
 
@@ -320,37 +427,62 @@ class Service {
 		var user = params[0];
 		var key = params[1];
 		
-		if ((key == 'common-contracts') && (this._hasBuiltInContracts())) {
-			var usercontent = (result.content ? result.content : params[2]); // for chaining
+		if (key == 'common-contracts') {
+			var usercontentstring = (result.content ? result.content : params[2]); // for chaining
+			var usercontentarray = (usercontentstring && (usercontentstring != '{}') ? JSON.parse(usercontentstring) : []);
 			
-			// we remove built-in contracts, based on their uuid
-			try {
-				var jsonarray = (usercontent && (usercontent != '{}') ? JSON.parse(usercontent) : []);
+			if (this._hasBuiltInContracts()) {
+				// we remove built-in contracts, based on their uuid
+				try {
+					var jsonarray = (usercontentstring && (usercontentstring != '{}') ? JSON.parse(usercontentstring) : []);
 
-				if (jsonarray.constructor !== Array)
-					jsonarray = [];
-				
-				var contractmap = this._getBuiltInContractMap() ;
-				var newjsonarray = []
-				
-				for (var i = 0; i < jsonarray.length; i++) {
-					var contract = jsonarray[i];
+					if (jsonarray.constructor !== Array)
+						jsonarray = [];
 					
-					if ((contract.uuid) && (contract.uuid in contractmap)) {
-						continue;
+					var contractmap = this._getBuiltInContractMap() ;
+					var newjsonarray = []
+					
+					for (var i = 0; i < jsonarray.length; i++) {
+						var contract = jsonarray[i];
+						
+						if ((contract.uuid) && (contract.uuid in contractmap)) {
+							continue;
+						}
+						else {
+							newjsonarray.push(contract);
+						}
 					}
-					else {
-						newjsonarray.push(contract);
-					}
+					
+					if (newjsonarray.length)
+						usercontentarray = newjsonarray;
+					else 
+						usercontentarray = [];
 				}
-				
-				if (newjsonarray.length)
-					result.content = JSON.stringify(newjsonarray);
-				else 
-					result.content = '[]';
+				catch(e) {
+				}
 			}
-			catch(e) {
+			
+			// we check modification from existing common contracts in storage
+			// and try turn this call into an atomic operation of
+			// difference on a single element if arrays are not equivalent
+			if (usercontentarray) {
+				try {
+					usercontentarray = this._atomizeUserContentSync(user, key, usercontentarray);
+					var atomizedarray = usercontentarray;
+					//global.log('ELEMENTS IN ATOMIZED ARRAY IS: ' + (atomizedarray ? atomizedarray.length : 0));
+					//global.log('ATOMIZED ARRAY IS: ' + JSON.stringify(atomizedarray));
+				}
+				catch(e) {
+				}
+
 			}
+
+			
+			if (usercontentarray && usercontentarray.length)
+				result.content = JSON.stringify(usercontentarray);
+			else 
+				result.content = '[]';
+
 			
 			result.push({service: this.name, handled: true});
 			
@@ -520,9 +652,11 @@ class Service {
 	}
 	
 	// faucet
-	topAccount(session, web3providerurl, address) {
+	topUpAccountSync(session, web3providerurl, address) {
 		var global = this.global;
-
+		
+		var FLOOR_RATIO = 0.2;
+		
 		var _web3providerurl = (web3providerurl ? web3providerurl : this.getWeb3ProviderFullUrl(session));
 		var _ethereumnodeinstance = this.getEthereumNodeInstance(session, _web3providerurl);
 		var _web3providerinstance = this.getWeb3ProviderInstance(session, _web3providerurl);
@@ -539,11 +673,14 @@ class Service {
 		var web3balance = _ethereumnodeinstance.web3_getAccountBalance(address);
 		var balance = parseInt(web3balance);
 		
-		// TODO: refill does not control for muliple simultaneous request
+		// TODO: refill does not control for multiple simultaneous request
 		// would need a mutex to prevent going over the top
 		var topinfo = {balance: balance, top: top};
 		
-		if (balance < top) {
+		var gauge = balance / top;
+		
+		if (gauge < FLOOR_RATIO) {
+			// refill when we drop below FLOOR_RATIO (e.g 20%) of the top
 			var refill = top - balance;
 			
 			var web3faucet_balance = _ethereumnodeinstance.web3_getAccountBalance(config.faucet_account);
@@ -576,17 +713,91 @@ class Service {
 				}
 			}
 			else {
-				global.log('WARNING: faucet account has not longer enough funds to top accounts!!!');
+				global.log('WARNING: faucet account has not longer enough funds to top-up accounts!!!');
 				
-				topinfo.error = 'faucet account has not longer enough funds to top accounts!!!';
+				topinfo.error = 'faucet account has not longer enough funds to top-up accounts!!!';
 			}
 		}
 		else {
-			topinfo.error = 'account has funds higher than top balance!'
+			topinfo.error = 'account has still funds higher than ' + Math.floor(FLOOR_RATIO*100) + '% of top-up balance!'
 		}
 		
 		return topinfo;
 	}
+	
+	async topUpAccountAsync(session, web3providerurl, address) {
+		var global = this.global;
+		
+		var FLOOR_RATIO = 0.2;
+		
+		var _web3providerurl = (web3providerurl ? web3providerurl : this.getWeb3ProviderFullUrl(session));
+		var _ethereumnodeinstance = this.getEthereumNodeInstance(session, _web3providerurl);
+		var _web3providerinstance = this.getWeb3ProviderInstance(session, _web3providerurl);
+		
+		var config = _web3providerinstance.getConfig();
+		
+		if (!config.faucet_account)
+			return null;
+		
+		if (!config.faucet_privatekey)
+			return null;
+		
+		var top = (config.top_balance ? parseInt(config.top_balance) : 0);
+		var web3balance = await _ethereumnodeinstance.web3_getAccountBalanceAsync(address);
+		var balance = parseInt(web3balance);
+		
+		// TODO: refill does not control for multiple simultaneous request
+		// would need a mutex to prevent going over the top
+		var topinfo = {balance: balance, top: top};
+		
+		var gauge = balance / top;
+		
+		if (gauge < FLOOR_RATIO) {
+			// refill when we drop below FLOOR_RATIO (e.g 20%) of the top
+			var refill = top - balance;
+			
+			var web3faucet_balance = await _ethereumnodeinstance.web3_getAccountBalanceAsync(config.faucet_account);
+			var faucet_balance = parseInt(web3faucet_balance);
+			
+			topinfo.refill = refill;
+			
+			if (faucet_balance > refill) {
+				var ethtransaction = _ethereumnodeinstance.createEthereumTransactionInstance();
+				
+				ethtransaction.setFromAddress(config.faucet_account);
+				ethtransaction.setFromPrivateKey(config.faucet_privatekey);
+				
+				ethtransaction.setToAddress(address);
+				
+				ethtransaction.setValue(refill);
+				
+				var gasLimit = global.getConfigValue('defaultgaslimit');
+				var gasPrice = global.getConfigValue('defaultgasprice');
+				
+				ethtransaction.setGas(gasLimit);
+				ethtransaction.setGasPrice(gasPrice);
+				
+				var signed = await _ethereumnodeinstance.signEthereumTransactionAsync(ethtransaction);
+				
+				if (signed) {
+					await _ethereumnodeinstance.web3_sendRawTransactionAsync(ethtransaction);
+					
+					topinfo.sent = true;
+				}
+			}
+			else {
+				global.log('WARNING: faucet account has not longer enough funds to top-up accounts!!!');
+				
+				topinfo.error = 'faucet account has not longer enough funds to top-up accounts!!!';
+			}
+		}
+		else {
+			topinfo.error = 'account has still funds higher than ' + Math.floor(FLOOR_RATIO*100) + '% of top-up balance!'
+		}
+		
+		return topinfo;
+	}
+
 
 }
 

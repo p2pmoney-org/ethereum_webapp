@@ -1216,7 +1216,7 @@ class EthNodeControllers {
 	}
 
 	// faucet
-	faucet_top(req, res) {
+	async faucet_top_up(req, res) {
 		// GET
 		var sessionuuid = req.get("sessiontoken");
 		var web3providerurl = req.get("calltoken");
@@ -1231,18 +1231,18 @@ class EthNodeControllers {
 			sessionuuid = global.guid(); // give a one-time sessionuuid
 		}
 		
-		global.log("faucet_top called for sessiontoken " + sessionuuid);
+		global.log("faucet_top_up called for sessiontoken " + sessionuuid);
 		
 		try {
-			var section = Session.openSessionSection(global, sessionuuid, 'faucet_top');
+			var section = Session.openSessionSection(global, sessionuuid, 'faucet_top_up');
 			var session = section.getSession();
 
 			var ethnodeservice = global.getServiceInstance('ethnode');
 			
-			var topinfo = ethnodeservice.topAccount(session, web3providerurl, address);
+			var topinfo = await ethnodeservice.topUpAccountAsync(session, web3providerurl, address);
 		}
 		catch(e) {
-			global.log("exception in faucet_top for sessiontoken " + sessionuuid + " and address " + address + ": " + e);
+			global.log("exception in faucet_top_up for sessiontoken " + sessionuuid + " and address " + address + ": " + e);
 		}
 
 		var jsonresult;
@@ -1251,7 +1251,7 @@ class EthNodeControllers {
 			jsonresult = {status: 1, data: topinfo};
 		}
 		else {
-			jsonresult = {status: 0, error: "could not top account"};
+			jsonresult = {status: 0, error: "could not top-up account"};
 		}
 		
 		if (section) section.close();

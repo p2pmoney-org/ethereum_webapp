@@ -57,29 +57,29 @@ class MySqlConnection {
 			var password = this.password;
 
 			this.connection = mysql.createConnection({
-			  host: host,
-			  port: port,
-			  database: database,
-			  user: user,
-			  password: password
+				host: host,
+				port: port,
+				database: database,
+				user: user,
+				password: password
 			});
 			
 			this.connection.connect(function(err) {
-			  if (err)  {
-				  global.log("error connecting to mysql database: " + err);
-				  
-				  self.connectionactive = false;
-				  finished = true;
+				if (err) {
+					global.log("error connecting to mysql database: " + err);
+					
+					self.connectionactive = false;
+					finished = true;
 
-				  //throw err;
-			  }
-			  else {
-				  global.log("successfully connected to mysql database: " + database);
+					//throw err;
+				}
+				else {
+					global.log("successfully connected to mysql database: " + database);
 
-				  self.connectionactive = true;
-				  finished = true;
-			  }
-			  
+					self.connectionactive = true;
+					finished = true;
+				}
+			
 			});	
 			
 		}
@@ -110,7 +110,7 @@ class MySqlConnection {
 		}
 		
 		this.close();
-	    
+		
 		return output;
 	}
 	
@@ -174,26 +174,63 @@ class MySqlConnection {
 		var finished = false;
 
 		this.connection.query(queryString, function(err, rows, fields) {
-		   // if (err) throw err;
-		    
+			// if (err) throw err;
+			
 			if (!err) {
 				result['rows'] = rows;
-			    result['fields'] = fields;
+				result['fields'] = fields;
 			}
 			else {
 				global.log("error in MySqlConnection.execute: " + err);
 			}
-		    
-		    finished = true;
-		    
+			
+			finished = true;
+			
 			return result;
 		});
 		
-	    // wait to turn into synchronous call
+		// wait to turn into synchronous call
 		while(!finished)
 		{global.deasync().runLoopOnce(this);}
 		
 		return result;
+	}
+	
+	async executeAsync(queryString) {
+		
+		if (!this.connection)
+			this._connect();
+		
+		var global = this.global;
+
+		global.log("executing mysql query; " + queryString);
+
+		var result = {};
+
+		if (!this.connectionactive)
+			return result;
+		
+		return new Promise((resolve, reject) => {
+			this.connection.query(queryString, function(err, rows, fields) {
+				// if (err) throw err;
+				
+				if (!err) {
+					result['rows'] = rows;
+					result['fields'] = fields;
+				}
+				else {
+					global.log("error in MySqlConnection.executeAsync: " + err);
+				}
+				
+				resolve(result);
+			});
+		})
+		.then((res) => {
+			return result;
+		})
+		.catch(err => {
+			return result;
+		});
 	}
 	
 	escape(val) {

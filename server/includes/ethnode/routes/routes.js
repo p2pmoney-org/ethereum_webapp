@@ -98,7 +98,9 @@ class EthNodeRoutes {
 
 		// faucet
 		app.route(route_root_path + '/faucet/top/:id')
-		.get(function(req, res) { controllers.faucet_top(req, res); });
+		.get(function(req, res) { controllers.faucet_top_up(req, res); });
+		app.route(route_root_path + '/faucet/topup/:id')
+		.get(function(req, res) { controllers.faucet_top_up(req, res); });
 	}
 	
 	
