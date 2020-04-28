@@ -176,7 +176,8 @@ class Service {
 		network_config.ethnodeserver.rest_server_url = ethnode_server_url;
 		network_config.ethnodeserver.rest_server_api_path = ethnode_server_api_path;
 		
-		if (!network_config.ethnodeserver.activate)
+		// we specify the default web3 provider url for this network
+		// be it a direct access by the client or a middle-tier access via this server
 		network_config.ethnodeserver.web3_provider_url = web3_provider_full_url;
 		
 		
@@ -374,19 +375,20 @@ class Service {
 			//global.log('STORAGE AND USER HAVE SAME LENGTH');
 			var difference = arr_remove(persistedusercontentarray, usercontentarray);
 			
-			var difference = arr_remove(persistedusercontentarray, usercontentarray);
-			
 			if (difference.length == 0) {
 				//global.log('STORAGE AND USER ARE IDENTICAL');
 
-				// no change to storage
-				array = persistedusercontentarray;
+				// potential update of storage
+				array = usercontentarray;
 			}
 			else if (usercontentarray.length == 1) {
 				//global.log('SIMPLE ADDITION REQUESTED: ' + usercontentarray[0].description);
 				
-				// this is a simple addition
-				array = (persistedusercontentarray ? persistedusercontentarray : []).concat(usercontentarray);
+				if (difference.length == persistedusercontentarray.length) {
+					// usercontentarray[0] is not in persistedusercontentarray
+					// this is a request for a simple addition
+					array = (persistedusercontentarray ? persistedusercontentarray : []).concat(usercontentarray);
+				}
 			}
 			else {
 				// too different, we do not change storage
@@ -404,6 +406,10 @@ class Service {
 					array = usercontentarray;
 					//global.log('ADDING ONE ELEMENT: ' + addition[0].description);
 				}
+				else {
+					// too different, we do not change storage
+					//global.log('TOO DIFFERENT KEEP STORAGE AS IT IS');
+				}
 			}
 			else if (persistedusercontentarray.length > usercontentarray.length) {
 				var removal = arr_remove(persistedusercontentarray, usercontentarray);
@@ -411,6 +417,10 @@ class Service {
 				if (removal.length == 1) {
 					array = usercontentarray;
 					//global.log('REMOVING ONE ELEMENT: ' + removal[0].description);
+				}
+				else {
+					// too different, we do not change storage
+					//global.log('TOO DIFFERENT KEEP STORAGE AS IT IS');
 				}
 			}
 		}
