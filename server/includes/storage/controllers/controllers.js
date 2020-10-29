@@ -98,7 +98,7 @@ class StorageControllers {
 		catch(e) {
 			global.log("exception in put_user_storage for sessiontoken " + sessionuuid + ": " + e);
 			
-			jsonresult = {status: 0, error: "exception could not retrieve content"};
+			jsonresult = {status: 0, error: "exception could not save content"};
 		}
 
 		//global.log("user_storage response is " + JSON.stringify(jsonresult));
