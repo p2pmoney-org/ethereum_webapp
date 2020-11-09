@@ -26,6 +26,9 @@ class Service {
 		
 		//this.users = global.readJson("users");
 
+		var auth_check_frequency = global.getConfigValue('auth_check_frequency');
+		this.auth_check_frequency = (auth_check_frequency ? auth_check_frequency : 5000);
+
 	}
 
 	// optional  service functions
@@ -327,21 +330,24 @@ class Service {
 		
 		if (user) {
 			var useruuid = user.getUserUUID();
-			
-			// check if user exists in our database
-			var authenticationserver = this.getAuthenticationServerInstance();
-			
-			if (!authenticationserver.userExistsFromUUID(useruuid)) {
-				global.log('remote user not found in database, inserting user with uuid: ' + useruuid);
+
+			if (useruuid) {
+				// check if user exists in our database
+				var authenticationserver = this.getAuthenticationServerInstance();
 				
-				// save user
-				user.altloginmethod = 'remote-authkey-server';
-				
-				authenticationserver.saveUser(session, user);
+				if (!authenticationserver.userExistsFromUUID(session, useruuid)) {
+					global.log('remote user not found in database, inserting user with uuid: ' + useruuid);
+					
+					// save user
+					user.altloginmethod = 'remote-authkey-server';
+					
+					authenticationserver.saveUser(session, user);
+				}
+				else {
+					global.log('remote user found in database with uuid: ' + useruuid);
+				}
 			}
-			else {
-				global.log('remote user found in database with uuid: ' + useruuid);
-			}
+			
 		}
 		
 		return user;
@@ -421,7 +427,7 @@ class Service {
 			
 			var now = Date.now();
 			
-			if (sessioncontext.anonymousupdate && ((now - sessioncontext.anonymousupdate) < 5000)) {
+			if (sessioncontext.anonymousupdate && ((now - sessioncontext.anonymousupdate) < this.auth_check_frequency)) {
 				// update only every 5s
 				result.push({service: this.name, handled: true});
 				return true;
@@ -481,7 +487,7 @@ class Service {
 			
 			var now = Date.now();
 			
-			if (sessioncontext.authenticatedupdate && ((now - sessioncontext.authenticatedupdate) < 5000)) {
+			if (sessioncontext.authenticatedupdate && ((now - sessioncontext.authenticatedupdate) < this.auth_check_frequency)) {
 				// update only every 5s
 				result.push({service: this.name, handled: true});
 				return true;
@@ -607,6 +613,53 @@ class Service {
 		
 		return cryptokey;
 	}
+
+	getDefaultAuthUrl() {
+		var rest_server_url = this.global.config['authkey_server_url'];
+		var rest_server_api_path = this.global.config['authkey_server_api_path'];
+
+		return rest_server_url + rest_server_api_path;
+	}
+
+	getUserIdHash(userid) {
+		var global = this.global;
+		var cryptoservice = global.getServiceInstance('crypto');
+		var cryptoserver = cryptoservice.getCryptoServerInstance();
+
+		var useridstring = userid.toString(); // to be sure
+
+		return cryptoserver.getStringHash(useridstring, 24);
+	}
+
+	getAuthUrlHash(authurl) {
+		if (!authurl)
+			return null;
+
+		var defaultauthurl = this.getDefaultAuthUrl();
+
+		if (authurl == defaultauthurl)
+			return 'default';
+
+		var global = this.global;
+
+		var cryptoservice = global.getServiceInstance('crypto');
+		var cryptoserver = cryptoservice.getCryptoServerInstance();
+
+		return cryptoserver.getStringHash(authurl, 8);
+	}
+
+	isValidEmail(session, emailaddress) {
+		if (!emailaddress)
+			return false;
+		
+		var mailformat = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+		
+		if(emailaddress.match(mailformat))
+			return true;
+		else
+			return false;
+	}
+
 			
 	
 	// static

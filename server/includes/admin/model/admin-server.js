@@ -452,7 +452,7 @@ class AdminServer {
 		
 		var authserver = authkeyservice.getAuthenticationServerInstance() 
 
-		var users = authserver.getUsers();
+		var users = authserver.getUsers(session);
 		
 		return users;
 	}

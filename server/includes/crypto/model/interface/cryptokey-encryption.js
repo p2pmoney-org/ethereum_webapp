@@ -336,7 +336,8 @@ class CryptoKeyEncryption {
 	      .privateKey(recipientPrivateKey)
 	      .publicKey(senderPublicKey);
 		
-		var cypherbuf = Buffer(hexcypertext, 'hex');
+		//var cypherbuf = Buffer(hexcypertext, 'hex'); // deprecated
+		var cypherbuf = Buffer.from(hexcypertext, 'hex');
 
 	    var plaintext = decryptor.decrypt(cypherbuf).toString('utf8');
 
@@ -364,7 +365,8 @@ class CryptoKeyEncryption {
 
 		// Util signing
 		var priv_key = this.cryptokey.private_key.split('x')[1];
-		var priv_key_Buffer = Buffer(priv_key, 'hex')
+		//var priv_key_Buffer = Buffer(priv_key, 'hex') // deprecated
+		var priv_key_Buffer = Buffer.from(priv_key, 'hex');
 		var util_signature =  ethereumjs.Util.ecsign(textHashBuffer, priv_key_Buffer);
 		
 
@@ -418,7 +420,8 @@ class CryptoKeyEncryption {
 		var ethereumjs = this.getEthereumJsClass();
 		
 		var pubkeystr = pubkey.substring(2); // remove leading '0x'
-		var pubkeybuf = Buffer(pubkeystr, 'hex'); 
+		//var pubkeybuf = Buffer(pubkeystr, 'hex');  // deprecated
+		var pubkeybuf = Buffer.from(pubkeystr, 'hex'); 
 		
 		if (ethereumjs.Util.isValidPublic(pubkeybuf)){
 			return true;
@@ -432,7 +435,8 @@ class CryptoKeyEncryption {
 		var ethereumjs = this.getEthereumJsClass();
 		
 		var privkeystr = privkey.substring(2); // remove leading '0x'
-		var privkeybuf = Buffer(privkeystr, 'hex'); 
+		//var privkeybuf = Buffer(privkeystr, 'hex'); // deprecated
+		var privkeybuf = Buffer.from(privkeystr, 'hex'); 
 		
 		if (ethereumjs.Util.isValidPrivate(privkeybuf)){
 			return true;

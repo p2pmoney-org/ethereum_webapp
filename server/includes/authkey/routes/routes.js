@@ -46,6 +46,8 @@ class AuthKeyRoutes {
 		.get(function(req, res) { controllers.session_status(req, res); });
 		app.route(route_root_path + '/session/:id/user')
 		.get(function(req, res) { controllers.session_getUser(req, res); });
+		app.route(route_root_path + '/session/:id/user')
+		.put(function(req, res) { controllers.session_updateUser(req, res); });
 		app.route(route_root_path + '/session/logout')
 		.post(function(req, res) { controllers.session_logout(req, res); });
 		

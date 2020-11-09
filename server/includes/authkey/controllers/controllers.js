@@ -10,6 +10,19 @@ class AuthKeyControllers {
 		this.global = global;
 	}
 	
+	getCalltokenJson(calltoken) {
+		if (calltoken && (calltoken.charAt(0) == '{')) {
+			// try to transform it into an object
+			try {
+				var calltokenjson = JSON.parse(calltoken);
+
+				return calltokenjson;
+			}
+			catch(e) {
+			}
+		}
+	}
+
 	//
 	// auth API
 	//
@@ -28,6 +41,8 @@ class AuthKeyControllers {
 		// POST or GET
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken"); // in the sessiontoken header
+		var calltoken = req.get("calltoken");
+		var calltokenjson = this.getCalltokenJson(calltoken);
 		
 		var sessionid =  req.params.id;
 
@@ -54,7 +69,7 @@ class AuthKeyControllers {
 			var commonservice = global.getServiceInstance('common');
 			var Session = commonservice.Session;
 
-			var section = Session.openSessionSection(global, sessionuuid, 'session_status');
+			var section = Session.openSessionSection(global, sessionuuid, 'session_status', calltokenjson);
 			var session = section.getSession();
 
 			if (session) {
@@ -84,6 +99,8 @@ class AuthKeyControllers {
 		// POST
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
+		var calltoken = req.get("calltoken");
+		var calltokenjson = this.getCalltokenJson(calltoken);
 		
 		global.log("session_authenticate called for sessiontoken " + sessionuuid);
 		
@@ -101,7 +118,7 @@ class AuthKeyControllers {
 				var commonservice = global.getServiceInstance('common');
 				var Session = commonservice.Session;
 
-				var section = Session.openSessionSection(global, sessionuuid, 'session_authenticate');
+				var section = Session.openSessionSection(global, sessionuuid, 'session_authenticate', calltokenjson);
 				var session = section.getSession();
 				
 				var user = authenticationserver.getUser(session, username);
@@ -130,6 +147,8 @@ class AuthKeyControllers {
 		// POST
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
+		var calltoken = req.get("calltoken");
+		var calltokenjson = this.getCalltokenJson(calltoken);
 		
 		global.log("session_logout called for sessiontoken " + sessionuuid);
 		
@@ -144,7 +163,7 @@ class AuthKeyControllers {
 			var commonservice = global.getServiceInstance('common');
 			var Session = commonservice.Session;
 
-			var section = Session.openSessionSection(global, sessionuuid, 'session_logout');
+			var section = Session.openSessionSection(global, sessionuuid, 'session_logout', calltokenjson);
 			var session = section.getSession();
 			var user = (session ? session.getUser() : null);
 
@@ -175,6 +194,8 @@ class AuthKeyControllers {
 		
 		var sessionid =  req.params.id;
 		var sessionuuid = req.get("sessiontoken");
+		var calltoken = req.get("calltoken");
+		var calltokenjson = this.getCalltokenJson(calltoken);
 		
 		global.log("session_getUser called for sessiontoken " + sessionuuid);
 		
@@ -189,7 +210,7 @@ class AuthKeyControllers {
 				var commonservice = global.getServiceInstance('common');
 				var Session = commonservice.Session;
 
-				var section = Session.openSessionSection(global, sessionuuid, 'session_getUser');
+				var section = Session.openSessionSection(global, sessionuuid, 'session_getUser', calltokenjson);
 				var session = section.getSession();
 				
 				if (!session.isAnonymous()) {
@@ -216,6 +237,65 @@ class AuthKeyControllers {
 	  	res.json(jsonresult);
 	}
 
+	session_updateUser(req, res) {
+		// PUT
+		var global = this.global;
+		
+		var sessionid =  req.params.id;
+		var sessionuuid = req.get("sessiontoken");
+		var calltoken = req.get("calltoken");
+		var calltokenjson = this.getCalltokenJson(calltoken);
+		
+		global.log("session_updateUser called for sessiontoken " + sessionuuid);
+
+		var useruuid  = req.body.useruuid;
+		var useremail  = req.body.user_email;
+
+		
+		var jsonresult;
+
+		try {
+			if (sessionid == sessionuuid) {
+				var authkeyservice = global.getServiceInstance('authkey');
+				var authenticationserver = authkeyservice.getAuthenticationServerInstance();
+
+				
+				var commonservice = global.getServiceInstance('common');
+				var Session = commonservice.Session;
+
+				var section = Session.openSessionSection(global, sessionuuid, 'session_updateUser', calltokenjson);
+				var session = section.getSession();
+				
+				if (session.isAuthenticated()) {
+					var user = session.getUser();
+
+					if ((user.getUserUUID() == useruuid) && (authkeyservice.isValidEmail(session, useremail))) {
+						user.setUserEmail(useremail);
+
+						authenticationserver.saveUser(session, user);
+					}
+					
+					jsonresult = {status: 1, useruuid: user.getUserUUID(), username: user.getUserName(), useremail: user.getUserEmail()};
+				}
+				else {
+					jsonresult = {status: 0, error: "session is not authenticated"};
+				}
+				
+			}
+			else {
+				jsonresult = {status: 0, error: "can not query details of another session"};
+			}
+		}
+		catch(e) {
+			global.log("exception in session_updateUser for sessiontoken " + sessionuuid + ": " + e);
+			jsonresult = {status: 0, error: "exception could not update user details"};
+		}
+		
+	  	
+	  	if (section) section.close();
+	  	res.json(jsonresult);
+	}
+
 	//
 	// key API
 	//
@@ -223,6 +303,8 @@ class AuthKeyControllers {
 		// GET
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
+		var calltoken = req.get("calltoken");
+		var calltokenjson = this.getCalltokenJson(calltoken);
 		
 		global.log("session_getCryptoKeys called for sessiontoken " + sessionuuid);
 		
@@ -235,7 +317,7 @@ class AuthKeyControllers {
 		var jsonresult;
 		
 		try {
-			var section = Session.openSessionSection(global, sessionuuid, 'session_getCryptoKeys');
+			var section = Session.openSessionSection(global, sessionuuid, 'session_getCryptoKeys', calltokenjson);
 			var session = section.getSession();
 			
 			if (session.isAuthenticated()) {
@@ -302,6 +384,8 @@ class AuthKeyControllers {
 		// PUT
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
+		var calltoken = req.get("calltoken");
+		var calltokenjson = this.getCalltokenJson(calltoken);
 		
 		global.log("user_addKey called for sessiontoken " + sessionuuid);
 		
@@ -323,7 +407,7 @@ class AuthKeyControllers {
 		var jsonresult;
 		
 		try {
-			var section = Session.openSessionSection(global, sessionuuid, 'user_addKey');
+			var section = Session.openSessionSection(global, sessionuuid, 'user_addKey', calltokenjson);
 			var session = section.getSession();
 			
 			if (session.isAuthenticated()) {
@@ -364,12 +448,16 @@ class AuthKeyControllers {
 	}
 
 	//
-	// Account API
+	// Account API (storage domain)
 	//
+
+
 	session_getAccountKeys(req, res) {
 		// GET
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
+		var calltoken = req.get("calltoken");
+		var calltokenjson = this.getCalltokenJson(calltoken);
 		
 		global.log("session_getAccountKeys called for sessiontoken " + sessionuuid);
 		
@@ -382,7 +470,7 @@ class AuthKeyControllers {
 		var jsonresult;
 		
 		try {
-			var section = Session.openSessionSection(global, sessionuuid, 'session_getAccountKeys');
+			var section = Session.openSessionSection(global, sessionuuid, 'session_getAccountKeys', calltokenjson);
 			var session = section.getSession();
 			
 			if (session.isAuthenticated()) {
@@ -429,6 +517,8 @@ class AuthKeyControllers {
 		// PUT
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
+		var calltoken = req.get("calltoken");
+		var calltokenjson = this.getCalltokenJson(calltoken);
 		
 		global.log("user_addAccount called for sessiontoken " + sessionuuid);
 		
@@ -450,7 +540,7 @@ class AuthKeyControllers {
 		var jsonresult;
 		
 		try {
-			var section = Session.openSessionSection(global, sessionuuid, 'user_addAccount');
+			var section = Session.openSessionSection(global, sessionuuid, 'user_addAccount', calltokenjson);
 			var session = section.getSession();
 			
 			if (session.isAuthenticated()) {
@@ -482,6 +572,7 @@ class AuthKeyControllers {
 		}
 		catch(e) {
 			global.log("exception in user_addAccount for sessiontoken " + sessionuuid + ": " + e);
+			console.log(e.stack);
 
 			jsonresult = {status: 0, error: "exception could add account"};
 		}
@@ -495,6 +586,8 @@ class AuthKeyControllers {
 		// PUT
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
+		var calltoken = req.get("calltoken");
+		var calltokenjson = this.getCalltokenJson(calltoken);
 		
 		global.log("user_updateAccount called for sessiontoken " + sessionuuid);
 		
@@ -517,7 +610,7 @@ class AuthKeyControllers {
 		var jsonresult;
 		
 		try {
-			var section = Session.openSessionSection(global, sessionuuid, 'user_updateAccount');
+			var section = Session.openSessionSection(global, sessionuuid, 'user_updateAccount', calltokenjson);
 			var session = section.getSession();
 			
 			if (session.isAuthenticated()) {
@@ -560,6 +653,8 @@ class AuthKeyControllers {
 		// PUT
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
+		var calltoken = req.get("calltoken");
+		var calltokenjson = this.getCalltokenJson(calltoken);
 		
 		global.log("user_reactivateAccount called for sessiontoken " + sessionuuid);
 		
@@ -576,7 +671,7 @@ class AuthKeyControllers {
 		var jsonresult;
 		
 		try {
-			var section = Session.openSessionSection(global, sessionuuid, 'user_reactivateAccount');
+			var section = Session.openSessionSection(global, sessionuuid, 'user_reactivateAccount', calltokenjson);
 			var session = section.getSession();
 			
 			if (session.isAuthenticated()) {
@@ -616,6 +711,8 @@ class AuthKeyControllers {
 		// PUT
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
+		var calltoken = req.get("calltoken");
+		var calltokenjson = this.getCalltokenJson(calltoken);
 		
 		global.log("user_deactivateAccount called for sessiontoken " + sessionuuid);
 		
@@ -632,7 +729,7 @@ class AuthKeyControllers {
 		var jsonresult;
 		
 		try {
-			var section = Session.openSessionSection(global, sessionuuid, 'user_deactivateAccount');
+			var section = Session.openSessionSection(global, sessionuuid, 'user_deactivateAccount', calltokenjson);
 			var session = section.getSession();
 			
 			if (session.isAuthenticated()) {
@@ -671,6 +768,8 @@ class AuthKeyControllers {
 		// PUT
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
+		var calltoken = req.get("calltoken");
+		var calltokenjson = this.getCalltokenJson(calltoken);
 		
 		global.log("user_removeAccount called for sessiontoken " + sessionuuid);
 		
@@ -687,7 +786,7 @@ class AuthKeyControllers {
 		var jsonresult;
 		
 		try {
-			var section = Session.openSessionSection(global, sessionuuid, 'user_removeAccount');
+			var section = Session.openSessionSection(global, sessionuuid, 'user_removeAccount', calltokenjson);
 			var session = section.getSession();
 			
 			if (session.isAuthenticated()) {

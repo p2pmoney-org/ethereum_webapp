@@ -48,7 +48,118 @@ class AuthenticationServer {
 		return false;
 		
 	}
+
+	_canAccessUser(session, useruuid) {
+		if (!session.isAuthenticated())
+			return false;
+		
+		var currentuser = session.getUser();
+		
+		if ((currentuser.getUserUUID() != useruuid) && (!currentuser.isSuperAdmin()))
+			return false;
+			
+		return true;
+	}
+
+	// read
+	_readRealUserDetails(session, useruuid) {
+		var _useruuid =  this._getSafeUserUUID(session, useruuid)
+		var userdetails = this.persistor.getUserArrayFromUUID(_useruuid);
+
+		if (!userdetails || !userdetails['useruuid'])
+			return;
+
+		// we replace the potentially hashed uuid back to this one
+		userdetails['useruuid'] = useruuid;
+
+		return userdetails;
+	}
+
+	_readRealUserFromArray(commonservice, session, userdetails) {
+		var user = commonservice.createBlankUserInstance();
+
+		var _realuseruuid = (session.getUser() ? session.getUser().getUserUUID() : null);
+		var _safeuseruuid = this._getSafeUserUUID(session);
+		
+		user.setUserName(userdetails['username']);
+		
+		if (userdetails['useremail'])
+			user.setUserEmail(userdetails['useremail']);
+		
+		if (userdetails['useruuid']) {
+			// we replace user uuid with real useruuid if it
+			// has been transformed
+			var _useruuid = userdetails['useruuid'];
+
+			if (_safeuseruuid && (_safeuseruuid == _useruuid) && (_useruuid != _realuseruuid))
+			_useruuid = _realuseruuid;
+
+			user.setUserUUID(_useruuid);
+		}
+			
+		
+		user.setAccountStatus(userdetails['accountstatus'] ? userdetails['accountstatus'] : 2);
+		
+		return user;
+	}
+
+	_readRealUserKey(session, userkey) {
+		var _realuseruuid = (session.getUser() ? session.getUser().getUserUUID() : null);
+		var _safeuseruuid = this._getSafeUserUUID(session);
+
+		if (userkey['useruuid']) {
+			// we replace user uuid with real useruuid if it
+			// has been transformed
+			var _useruuid = userkey['useruuid'];
+
+			if (_safeuseruuid && (_safeuseruuid == _useruuid) && (_useruuid != _realuseruuid)) {
+				userkey['useruuid'] = _realuseruuid;
+			}
+		}
+
+		return userkey;
+	}
+
+	// write
+	_getSafeUserUUID(session, useruuid) {
+		var global = this.global;
+		var _useruuid;
+
+		if (useruuid) {
+			if (global.getConfigValue('authkey_server_passthrough') !== true)
+			return useruuid;
+
+			_useruuid = useruuid;
+		}
+		else {
+			// get current session's useruuid
+			var currentuser = session.getUser();
+		
+			if (!currentuser)
+				return null;
 	
+			_useruuid = currentuser.getUserUUID();
+
+			if ((!_useruuid) && (!currentuser.isSuperAdmin()))
+				throw 'user has no uuid';
+		}
+
+		if (session.auth_url_hash && (session.auth_url_hash != 'default')) {
+
+			// we replace useruuid with a hash of url and useruuid 
+			// to avoid collisions between different urls
+			// (or proxies) of same authentication server
+			var userid = this.service.getUserIdHash(_useruuid);
+
+			return session.auth_url_hash + '-' + userid;
+		}
+		else {
+			return _useruuid;
+		}
+
+	}
+	
+	// API
 	getUserDetails(session) {
 		var username = session.getUser().getUserName();
 		
@@ -56,7 +167,13 @@ class AuthenticationServer {
 	}
 	
 	getUserKeysFromUserUUID(session, useruuid) {
-		var keys = this.persistor.getUserKeysFromUserUUID(useruuid);
+		var _useruuid = this._getSafeUserUUID(session, useruuid);
+
+		var keys = this.persistor.getUserKeysFromUserUUID(_useruuid);
+
+		for (var i = 0; i < (keys ? keys.length : 0); i++) {
+			keys[i] = this._readRealUserKey(session, keys[i]);
+		}
 		
 		return keys;
 	}
@@ -81,14 +198,13 @@ class AuthenticationServer {
 	}
 	
 	getUserKeys(session) {
-		var user = session.getUser();
+		var _useruuid = this._getSafeUserUUID(session);
 		
-		if (!user)
-			throw 'session is not identified';
+		var keys = this.persistor.getUserKeysFromUserUUID(_useruuid);
 		
-		var useruuid = user.getUserUUID();
-		
-		var keys = this.persistor.getUserKeysFromUserUUID(useruuid);
+		for (var i = 0; i < (keys ? keys.length : 0); i++) {
+			keys[i] = this._readRealUserKey(session, keys[i]);
+		}
 		
 		// create array of cryptokey objects
 		var cryptokeys = [];
@@ -196,67 +312,59 @@ class AuthenticationServer {
 		
 		var description = cryptokey.getDescription(); 
 		
-		this.persistor.putUserKey(useruuid, keyuuid, privatekey, publickey, address, rsapublickey, type, description);
+		var _useruuid = this._getSafeUserUUID(session, useruuid);
+
+		this.persistor.putUserKey(_useruuid, keyuuid, privatekey, publickey, address, rsapublickey, type, description);
 	}
 
 	saveUserKey(session, useruuid, cryptokey) {
 		var keyuuid = cryptokey.getKeyUUID();
 		
 		// update only description for existing key
-		var description = cryptokey.getDescription(); 
+		var description = cryptokey.getDescription();
 		
-		this.persistor.updateUserKey(useruuid, keyuuid, description);
+		var _useruuid = this._getSafeUserUUID(session, useruuid);
+
+		this.persistor.updateUserKey(_useruuid, keyuuid, description);
 	}
 
 	reactivateUserKey(session, useruuid, cryptokey) {
 		var keyuuid = cryptokey.getKeyUUID();
-		var sessionuseruuid = session.getUserUUID();
 		
-		if (sessionuseruuid != useruuid)
+		if (!this._canAccessUser(session, useruuid) )
 			throw 'can not activate a key from another user';
 		
-		this.persistor.reactivateUserKey(useruuid, keyuuid);
+		var _useruuid = this._getSafeUserUUID(session, useruuid);
+		
+		this.persistor.reactivateUserKey(_useruuid, keyuuid);
 	}
 
 	
 	deactivateUserKey(session, useruuid, cryptokey) {
 		var keyuuid = cryptokey.getKeyUUID();
-		var sessionuseruuid = session.getUserUUID();
-		
-		if (sessionuseruuid != useruuid)
+
+		if (!this._canAccessUser(session, useruuid) )
 			throw 'can not deactivate a key from another user';
+
+		var _useruuid = this._getSafeUserUUID(session, useruuid);
 		
-		this.persistor.deactivateUserKey(useruuid, keyuuid);
+		this.persistor.deactivateUserKey(_useruuid, keyuuid);
 	}
 
 	
 	removeUserKey(session, useruuid, cryptokey) {
 		var keyuuid = cryptokey.getKeyUUID();
-		var sessionuseruuid = session.getUserUUID();
 		
-		if (sessionuseruuid != useruuid)
-			throw 'can not deactivate a key from another user';
-		
+		if (!this._canAccessUser(session, useruuid) )
+			throw 'can not remove a key from another user';
+
+		var _useruuid = this._getSafeUserUUID(session, useruuid);
+
 		// we should not delete a key, we should just put a flag telling is has been deactivated
-		this.persistor.deactivateUserKey(useruuid, keyuuid);
+		this.persistor.deactivateUserKey(_useruuid, keyuuid);
 	}
 
 	
-	_getUserFromArray(commonservice, userdetails) {
-		var user = commonservice.createBlankUserInstance();
-		
-		user.setUserName(userdetails['username']);
-		
-		if (userdetails['useremail'])
-			user.setUserEmail(userdetails['useremail']);
-		
-		if (userdetails['useruuid'])
-			user.setUserUUID(userdetails['useruuid']);
-		
-		user.setAccountStatus(userdetails['accountstatus'] ? userdetails['accountstatus'] : 2);
-		
-		return user;
-	}
 	
 	getUser(session, username) {
 		var userdetails = this._getUserArray(username);
@@ -264,37 +372,35 @@ class AuthenticationServer {
 		var global = this.global;
 		var commonservice = global.getServiceInstance('common');
 		
-		var user = this._getUserFromArray(commonservice, userdetails);
+		var user = this._readRealUserFromArray(commonservice, session, userdetails);
 		
 		return user;
 	}
 	
-	userExistsFromUUID(useruuid) {
+	userExistsFromUUID(session, useruuid) {
 		if (!useruuid)
 			return false;
 		
 		var global = this.global;
-		var userdetails = this.persistor.getUserArrayFromUUID(useruuid);
+
+		var userdetails = this._readRealUserDetails(session, useruuid);
 		
-		return (userdetails.useruuid == useruuid);
+		return (userdetails && (userdetails.useruuid == useruuid) ? true : false);
 	}
-	
+
 	getUserFromUUID(session, useruuid) {
-		// TODO: check this sessions has the rights to read this user
 		if (!session.isAuthenticated())
 			throw 'Session is not authenticated';
 		
-		var currentuser = session.getUser();
-		
-		if ((currentuser.getUserUUID() != useruuid) && (!currentuser.isSuperAdmin()))
+		if (!this._canAccessUser(session, useruuid) )
 			throw 'User does not have the rights to read another user';
 			
-		var userdetails = this.persistor.getUserArrayFromUUID(useruuid);
+		var userdetails = this._readRealUserDetails(session, useruuid);
 		
 		var global = this.global;
 		var commonservice = global.getServiceInstance('common');
 		
-		var user = this._getUserFromArray(commonservice, userdetails);
+		var user = this._readRealUserFromArray(commonservice, session, userdetails);
 		
 		return user;
 	}
@@ -303,8 +409,11 @@ class AuthenticationServer {
 		var global = this.global;
 		
 		var array = {};
-		
-		array.useruuid = user.getUserUUID();
+
+		var useruuid = user.getUserUUID();
+		var _useruuid = this._getSafeUserUUID(session, useruuid);
+
+		array.useruuid = _useruuid;
 		array.useremail = user.getUserEmail();
 		array.username = user.getUserName();
 		array.accountstatus = user.getAccountStatus();
@@ -324,7 +433,9 @@ class AuthenticationServer {
 		array.password = (passwordobject.hashmethod == 0 ? passwordobject.clearpassword : passwordobject.hashpassword);
 		array.salt = passwordobject.salt;
 
-		this.persistor.putUserPassword(useruuid, array);
+		var _useruuid = this._getSafeUserUUID(session, useruuid);
+
+		this.persistor.putUserPassword(_useruuid, array);
 	}
 	
 	getUsers(session) {
@@ -337,7 +448,7 @@ class AuthenticationServer {
 		
 		for (var i = 0; i < usersarray.length; i++) {
 			var userdetails = usersarray[i];
-			array.push(this._getUserFromArray(commonservice, userdetails));
+			array.push(this._readRealUserFromArray(commonservice, session, userdetails));
 		}
 		
 		return array;

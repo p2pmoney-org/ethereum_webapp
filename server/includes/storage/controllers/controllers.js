@@ -10,6 +10,19 @@ class StorageControllers {
 		this.global = global;
 	}
 	
+	getCalltokenJson(calltoken) {
+		if (calltoken && (calltoken.charAt(0) == '{')) {
+			// try to transform it into an object
+			try {
+				var calltokenjson = JSON.parse(calltoken);
+
+				return calltokenjson;
+			}
+			catch(e) {
+			}
+		}
+	}
+
 	//
 	// storage API
 	//
@@ -21,6 +34,8 @@ class StorageControllers {
 		// POST
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
+		var calltoken = req.get("calltoken");
+		var calltokenjson = this.getCalltokenJson(calltoken);
 		
 		global.log("user_storage called for sessiontoken " + sessionuuid);
 		
@@ -32,7 +47,7 @@ class StorageControllers {
 		var jsonresult;
 		
 		try {
-			var section = Session.openSessionSection(global, sessionuuid, 'user_storage');
+			var section = Session.openSessionSection(global, sessionuuid, 'user_storage', calltokenjson);
 			var session = section.getSession();
 			
 			if (session.isAuthenticated()) {
@@ -65,6 +80,8 @@ class StorageControllers {
 		// PUT
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
+		var calltoken = req.get("calltoken");
+		var calltokenjson = this.getCalltokenJson(calltoken);
 		
 		global.log("put_user_storage called for sessiontoken " + sessionuuid);
 		
@@ -77,7 +94,7 @@ class StorageControllers {
 		var jsonresult;
 		
 		try {
-			var section = Session.openSessionSection(global, sessionuuid, 'put_user_storage');
+			var section = Session.openSessionSection(global, sessionuuid, 'put_user_storage', calltokenjson);
 			var session = section.getSession();
 			
 			if (session.isAuthenticated()) {
@@ -111,6 +128,8 @@ class StorageControllers {
 		// DELETE
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
+		var calltoken = req.get("calltoken");
+		var calltokenjson = this.getCalltokenJson(calltoken);
 		
 		global.log("delete_user_storage called for sessiontoken " + sessionuuid);
 		
@@ -122,7 +141,7 @@ class StorageControllers {
 		var jsonresult;
 		
 		try {
-			var section = Session.openSessionSection(global, sessionuuid, 'put_user_storage');
+			var section = Session.openSessionSection(global, sessionuuid, 'put_user_storage', calltokenjson);
 			var session = section.getSession();
 			
 			if (session.isAuthenticated()) {
@@ -157,6 +176,8 @@ class StorageControllers {
 		// PUT
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
+		var calltoken = req.get("calltoken");
+		var calltokenjson = this.getCalltokenJson(calltoken);
 		
 		global.log("user_import called for sessiontoken " + sessionuuid);
 		
@@ -169,7 +190,7 @@ class StorageControllers {
 		var jsonresult;
 		
 		try {
-			var section = Session.openSessionSection(global, sessionuuid, 'user_import');
+			var section = Session.openSessionSection(global, sessionuuid, 'user_import', calltokenjson);
 			var session = section.getSession();
 			
 			if (session.isAuthenticated()) {
@@ -204,6 +225,8 @@ class StorageControllers {
 		// POST
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
+		var calltoken = req.get("calltoken");
+		var calltokenjson = this.getCalltokenJson(calltoken);
 		
 		global.log("user_export called for sessiontoken " + sessionuuid);
 		
@@ -215,7 +238,7 @@ class StorageControllers {
 		var jsonresult;
 		
 		try {
-			var section = Session.openSessionSection(global, sessionuuid, 'user_export');
+			var section = Session.openSessionSection(global, sessionuuid, 'user_export', calltokenjson);
 			var session = section.getSession();
 			
 			if (session.isAuthenticated()) {

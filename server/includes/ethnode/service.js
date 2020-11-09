@@ -18,6 +18,7 @@ class Service {
 		this.web3_provider_port= null;
 		
 		this.web3_providers = null;
+
 	}
 	
 	loadService() {
@@ -31,7 +32,11 @@ class Service {
 		
 		var config = global.config;
 		this.web3_provider_url = (config && (typeof config["web3_provider_url"] != 'undefined') ? config["web3_provider_url"] : 'http://localhost');
-		this.web3_provider_port= (config && (typeof config["web3_provider_port"] != 'undefined') ? config["web3_provider_port"] : '8545');
+		this.web3_provider_port = (config && (typeof config["web3_provider_port"] != 'undefined') ? config["web3_provider_port"] : '8545');
+
+		this.protected_read = (config && (typeof config["web3_protected_read"] != 'undefined') ? config["web3_protected_read"] : false);
+		this.protected_write = (config && (typeof config["web3_protected_write"] != 'undefined') ? config["web3_protected_write"] : true);
+
 	}
 
 	// optional  service functions
@@ -659,6 +664,21 @@ class Service {
 		// check if ethereum_node_instance needs to be reset
 		if (session.ethereum_node)
 			session.ethereum_node = null;
+	}
+
+	// rigths
+	canRead(session) {
+		if (this.protected_read != true)
+			return true;
+		else
+			return session.isAuthenticated();
+	}
+	
+	canWrite(session) {
+		if (this.protected_write === false)
+			return true;
+		else
+			return session.isAuthenticated();
 	}
 	
 	// faucet

@@ -143,6 +143,7 @@ class DataBasePersistor {
 				array['useremail'] = row.UserEmail;
 				array['password'] = row.Password;
 				array['hashmethod'] = row.HashMethod;
+				array['altloginmethod'] = row.AltLoginMethod;
 				array['salt'] = row.Salt;
 				array['accountstatus'] = row.AccountStatus;
 			}

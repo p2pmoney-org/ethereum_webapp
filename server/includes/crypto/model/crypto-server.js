@@ -133,6 +133,25 @@ class CryptoServer {
 			return false;
 		}
 	}
+
+	getStringHash(datastring, length) {
+		var crypto = require('crypto');	
+
+		var keystring = 'gktlwsm';
+	
+		var hashf = 'sha256';
+		var data = Buffer.from(datastring);
+		var key = Buffer.from(keystring);
+		
+		var hmac = crypto.createHmac(hashf, key);
+		hmac.update(datastring); 
+
+		var hash_hex_str = hmac.digest('hex');
+
+
+		return hash_hex_str.substring(0, length);
+
+	}
 }
 
 module.exports = CryptoServer;

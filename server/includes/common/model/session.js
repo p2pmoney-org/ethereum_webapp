@@ -4,16 +4,28 @@
 'use strict';
 
 var SessionSection = class {
-	constructor(global, sessionuuid, name) {
+	constructor(global, sessionuuid, name, calltoken) {
 		this.global = global;
 		this.sessionuuid = sessionuuid;
 		this.name = name;
+
+		this.calltoken = calltoken;
+
+		if (calltoken && calltoken.auth) {
+			var authkeyservice = global.getServiceInstance('authkey');
+			var authurl = calltoken.auth;
+
+			this.auth_url_hash = authkeyservice.getAuthUrlHash(authurl);
+		}
 		
 		this.events = [];
 		
 		this.uuid = global.guid();
 
 		this.session = null;
+
+		this.isanonymous = null;
+		this.isauthenticated = null;
 		
 		this.record('section_opened_on');
 		
@@ -43,7 +55,37 @@ var SessionSection = class {
 		var requested_on = Date.now();
 		this.record('session_requested_on');
 		
-		this.session = Session.getSession(this.global, this.sessionuuid);
+		var mainsession = Session.getSession(this.global, this.sessionuuid);
+
+		if (global.getConfigValue('authkey_server_passthrough') === true) {
+			// we allow other authentication servers than the default one
+			if (!this.auth_url_hash || (this.auth_url_hash == 'default'))
+			this.session = mainsession;
+			else {
+				// transient variables (not saved in database)
+				var childsessionmap = mainsession.getChildSessionMap();
+
+				if (childsessionmap[this.auth_url_hash])
+					this.session = childsessionmap[this.auth_url_hash];
+				else {
+					// note: as long as we do not pass the SessionSection down
+					// to the the RemoteAuthentication server, we are
+					// force to spawn a new session to keep the authentication
+					// context in this session instead of in the section
+					this.session = Session.createBlankSession(global);
+
+					this.session.auth_url_hash = this.auth_url_hash;
+					this.session.auth_url = this.calltoken.auth;
+					this.session.attachAsChild(mainsession);
+
+					childsessionmap[this.auth_url_hash] = this.session;
+				}
+			}
+		}
+		else {
+			this.session = mainsession;
+		}
+		
 		
 		var retrieved_on = Date.now();
 		this.record('session_retrieved_on');
@@ -51,6 +93,32 @@ var SessionSection = class {
 		global.log('retrieving session ' + (this.name ? 'for "' + this.name + '" ' : '') + 'took ' + (retrieved_on - requested_on) + ' ms');
 		
 		return this.session;
+	}
+
+	isAnonymous() {
+		// we cache the value within the span
+		// of a call materialized by a section
+		if (this.isanonymous !== undefined)
+			return this.isanonymous;
+		else {
+			var session = this.getSession();
+			this.isanonymous = session.isAnonymous();
+
+			return this.isanonymous;
+		}
+	}
+	
+	isAuthenticated() {
+		// we cache the value within the span
+		// of a call materialized by a section
+		if (this.isauthenticated !== undefined)
+			return this.isauthenticated;
+		else {
+			var session = this.getSession();
+			this.isauthenticated = session.isAuthenticated();
+
+			return this.isauthenticated;
+		}
 	}
 	
 	record(eventname) {
@@ -252,6 +320,13 @@ class Session {
 
 		// authentication
 		this.isauthenticated = false;
+
+
+		var session_time_length = global.getConfigValue('session_time_length'); // -1 means infinite
+		this.session_time_length = (session_time_length ? session_time_length : 2*60*60*1000);
+
+		var session_obsolence_length = global.getConfigValue('session_obsolence_length'); 
+		this.session_obsolence_length = (session_obsolence_length > 0 ? session_obsolence_length : 24*60*60*1000);
 		
 		// object map
 		this.objectmap = Object.create(null); // only in memory
@@ -277,6 +352,7 @@ class Session {
 		return (this.issticky !== false);
 	}
 	
+	// sections for call contexts
 	openSection(name) {
 		var global = this.global;
 		var sessionuuid = this.sessionuuid;
@@ -289,33 +365,101 @@ class Session {
 		section.close();
 	}
 	
-	/*_acquiremutex(mutextype) {
-		var global = this.global;
+	// child sessions
+	getChildSessionMap() {
+		// transient variables (not saved in database)
+		var childsessionmap = this.getObject('childsessionmap');
 		
-		// we create a mutex to acquire a lock
-		var SessionMutex = require('./sessionmutex.js');
-		
-		var sessionmutex = SessionMutex.get(this, mutextype);
-		
-		global.log('test mutex ' + sessionmutex.instanceuuid + ' to be acquired');
-		sessionmutex.acquire(5000, function(mutex) {
-			global.log('test mutex ' + mutex.instanceuuid + ' has been acquired');
-			setTimeout(function() {
-				sessionmutex.release(function() {
-					global.log('test mutex ' + mutex.instanceuuid + ' released after 3 seconds');
-				});
-			  }, 500);
-			
-		});
+		if (!childsessionmap) {
+			childsessionmap = Object.create(null);
+			this.pushObject('childsessionmap', childsessionmap);
+		}
 
-		global.log('mutex ' + sessionmutex.instanceuuid + ' of type ' + mutextype + ' to be acquired');
-		sessionmutex.acquire(5000, function(mutex) {
-			global.log('mutex ' + mutex.instanceuuid + ' of type ' + mutextype + ' has been acquired');
-		});
+		return childsessionmap;
+	}
+
+	getChildSessions() {
+		var childsessionmap = this.getChildSessionMap();
 		
-		return sessionmutex;
-	}*/
+		var array = [];
+		
+		for (var key in childsessionmap) {
+		    if (!childsessionmap[key]) continue;
+		    
+		    array.push(childsessionmap[key]);
+		}
+		
+		return array;
+	}
 	
+	cleanChildSessions() {
+		var session = this;
+
+		var childsessionmap = session.getObject('childsessionmap');
+		
+		// empty map
+		if (childsessionmap) {
+			childsessionmap = Object.create(null);
+			session.pushObject('childsessionmap', childsessionmap);
+		}
+	}
+	
+	getParentSession() {
+		var session = this;
+
+		var parentsession = session.getObject('parentsession');
+		
+		if (parentsession) {
+			return parentsession;
+		}
+	}
+	
+	attachAsChild(parentsession) {
+		var session = this;
+
+		if (parentsession) {
+			var childsession = session;
+			
+			// detach from former parent (if any)
+			childsession.detachAsChild()
+			
+			// attach to new
+			var childsessionmap = parentsession.getChildSessionMap();
+			
+			// put child session in parent's child session map
+			var parentsessionuuid = parentsession.getSessionUUID();
+			var childsessionuuid = childsession.getSessionUUID();
+			
+			childsessionmap[childsessionuuid] = childsession;
+			childsession.pushObject('parentsession', parentsession);
+			
+			console.log('attaching child session ' + childsessionuuid  + '  to ' + parentsessionuuid);
+		}
+	}
+	
+	detachAsChild() {
+		var session = this;
+
+		// former parent
+		var oldparentsession = this.getParentSession();
+		
+		if (oldparentsession) {
+			var childsession = session;
+			var parentsession = oldparentsession;
+			
+			var childsessionmap = parentsession.getChildSessionMap();
+			
+			// remove child session from parent's child session map
+			var parentsessionuuid = parentsession.getSessionUUID();
+			var childsessionuuid = childsession.getSessionUUID();
+			
+			delete childsessionmap[childsessionuuid];
+			childsession.pushObject('parentsession', null);
+			
+			console.log('detaching child session ' + childsessionuuid  + '  to ' + parentsessionuuid);
+		}
+	}
+
 	save() {
 		var global = this.global;
 		
@@ -599,8 +743,9 @@ class Session {
 
 		// current check
 		var now = Date.now();
+		var session_time_length = this.session_time_length;
 		
-		if ((now - this.last_ping_date) < 2*60*60*1000) {
+		if ((session_time_length == -1) || ((now - this.last_ping_date) < session_time_length)) {
 			
 			if (this.isauthenticated)
 				return true;
@@ -608,6 +753,9 @@ class Session {
 				return false;
 		}
 		else {
+			if (this.authenticated)
+				global.log('session ' + this.getSessionUUID() + ' has expired after ' + (now - this.last_ping_date) + ' from last ping');
+
 			this.isauthenticated = false;
 			return false;
 		}
@@ -628,7 +776,7 @@ class Session {
 	
 	isObsolete() {
 		var now = Date.now();
-		return ((now - this.last_ping_date) > 24*60*60*1000)
+		return ((now - this.last_ping_date) > this.session_obsolence_length)
 	}
 	
 	ping() {
@@ -952,8 +1100,8 @@ class Session {
 		sessionmap.pushSession(session);
 	}
 	
-	static openSessionSection(global, sessionuuid, sectionname) {
-		return new SessionSection(global, sessionuuid, sectionname);
+	static openSessionSection(global, sessionuuid, sectionname, calltoken) {
+		return new SessionSection(global, sessionuuid, sectionname, calltoken);
 	}
 
 }
