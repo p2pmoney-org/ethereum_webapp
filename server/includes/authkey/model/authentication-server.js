@@ -14,6 +14,8 @@ class AuthenticationServer {
 		var Persistor = require('./interface/database-persistor.js');
 		
 		this.persistor =  new Persistor(service);
+
+		this.authkey_server_passthrough = service.authkey_server_passthrough;
 	}
 	
 	_getUserArray(username) {
@@ -126,7 +128,7 @@ class AuthenticationServer {
 		var _useruuid;
 
 		if (useruuid) {
-			if (global.getConfigValue('authkey_server_passthrough') !== true)
+			if (this.authkey_server_passthrough !== true)
 			return useruuid;
 
 			_useruuid = useruuid;

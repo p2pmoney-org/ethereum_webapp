@@ -10,8 +10,10 @@ class RemoteAuthenticationServer {
 		this.global = service.global;
 		
 		// default remote authentication
-		this.rest_server_url = service.global.config['authkey_server_url'];
-		this.rest_server_api_path = service.global.config['authkey_server_api_path'];
+		this.rest_server_url = service.authkey_server_url;
+		this.rest_server_api_path = service.authkey_server_api_path;
+		
+		this.authkey_server_passthrough = service.authkey_server_passthrough;
 	}
 
 	_getSessionRestDetails(session) {
@@ -20,7 +22,7 @@ class RemoteAuthenticationServer {
 		var rest_server_url;
 		var	rest_server_api_path;
 
-		if ((global.getConfigValue('authkey_server_passthrough') === true) && session.auth_url_hash && (session.auth_url_hash != 'default')) {
+		if ((this.authkey_server_passthrough === true) && session.auth_url_hash && (session.auth_url_hash != 'default')) {
 			rest_server_url = session.auth_url;
 			rest_server_api_path = ''; // we do not try to find the path back from url
 		}
@@ -42,7 +44,7 @@ class RemoteAuthenticationServer {
 
 		var restcon;
 		
-		if ((global.getConfigValue('authkey_server_passthrough') === true) && session.auth_url_hash && (session.auth_url_hash != 'default')) {
+		if ((this.authkey_server_passthrough === true) && session.auth_url_hash && (session.auth_url_hash != 'default')) {
 			var parentsession = session.getParentSession();
 
 			if (parentsession)
@@ -62,7 +64,7 @@ class RemoteAuthenticationServer {
 
 		var sessionuuid;
 
-		if ((global.getConfigValue('authkey_server_passthrough') === true) && session.auth_url_hash && (session.auth_url_hash != 'default')) {
+		if ((this.authkey_server_passthrough === true) && session.auth_url_hash && (session.auth_url_hash != 'default')) {
 			var parentsession = session.getParentSession();
 
 			if (parentsession)

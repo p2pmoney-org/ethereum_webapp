@@ -29,10 +29,10 @@ class Service {
 
 		this.dapp_root_base_dir = (config && (typeof config["dapp_root_dir"] != 'undefined') ? config["dapp_root_dir"] : null);
 		
-		this.overload_dapp_files = (config && (typeof config["overload_dapp_files"] != 'undefined') ? config["overload_dapp_files"] : 0);
+		this.overload_dapp_files = (config && (typeof config["overload_dapp_files"] != 'undefined') ? parseInt(config["overload_dapp_files"]) : 0);
 		
 		this.webapp_app_dir = (config && (typeof config["webapp_app_dir"] != 'undefined') ? config["webapp_app_dir"] : path.join(global.execution_dir, './webapp/app'));
-		this.copy_dapp_files = (config && (typeof config["copy_dapp_files"] != 'undefined') ? config["copy_dapp_files"] : 0);
+		this.copy_dapp_files = (config && (typeof config["copy_dapp_files"] != 'undefined') ? parseInt(config["copy_dapp_files"]) : 0);
 		
 		this.dapp_root_exec_dir = (this.copy_dapp_files == 1 ? path.join(this.webapp_app_dir, '../') : this.dapp_root_base_dir);
 		

@@ -26,9 +26,15 @@ class Service {
 		
 		//this.users = global.readJson("users");
 
-		var auth_check_frequency = global.getConfigValue('auth_check_frequency');
-		this.auth_check_frequency = (auth_check_frequency ? auth_check_frequency : 5000);
+		// default remote authentication
+		this.authkey_server_url = global.getConfigValue('authkey_server_url');
+		this.authkey_server_api_path = global.getConfigValue('authkey_server_api_path');
 
+		var auth_check_frequency = global.getConfigValue('auth_check_frequency');
+		this.auth_check_frequency = (auth_check_frequency ? parseInt(auth_check_frequency) : 5000);
+
+		var authkey_server_passthrough = global.getConfigValue('authkey_server_passthrough');
+		this.authkey_server_passthrough = (authkey_server_passthrough == 1 ? true : false);
 	}
 
 	// optional  service functions

@@ -9,10 +9,13 @@ var SessionSection = class {
 		this.sessionuuid = sessionuuid;
 		this.name = name;
 
+		// while we don't pass the context down to the the RemoteAuthentication server
+		var authkeyservice = global.getServiceInstance('authkey');
+		this.authkey_server_passthrough = authkeyservice.authkey_server_passthrough;
+
 		this.calltoken = calltoken;
 
 		if (calltoken && calltoken.auth) {
-			var authkeyservice = global.getServiceInstance('authkey');
 			var authurl = calltoken.auth;
 
 			this.auth_url_hash = authkeyservice.getAuthUrlHash(authurl);
@@ -57,7 +60,7 @@ var SessionSection = class {
 		
 		var mainsession = Session.getSession(this.global, this.sessionuuid);
 
-		if (global.getConfigValue('authkey_server_passthrough') === true) {
+		if (this.authkey_server_passthrough === true) {
 			// we allow other authentication servers than the default one
 			if (!this.auth_url_hash || (this.auth_url_hash == 'default'))
 			this.session = mainsession;
@@ -322,11 +325,8 @@ class Session {
 		this.isauthenticated = false;
 
 
-		var session_time_length = global.getConfigValue('session_time_length'); // -1 means infinite
-		this.session_time_length = (session_time_length ? session_time_length : 2*60*60*1000);
-
-		var session_obsolence_length = global.getConfigValue('session_obsolence_length'); 
-		this.session_obsolence_length = (session_obsolence_length > 0 ? session_obsolence_length : 24*60*60*1000);
+		this.session_time_length = global.session_time_length;
+		this.session_obsolence_length = (global.session_obsolence_length > 0 ? global.session_obsolence_length : 24*60*60*1000);
 		
 		// object map
 		this.objectmap = Object.create(null); // only in memory

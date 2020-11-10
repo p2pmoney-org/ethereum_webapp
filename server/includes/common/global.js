@@ -103,10 +103,12 @@ class Global {
 		this.execution_env = this.server_env;
 		
 		this.sticky_session = (config && (typeof config["sticky_session"] != 'undefined') && (config["sticky_session"] == 0) ? false : true);
+		this.session_time_length = (config && (typeof config["session_time_length"] != 'undefined') ? parseInt(config["session_time_length"]) : 2*60*60*1000);
+		this.session_obsolence_length = (config && (typeof config["session_obsolence_length"] != 'undefined') ? parseInt(config["session_obsolence_length"]) : 24*60*60*1000);
 		
 		// logging
-		this.enable_log = (config && (typeof config["enable_log"] != 'undefined') ? config["enable_log"] : 1);
-		this.write_to_log_file = (config && (typeof config["write_to_log_file"] != 'undefined') ? config["write_to_log_file"] : (this.execution_env != 'dev' ? 0 : 1));
+		this.enable_log = (config && (typeof config["enable_log"] != 'undefined') ? parseInt(config["enable_log"]) : 1);
+		this.write_to_log_file = (config && (typeof config["write_to_log_file"] != 'undefined') ? parseInt(config["write_to_log_file"]) : (this.execution_env != 'dev' ? 0 : 1));
 		this.can_write_to_log_file = false;
 		
 		this.logPath = (config && (typeof config["log_path"] != 'undefined') ? config["log_path"] : null);
@@ -164,7 +166,7 @@ class Global {
 		// configuration parameters
 		this.service_name = (config && (typeof config["service_name"] != 'undefined') ? config["service_name"] : 'ethereum_webapp');
 		this.service_uuid = (config && (typeof config["service_uuid"] != 'undefined') ? config["service_uuid"] : this.guid());
-		this.server_listening_port = (config && (typeof config["server_listening_port"] != 'undefined') ? config["server_listening_port"] : 8000);
+		this.server_listening_port = (config && (typeof config["server_listening_port"] != 'undefined') ? parseInt(config["server_listening_port"]) : 8000);
 		this.route_root_path = (config && (typeof config["route_root_path"] != 'undefined') ? config["route_root_path"] : '/api');
 
 		//this.web3_provider_url = (config && (typeof config["web3_provider_url"] != 'undefined') ? config["web3_provider_url"] : 'http://localhost');
@@ -172,7 +174,7 @@ class Global {
 
 		
 		this.mysql_host = (config && (typeof config["mysql_host"] != 'undefined') ? config["mysql_host"] : "localhost");
-		this.mysql_port = (config && (typeof config["mysql_port"] != 'undefined') ? config["mysql_port"] : 3306);
+		this.mysql_port = (config && (typeof config["mysql_port"] != 'undefined') ? parseInt(config["mysql_port"]) : 3306);
 		this.mysql_database = (config && (typeof config["mysql_database"] != 'undefined') ? config["mysql_database"] : null);
 		this.mysql_username = (config && (typeof config["mysql_username"] != 'undefined') ? config["mysql_username"] : null);
 		this.mysql_password = (config && (typeof config["mysql_password"] != 'undefined') ? config["mysql_password"] : null);

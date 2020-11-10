@@ -34,8 +34,8 @@ class Service {
 		this.web3_provider_url = (config && (typeof config["web3_provider_url"] != 'undefined') ? config["web3_provider_url"] : 'http://localhost');
 		this.web3_provider_port = (config && (typeof config["web3_provider_port"] != 'undefined') ? config["web3_provider_port"] : '8545');
 
-		this.protected_read = (config && (typeof config["web3_protected_read"] != 'undefined') ? config["web3_protected_read"] : false);
-		this.protected_write = (config && (typeof config["web3_protected_write"] != 'undefined') ? config["web3_protected_write"] : true);
+		this.protected_read = (config && (typeof config["web3_protected_read"] != 'undefined') && (config["web3_protected_read"] == 1)?  true : false);
+		this.protected_write = (config && (typeof config["web3_protected_write"] != 'undefined') && (config["web3_protected_write"] == 0)?  false : true);
 
 	}
 
