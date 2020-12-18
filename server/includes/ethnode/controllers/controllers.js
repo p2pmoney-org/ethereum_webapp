@@ -295,7 +295,7 @@ class EthNodeControllers {
 	}
 	
 	// node
-	web3_node(req, res) {
+	async web3_node(req, res) {
 		// GET
 		var sessionuuid = req.get("sessiontoken");
 		var calltoken = req.get("calltoken");
@@ -324,7 +324,7 @@ class EthNodeControllers {
 			if (ethnodeservice.canRead(session)) {
 				var ethnode = this.getEthereumNode(session, web3providerurl);
 			
-				var nodeinfo = ethnode.web3_getNodeInfo();
+				var nodeinfo = await ethnode.web3_getNodeInfoAsync();
 				
 				var execenv = global.getExecutionEnvironment();
 				

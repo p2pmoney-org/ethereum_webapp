@@ -23,7 +23,7 @@ if (process.env.ETHEREUM_WEBAPP_EXEC_DIR) {
 //instantiating global object
 var global = Global.getGlobalInstance();
 
-global.current_version = "0.20.1.2020.11.12";
+global.current_version = "0.20.4.2020.12.05";
 global.version_support = ["0.20", "0.14"];
 
 
