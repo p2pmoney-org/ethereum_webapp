@@ -48,6 +48,8 @@ class EthNodeRoutes {
 		.get(function(req, res) { controllers.web3_account_code(req, res); });
 		app.route(route_root_path + '/web3/account/:id/tx/count')
 		.get(function(req, res) { controllers.web3_account_transaction_count(req, res); });
+		app.route(route_root_path + '/web3/account/:id/tx/count')
+		.post(function(req, res) { controllers.web3_account_transaction_count_on(req, res); });
 		
 		app.route(route_root_path + '/web3/block/currentnumber')
 		.get(function(req, res) { controllers.web3_block_current_number(req, res); });

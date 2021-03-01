@@ -503,6 +503,57 @@ class EthNodeControllers {
 		if (section) section.close();
 		res.json(jsonresult);
 	}
+
+	async web3_account_transaction_count_on(req, res) {
+		// POST
+		var sessionuuid = req.get("sessiontoken");
+		var calltoken = req.get("calltoken");
+		var calltokenjson = this.getCalltokenJson(calltoken);
+		var web3providerurl = this.getWeb3ProviderUrlFromCalltoken(calltoken);
+		var address = req.params.id;
+		
+		var defaultBlock = (req.body.defaultblock ? req.body.defaultblock : null);
+
+		var global = this.global;
+		var commonservice = global.getServiceInstance('common');
+		var Session = commonservice.Session;
+
+		global.log("web3_account_transaction_count called for sessiontoken " + sessionuuid + " and defaultblock = " + defaultBlock);
+		
+		var jsonresult;
+		
+		try {
+			var section = Session.openSessionSection(global, sessionuuid, 'web3_account_transaction_count', calltokenjson);
+			var session = section.getSession();
+			var ethnodeservice = this.global.getServiceInstance('ethnode');
+			
+			if (ethnodeservice.canRead(session)) {
+				var ethnode = this.getEthereumNode(session, web3providerurl);
+			
+				var count = await ethnode.web3_getTransactionCountAsync(address, defaultBlock);
+
+				if (count !== null) {
+					jsonresult = {status: 1, count: count};
+				}
+				else {
+					jsonresult = {status: 0, error: "could not retrieve count"};
+				}
+	
+			}
+			else {
+				jsonresult = {status: 0, error: "insufficient rights"};
+			}
+		}
+		catch(e) {
+			global.log("exception in web3_account_transaction_count for sessiontoken " + sessionuuid + " and address " + address + ": " + e);
+
+			jsonresult = {status: 0, error: "exception in web3_account_transaction_count"};
+		}
+
+		
+		if (section) section.close();
+		res.json(jsonresult);
+	}
 	
 	// blocks
 	web3_block_current_number(req, res) {

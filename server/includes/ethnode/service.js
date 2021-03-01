@@ -685,8 +685,6 @@ class Service {
 	topUpAccountSync(session, web3providerurl, address) {
 		var global = this.global;
 		
-		var FLOOR_RATIO = 0.2;
-		
 		var _web3providerurl = (web3providerurl ? web3providerurl : this.getWeb3ProviderFullUrl(session));
 		var _ethereumnodeinstance = this.getEthereumNodeInstance(session, _web3providerurl);
 		var _web3providerinstance = this.getWeb3ProviderInstance(session, _web3providerurl);
@@ -699,6 +697,8 @@ class Service {
 		if (!config.faucet_privatekey)
 			return null;
 		
+		var FLOOR_RATIO = (config.floor_ratio ? config.floor_ratio : 0.2);
+	
 		var top = (config.top_balance ? parseInt(config.top_balance) : 0);
 		var web3balance = _ethereumnodeinstance.web3_getAccountBalance(address);
 		var balance = parseInt(web3balance);

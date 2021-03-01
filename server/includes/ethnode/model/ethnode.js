@@ -1419,13 +1419,16 @@ class EthereumNode {
 		return txarray;
 	}
 	
-	web3_getTransactionCountAsync(address) {
+	web3_getTransactionCountAsync(address, defaultBlock) {
 		var global = this.session.getGlobalInstance();
 		
 		global.log("EthereumNode.web3_getTransactionCountAsync called for " + address);
 		var web3 = this.getWeb3Instance();
 
-		return web3.eth.getTransactionCount(address);
+		if (defaultBlock)
+			return web3.eth.getTransactionCount(address, defaultBlock);
+		else
+			return web3.eth.getTransactionCount(address);
 	}
 
 	web3_getTransactionCount(address) {
