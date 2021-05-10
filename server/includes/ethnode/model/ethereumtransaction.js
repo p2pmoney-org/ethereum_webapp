@@ -26,6 +26,9 @@ class EthereumTransaction {
 		this.nonce = null;
 		
 		this.web3providerurl = null;
+
+		this.chainid = null;
+		this.networkid = null;
 	}
 	
 	getTransactionUUID() {
@@ -123,6 +126,22 @@ class EthereumTransaction {
 		this.web3providerurl = url;
 	}
 	
+	getChainId() {
+		return this.chainid;
+	}
+
+	setChainId(chainid) {
+		this.chainid = chainid;
+	}
+
+	getNetworkId() {
+		return this.networkid;
+	}
+
+	setNetworkId(networkid) {
+		this.networkid = networkid;
+	}
+
 	getTxJson() {
 		var fromaddress = this.fromaddress;
 		var toaddress = this.toaddress;
@@ -134,11 +153,16 @@ class EthereumTransaction {
 		var txdata = (this.data ? this.data : this.rawdata);
 		var nonce = this.nonce;
 		
+		var chainid = this.chainid; // EIP-155 replay protection
+		var networkid = this.networkid;
+		
 		var txjson = {from: fromaddress,
 				to: toaddress,
 				value: value,
 				gas: gas, 
 				gasPrice: gasPrice,
+				chainid: chainid,
+				networkid: networkid
 			};
 		
 		if (nonce)

@@ -18,6 +18,19 @@ class EthNodeControllers {
 		return ethnodeservice.getEthereumNodeInstance(session, web3providerurl);
 	}
 
+	getFieldJson(jsonstring) {
+		if (jsonstring && (jsonstring.charAt(0) == '{')) {
+			// try to transform it into an object
+			try {
+				var json = JSON.parse(jsonstring);
+
+				return json;
+			}
+			catch(e) {
+			}
+		}
+	}
+
 	getCalltokenJson(calltoken) {
 		if (calltoken && (calltoken.charAt(0) == '{')) {
 			// try to transform it into an object
@@ -1063,7 +1076,7 @@ class EthNodeControllers {
 
 
 	// contracts
-	web3_artifact_load(req, res) {
+	async web3_artifact_load(req, res) {
 		// POST
 		var sessionuuid = req.get("sessiontoken");
 		var calltoken = req.get("calltoken");
@@ -1089,7 +1102,7 @@ class EthNodeControllers {
 			if (ethnodeservice.canRead(session)) {
 				var ethnode = this.getEthereumNode(session, web3providerurl);
 			
-				var contractartifact = ethnode.web3_loadArtifact(artifactpath);
+				var contractartifact = await ethnode.web3_loadArtifactAsync(artifactpath);
 		
 				if (contractartifact) {
 					var contractartifactuuid = session.guid();
@@ -1564,6 +1577,62 @@ class EthNodeControllers {
 		
 			if (ethnodeservice.canRead(session)) {
 				var topinfo = await ethnodeservice.topUpAccountAsync(session, web3providerurl, address);
+			}
+			else {
+				jsonresult = {status: 0, error: "insufficient rights"};
+			}
+			
+			if (topinfo !== null) {
+				jsonresult = {status: 1, data: topinfo};
+			}
+			else {
+				jsonresult = {status: 0, error: "could not top-up account"};
+			}
+			
+		}
+		catch(e) {
+			global.log("exception in faucet_top_up for sessiontoken " + sessionuuid + " and address " + address + ": " + e);
+
+			jsonresult = {status: 0, error: "exception in faucet_top_up"};
+		}
+
+		if (section) section.close();
+		res.json(jsonresult);
+	}
+
+	async faucet_top_up_on(req, res) {
+		// POST
+		var sessionuuid = req.get("sessiontoken");
+		var calltoken = req.get("calltoken");
+		var calltokenjson = this.getCalltokenJson(calltoken);
+		var web3providerurl = this.getWeb3ProviderUrlFromCalltoken(calltoken);
+		var address = req.params.id;
+
+		// options
+		var options_string  = req.body.options;
+
+		var options = this.getFieldJson(options_string)
+		
+		var global = this.global;
+		var commonservice = global.getServiceInstance('common');
+		var Session = commonservice.Session;
+
+		if (!sessionuuid) {
+			// we allow calls without a session
+			sessionuuid = global.guid(); // give a one-time sessionuuid
+		}
+		
+		global.log("faucet_top_up called for sessiontoken " + sessionuuid);
+		
+		var jsonresult;
+		
+		try {
+			var section = Session.openSessionSection(global, sessionuuid, 'faucet_top_up', calltokenjson);
+			var session = section.getSession();
+			var ethnodeservice = this.global.getServiceInstance('ethnode');
+		
+			if (ethnodeservice.canRead(session)) {
+				var topinfo = await ethnodeservice.topUpAccountAsync(session, web3providerurl, address, options);
 			}
 			else {
 				jsonresult = {status: 0, error: "insufficient rights"};

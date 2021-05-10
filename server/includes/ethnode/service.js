@@ -33,6 +33,8 @@ class Service {
 		var config = global.config;
 		this.web3_provider_url = (config && (typeof config["web3_provider_url"] != 'undefined') ? config["web3_provider_url"] : 'http://localhost');
 		this.web3_provider_port = (config && (typeof config["web3_provider_port"] != 'undefined') ? config["web3_provider_port"] : '8545');
+		this.web3_provider_chain_id = (config && (typeof config["web3_provider_chain_id"] != 'undefined') ? config["web3_provider_chain_id"] : '1');
+		this.web3_provider_network_id = (config && (typeof config["web3_provider_network_id"] != 'undefined') ? config["web3_provider_network_id"] : '1');
 
 		this.protected_read = (config && (typeof config["web3_protected_read"] != 'undefined') && (config["web3_protected_read"] == 1)?  true : false);
 		this.protected_write = (config && (typeof config["web3_protected_write"] != 'undefined') && (config["web3_protected_write"] == 0)?  false : true);
@@ -168,6 +170,8 @@ class Service {
 		
 		var web3_provider_url = global.getConfigValue('web3_provider_url');
 		var web3_provider_port = global.getConfigValue('web3_provider_port');
+		var web3_provider_chain_id = global.getConfigValue('web3_provider_chain_id');
+		var web3_provider_network_id = global.getConfigValue('web3_provider_network_id');
 		var web3_provider_full_url = this.buildWeb3ProviderUrl(web3_provider_url, web3_provider_port);
 
 
@@ -184,6 +188,8 @@ class Service {
 		// we specify the default web3 provider url for this network
 		// be it a direct access by the client or a middle-tier access via this server
 		network_config.ethnodeserver.web3_provider_url = web3_provider_full_url;
+		network_config.ethnodeserver.chainid = web3_provider_chain_id;
+		network_config.ethnodeserver.networkid = web3_provider_network_id;
 		
 		
 		result.push({service: this.name, handled: true});
@@ -682,7 +688,7 @@ class Service {
 	}
 	
 	// faucet
-	topUpAccountSync(session, web3providerurl, address) {
+	topUpAccountSync(session, web3providerurl, address, options) {
 		var global = this.global;
 		
 		var _web3providerurl = (web3providerurl ? web3providerurl : this.getWeb3ProviderFullUrl(session));
@@ -709,8 +715,9 @@ class Service {
 		
 		var gauge = balance / top;
 		
-		if (gauge < FLOOR_RATIO) {
+		if ((gauge < FLOOR_RATIO) || (options && (options.full === true) && (gauge < 1)) ) {
 			// refill when we drop below FLOOR_RATIO (e.g 20%) of the top
+			// or we are asked for a full top-up and we are not there (or above)
 			var refill = top - balance;
 			
 			var web3faucet_balance = _ethereumnodeinstance.web3_getAccountBalance(config.faucet_account);
@@ -734,6 +741,12 @@ class Service {
 				ethtransaction.setGas(gasLimit);
 				ethtransaction.setGasPrice(gasPrice);
 				
+				if (config.chainid)
+				ethtransaction.setChainId(parseInt(config.chainid));
+				
+				if (config.networkid)
+				ethtransaction.setNetworkId(parseInt(config.networkid));
+				
 				var signed = _ethereumnodeinstance.signEthereumTransaction(ethtransaction);
 				
 				if (signed) {
@@ -755,10 +768,8 @@ class Service {
 		return topinfo;
 	}
 	
-	async topUpAccountAsync(session, web3providerurl, address) {
+	async topUpAccountAsync(session, web3providerurl, address, options) {
 		var global = this.global;
-		
-		var FLOOR_RATIO = 0.2;
 		
 		var _web3providerurl = (web3providerurl ? web3providerurl : this.getWeb3ProviderFullUrl(session));
 		var _ethereumnodeinstance = this.getEthereumNodeInstance(session, _web3providerurl);
@@ -772,6 +783,8 @@ class Service {
 		if (!config.faucet_privatekey)
 			return null;
 		
+		var FLOOR_RATIO = (config.floor_ratio ? config.floor_ratio : 0.2);
+
 		var top = (config.top_balance ? parseInt(config.top_balance) : 0);
 		var web3balance = await _ethereumnodeinstance.web3_getAccountBalanceAsync(address);
 		var balance = parseInt(web3balance);
@@ -782,7 +795,7 @@ class Service {
 		
 		var gauge = balance / top;
 		
-		if (gauge < FLOOR_RATIO) {
+		if ((gauge < FLOOR_RATIO) || (options && (options.full === true) && (gauge < 1)) ) {
 			// refill when we drop below FLOOR_RATIO (e.g 20%) of the top
 			var refill = top - balance;
 			
@@ -806,8 +819,17 @@ class Service {
 				
 				ethtransaction.setGas(gasLimit);
 				ethtransaction.setGasPrice(gasPrice);
+
+				if (config.chainid)
+				ethtransaction.setChainId(parseInt(config.chainid));
 				
-				var signed = await _ethereumnodeinstance.signEthereumTransactionAsync(ethtransaction);
+				if (config.networkid)
+				ethtransaction.setNetworkId(parseInt(config.networkid));
+				
+				var signed = await _ethereumnodeinstance.signEthereumTransactionAsync(ethtransaction)
+				.catch(err => {
+					global.log('topUpAccountAsync: error signing transaction: ' + err);
+				});
 				
 				if (signed) {
 					await _ethereumnodeinstance.web3_sendRawTransactionAsync(ethtransaction);

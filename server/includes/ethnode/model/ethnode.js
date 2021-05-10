@@ -135,11 +135,11 @@ class EthereumNode {
 	getEthereumJsClass() {
 		var ethereumjs;
 		
-		ethereumjs = require('ethereum.js');
+		ethereumjs = require('@ethereumjs/common');
+		ethereumjs.Common = ethereumjs.default;
+		ethereumjs.Tx = require('@ethereumjs/tx').Transaction;
 		ethereumjs.Util = require('ethereumjs-util');
 		ethereumjs.Wallet = require('ethereumjs-wallet');
-		
-		ethereumjs.Tx = require('ethereumjs-tx');
 
 		ethereumjs.Buffer = {};
 		ethereumjs.Buffer.Buffer = Buffer.from;
@@ -162,83 +162,7 @@ class EthereumNode {
 		var result;
 		var finished = false;
 		
-		new Promise((resolve, reject) => {
-			
-			var web3 = this.getWeb3Instance();
-
-			var fromaddress = ethtransaction.getFromAddress();
-			var toaddress = ethtransaction.getToAddress();
-			
-			var amount = ethtransaction.getValue();
-			var gas = ethtransaction.getGas();
-			var gasPrice = ethtransaction.getGasPrice();
-			
-			var txdata = ethtransaction.getData();
-			var nonce = ethtransaction.getNonce();
-
-			
-			var txjson = ethtransaction.getTxJson();
-			
-			
-			if (ethtransaction.canSignTransaction()) {
-				// signing the transaction
-				var ethereumjs = this.getEthereumJsClass();
-				
-				var hexprivkey = ethtransaction.getFromPrivateKey();
-				
-				var privkey = hexprivkey.substring(2);
-				var bufprivkey = ethereumjs.Buffer.Buffer.from(privkey, 'hex');
-
-				
-				// signing
-				if (this.web3_version == "1.0.x") {
-					// Web3 > 1.0
-
-					// turn gas, gasprice and value to hex
-					// not to receive "insufficient funds for gas * price + value"
-					txjson.gas = web3.utils.toHex(gas.toString());
-					txjson.gasPrice = web3.utils.toHex(gasPrice.toString());
-					txjson.value = web3.utils.toHex((txjson.value ? txjson.value.toString() : 0));
-					
-				}
-				else {
-					// Web3 == 0.20.x
-
-					// turn gas, gasprice and value to hex
-					// not to receive "insufficient funds for gas * price + value"
-					txjson.gas = web3.toHex(gas.toString());
-					txjson.gasPrice = web3.toHex(gasPrice.toString());
-					txjson.value = web3.toHex(txjson.value.toString());
-					
-				}
-				
-				var tx = new ethereumjs.Tx(txjson);
-				
-				
-				web3.eth.getTransactionCount(fromaddress, (err, count) => {
-					
-					if (!err) {
-						txjson.nonce = (nonce ? nonce : count);
-						
-						var tx = new ethereumjs.Tx(txjson);
-						
-						tx.sign(bufprivkey);
-
-						var raw = '0x' + tx.serialize().toString('hex');
-						
-						ethtransaction.setRawData(raw);
-						
-						resolve(raw);
-					}
-					else {
-						reject(err, null);
-					}
-				});
-			}
-			else {
-				throw 'transaction can not be signed';
-			}
-		})
+		this.signEthereumTransactionAsync(ethtransaction)
 		.then((res) => {
 			result = true;
 			
@@ -266,95 +190,86 @@ class EthereumNode {
 
 		var result;
 
-		return new Promise((resolve, reject) => {
-			
-			var web3 = this.getWeb3Instance();
+		var web3 = this.getWeb3Instance();
 
-			var fromaddress = ethtransaction.getFromAddress();
-			var toaddress = ethtransaction.getToAddress();
+		var fromaddress = ethtransaction.getFromAddress();
+		var toaddress = ethtransaction.getToAddress();
+		
+		var amount = ethtransaction.getValue();
+		var gas = ethtransaction.getGas();
+		var gasPrice = ethtransaction.getGasPrice();
+		
+		var txdata = ethtransaction.getData();
+		var nonce = ethtransaction.getNonce();
+
+		
+		var txjson = ethtransaction.getTxJson();
+		
+		
+		if (ethtransaction.canSignTransaction()) {
+			// signing the transaction
+			var ethereumjs = this.getEthereumJsClass();
 			
-			var amount = ethtransaction.getValue();
-			var gas = ethtransaction.getGas();
-			var gasPrice = ethtransaction.getGasPrice();
+			var hexprivkey = ethtransaction.getFromPrivateKey();
 			
-			var txdata = ethtransaction.getData();
-			var nonce = ethtransaction.getNonce();
+			var privkey = hexprivkey.substring(2);
+			var bufprivkey = ethereumjs.Buffer.Buffer.from(privkey, 'hex');
 
 			
-			var txjson = ethtransaction.getTxJson();
-			
-			
-			if (ethtransaction.canSignTransaction()) {
-				// signing the transaction
-				var ethereumjs = this.getEthereumJsClass();
-				
-				var hexprivkey = ethtransaction.getFromPrivateKey();
-				
-				var privkey = hexprivkey.substring(2);
-				var bufprivkey = ethereumjs.Buffer.Buffer.from(privkey, 'hex');
+			// signing
+			if (this.web3_version == "1.0.x") {
+				// Web3 > 1.0
 
+				// turn gas, gasprice and value to hex
+				// not to receive "insufficient funds for gas * price + value"
+				txjson.gas = web3.utils.toHex(gas.toString());
+				txjson.gasLimit = web3.utils.toHex(gas.toString());
+				txjson.gasPrice = web3.utils.toHex(gasPrice.toString());
+				txjson.value = web3.utils.toHex((txjson.value ? txjson.value.toString() : 0));
 				
-				// signing
-				if (this.web3_version == "1.0.x") {
-					// Web3 > 1.0
-
-					// turn gas, gasprice and value to hex
-					// not to receive "insufficient funds for gas * price + value"
-					txjson.gas = web3.utils.toHex(gas.toString());
-					txjson.gasPrice = web3.utils.toHex(gasPrice.toString());
-					txjson.value = web3.utils.toHex((txjson.value ? txjson.value.toString() : 0));
-					
-				}
-				else {
-					// Web3 == 0.20.x
-
-					// turn gas, gasprice and value to hex
-					// not to receive "insufficient funds for gas * price + value"
-					txjson.gas = web3.toHex(gas.toString());
-					txjson.gasPrice = web3.toHex(gasPrice.toString());
-					txjson.value = web3.toHex(txjson.value.toString());
-					
-				}
-				
-				var tx = new ethereumjs.Tx(txjson);
-				
-				
-				web3.eth.getTransactionCount(fromaddress, (err, count) => {
-					
-					if (!err) {
-						txjson.nonce = (nonce ? nonce : count);
-						
-						var tx = new ethereumjs.Tx(txjson);
-						
-						tx.sign(bufprivkey);
-
-						var raw = '0x' + tx.serialize().toString('hex');
-						
-						ethtransaction.setRawData(raw);
-						
-						resolve(raw);
-					}
-					else {
-						reject(err, null);
-					}
-				});
 			}
 			else {
-				throw 'transaction can not be signed';
+				// Web3 == 0.20.x
+
+				// turn gas, gasprice and value to hex
+				// not to receive "insufficient funds for gas * price + value"
+				txjson.gas = web3.toHex(gas.toString());
+				txjson.gasLimit = web3.toHex(gas.toString());
+				txjson.gasPrice = web3.toHex(gasPrice.toString());
+				txjson.value = web3.toHex(txjson.value.toString());
+				
 			}
-		})
-		.then((res) => {
-			result = true;
 			
-			return result;
-		})
-		.catch(err => {
-			global.log('error in EthereumNode.signEthereumTransactionAsync: ' + err);
 			
-			result = false;
+			//var count = await web3.eth.getTransactionCount(fromaddress);
+			var count = await this.web3_getTransactionCountAsync(fromaddress, 'pending');
+				
+			txjson.nonce = (nonce ? nonce : count);
+
+			if (!txjson.chainid)
+				txjson.chainid = await this.web3_getChainIdAsync();
+
+			if (!txjson.networkid)
+				txjson.networkid  = await this.web3_getNetworkId();
+					
+			const customChain = ethereumjs.Common.forCustomChain(
+				'mainnet',{ name: 'customchain', networkId: txjson.networkid, chainId: txjson.chainid},
+				'petersburg'
+			);
+
+			var _tx = ethereumjs.Tx.fromTxData(txjson, { common: customChain });;
 			
-			return result;
-		});
+			const _signedTx = _tx.sign(bufprivkey);
+
+			var _raw = '0x' + _signedTx.serialize().toString('hex');
+			
+			ethtransaction.setRawData(_raw);
+
+			return true;
+		}
+		else {
+			throw 'transaction can not be signed';
+		}
 	}
 	
 	
@@ -724,6 +639,58 @@ class EthereumNode {
 		
 		return issyncing;
 	}
+
+	async web3_getChainIdAsync() {
+		var global = this.session.getGlobalInstance();
+		var self = this;
+
+		global.log("EthereumNode.web3_getChainIdAsync called");
+		
+		var web3 = this.getWeb3Instance();
+
+		if (self.web3_version == "1.0.x") {
+			// Web3 > 1.0
+			var funcname = web3.eth.getChainId;
+		}
+		else {
+			// Web3 == 0.20.x
+			var funcname = web3.version.getNetwork; // hope chainid and networkid match
+		}
+
+		var chainid = await funcname()		
+		.catch(error => {
+			global.log('Web3 error: ' + error);
+		});
+		
+		return chainid;
+	}
+
+
+	web3_getChainId() {
+		var global = this.session.getGlobalInstance();
+		var self = this;
+
+		global.log("EthereumNode.web3_getChainId called");
+		var chainid = null;
+		
+		var finished = false;
+		
+		// call Async function
+		this.web3_getChainIdAsync()
+		.then(res => {
+			chainid = res;
+			finished = true;
+		})
+		.catch(error => {
+			finished = true;
+		});
+		
+		// wait to turn into synchronous call
+		while(finished === false)
+		{global.deasync().runLoopOnce();}
+		
+		return chainid;
+	}
 	
 	async web3_getNetworkIdAsync() {
 		var global = this.session.getGlobalInstance();
@@ -861,6 +828,7 @@ class EthereumNode {
 		global.log("EthereumNode.web3_getNodeInfoAsync called");
 		
 		var islistening = await this.web3_isListeningAsync();
+		var chainid = await this.web3_getChainIdAsync();
 		var networkid = await this.web3_getNetworkIdAsync();
 		var peercount = await this.web3_getPeerCountAsync();
 		var issyncing = await this.web3_isSyncingAsync();
@@ -868,6 +836,7 @@ class EthereumNode {
 		var highestblock = await this.web3_getHighestBlockNumberAsync();
 
 		return {
+				chainid: chainid,
 				networkid: networkid,
 				islistening: islistening,
 				peercount: peercount,
@@ -1946,13 +1915,92 @@ class EthereumNode {
 	}
 
 	// from artifact
+	async _http_get_jsonAsync(resourceurl) {
+		return new Promise((resolve, reject) => {
+			var _XMLHttpRequest =  require("xmlhttprequest").XMLHttpRequest;
+			var xhttp = new _XMLHttpRequest();
+			
+			xhttp.open('GET', resourceurl, true);
+			
+			xhttp.setRequestHeader("Content-type", "application/json");
+			
+			xhttp.send();
+			
+			xhttp.onload = function(e) {
+				if (xhttp.status == 200) {
+					var res = {};
+					
+					try {
+						res = JSON.parse(xhttp.responseText);
+					}
+					catch(e) {
+					}
+
+					resolve(res);
+				}
+				else {
+					reject('wrong result');
+				}
+			};
+			
+			xhttp.onerror = function (e) {
+				reject('rest error is ' + xhttp.statusText);
+			};
+		});
+	}
+
 	_loadArtifactFile(artifactpath) {
 		var global = this.session.getGlobalInstance();
 		var webappservice = global.getServiceInstance('ethereum_webapp');
 		
 		return webappservice.getContractArtifactContent(artifactpath);
 	}
-	
+
+	async web3_loadArtifactAsync(artifactpath) {
+		var global = this.session.getGlobalInstance();
+		var session = this.session;
+		
+		global.log("EthereumNode.web3_loadArtifact called for " + artifactpath);
+		
+		var cachename = 'ethnode_artifactcache';
+		var artifactcache = global.getExecutionVariable(cachename);
+		
+		if (!artifactcache) {
+			artifactcache = global.createCacheObject(cachename);
+			artifactcache.setValidityLimit(1800000); // 30 mn
+			global.setExecutionVariable(cachename, artifactcache);
+		}
+		
+		var data = artifactcache.getValue(artifactpath);
+		
+		if (!data)  {
+			if ((artifactpath.startsWith('http://') === true) 
+			|| (artifactpath.startsWith('https://') === true)) {
+				// full url
+				data = await this._http_get_jsonAsync(artifactpath);
+			}
+			else {
+				// relative path
+				var jsonFile = this._loadArtifactFile(artifactpath);
+			
+				if (!jsonFile)
+					throw 'could not find artifact: ' + artifactpath;
+				
+				data = (jsonFile ? JSON.parse(jsonFile) : {});
+			}
+
+			
+			// put in cache
+			artifactcache.putValue(artifactpath, data);
+		}
+		
+		var artifactuuid = session.guid();
+		
+		var web3_contract_artifact = new ArtifactProxy(this, artifactuuid, data, artifactpath);
+		
+		return web3_contract_artifact;
+	}
+
 	web3_loadArtifact(artifactpath) {
 		var global = this.session.getGlobalInstance();
 		var session = this.session;
@@ -1971,12 +2019,20 @@ class EthereumNode {
 		var data = artifactcache.getValue(artifactpath);
 		
 		if (!data)  {
-			var jsonFile = this._loadArtifactFile(artifactpath);
+			if ((artifactpath.startsWith('http://') === true) 
+			|| (artifactpath.startsWith('https://') === true)) {
+				throw 'does not support url, call web3_loadArtifactAsync instead';
+			}
+			else {
+				// relative path
+				var jsonFile = this._loadArtifactFile(artifactpath);
 			
-			if (!jsonFile)
-				throw 'could not find artifact: ' + artifactpath;
-			
-			var data = (jsonFile ? JSON.parse(jsonFile) : {});
+				if (!jsonFile)
+					throw 'could not find artifact: ' + artifactpath;
+				
+				data = (jsonFile ? JSON.parse(jsonFile) : {});
+			}
+
 			
 			// put in cache
 			artifactcache.putValue(artifactpath, data);

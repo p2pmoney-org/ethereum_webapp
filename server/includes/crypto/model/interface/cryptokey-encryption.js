@@ -23,10 +23,15 @@ class CryptoKeyEncryption {
 	getEthereumJsClass() {
 		var ethereumjs;
 		
-		ethereumjs = require('ethereum.js');
-		ethereumjs.Tx = require('ethereumjs-tx');
+		ethereumjs = require('@ethereumjs/common');
+		ethereumjs.Common = ethereumjs.default;
+		ethereumjs.Tx = require('@ethereumjs/tx').Transaction;
 		ethereumjs.Util = require('ethereumjs-util');
 		ethereumjs.Wallet = require('ethereumjs-wallet');
+
+		ethereumjs.Buffer = {};
+		ethereumjs.Buffer.Buffer = Buffer.from;
+		ethereumjs.Buffer.Buffer.from = Buffer.from;
 
 		return ethereumjs;
 	}

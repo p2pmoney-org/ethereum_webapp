@@ -23,8 +23,8 @@ if (process.env.ETHEREUM_WEBAPP_EXEC_DIR) {
 //instantiating global object
 var global = Global.getGlobalInstance();
 
-global.current_version = "0.20.10.2020.03.13";
-global.version_support = ["0.20", "0.14"];
+global.current_version = "0.30.1.2021.05.13";
+global.version_support = ["0.30", "0.20", "0.14"];
 
 
 //force logging
@@ -134,6 +134,8 @@ var ethnode_service = global.getServiceInstance('ethnode');
 global.log("****Ethereum****");
 global.log("Web3 provider is " + ethnode_service.web3_provider_url);
 global.log("Web3 port is " + ethnode_service.web3_provider_port);
+global.log("Web3 chain id is " + ethnode_service.web3_provider_chain_id);
+global.log("Web3 network id is " + ethnode_service.web3_provider_network_id);
 
 global.log("*********");
 
