@@ -139,7 +139,7 @@ class EthereumNode {
 		ethereumjs.Common = ethereumjs.default;
 		ethereumjs.Tx = require('@ethereumjs/tx').Transaction;
 		ethereumjs.Util = require('ethereumjs-util');
-		ethereumjs.Wallet = require('ethereumjs-wallet');
+		ethereumjs.Wallet = require('ethereumjs-wallet').default;
 
 		ethereumjs.Buffer = {};
 		ethereumjs.Buffer.Buffer = Buffer.from;
@@ -225,8 +225,13 @@ class EthereumNode {
 				txjson.gas = web3.utils.toHex(gas.toString());
 				txjson.gasLimit = web3.utils.toHex(gas.toString());
 				txjson.gasPrice = web3.utils.toHex(gasPrice.toString());
+
 				txjson.value = web3.utils.toHex((txjson.value ? txjson.value.toString() : 0));
-				
+
+				if (txjson.data && (typeof txjson.data === 'string' || txjson.data instanceof String)) {
+					// transform into hexadecimal string
+					txjson.data = web3.utils.toHex(txjson.data);
+				}
 			}
 			else {
 				// Web3 == 0.20.x
@@ -236,6 +241,7 @@ class EthereumNode {
 				txjson.gas = web3.toHex(gas.toString());
 				txjson.gasLimit = web3.toHex(gas.toString());
 				txjson.gasPrice = web3.toHex(gasPrice.toString());
+
 				txjson.value = web3.toHex(txjson.value.toString());
 				
 			}

@@ -1622,12 +1622,12 @@ class EthNodeControllers {
 			sessionuuid = global.guid(); // give a one-time sessionuuid
 		}
 		
-		global.log("faucet_top_up called for sessiontoken " + sessionuuid);
+		global.log("faucet_top_up_on called for sessiontoken " + sessionuuid);
 		
 		var jsonresult;
 		
 		try {
-			var section = Session.openSessionSection(global, sessionuuid, 'faucet_top_up', calltokenjson);
+			var section = Session.openSessionSection(global, sessionuuid, 'faucet_top_up_on', calltokenjson);
 			var session = section.getSession();
 			var ethnodeservice = this.global.getServiceInstance('ethnode');
 		

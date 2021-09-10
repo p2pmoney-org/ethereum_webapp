@@ -27,7 +27,7 @@ class CryptoKeyEncryption {
 		ethereumjs.Common = ethereumjs.default;
 		ethereumjs.Tx = require('@ethereumjs/tx').Transaction;
 		ethereumjs.Util = require('ethereumjs-util');
-		ethereumjs.Wallet = require('ethereumjs-wallet');
+		ethereumjs.Wallet = require('ethereumjs-wallet').default;
 
 		ethereumjs.Buffer = {};
 		ethereumjs.Buffer.Buffer = Buffer.from;
@@ -41,12 +41,14 @@ class CryptoKeyEncryption {
 		cryptokey.private_key = privkey;
 		
 		var ethereumjs = this.getEthereumJsClass();
+		var _private_key = cryptokey.private_key.split('x')[1];
+		var _private_key_buf =  ethereumjs.Buffer.Buffer(_private_key, 'hex'); 
 		
 		// ECE
 		if (cryptokey.public_key == null) {
 			//console.log('ethereumjs is ' + JSON.stringify(ethereumjs));
 			
-			cryptokey.public_key = '0x' + ethereumjs.Util.privateToPublic(cryptokey.private_key).toString('hex');
+			cryptokey.public_key = '0x' + ethereumjs.Util.privateToPublic(_private_key_buf).toString('hex');
 			
 			console.log('aes public key is: ' + cryptokey.public_key );
 			
@@ -55,13 +57,13 @@ class CryptoKeyEncryption {
 				this.session.removeCryptoKeyObject(cryptokey);
 			}
 			
-			cryptokey.address = '0x' + ethereumjs.Util.privateToAddress(cryptokey.private_key).toString('hex');
+			cryptokey.address = '0x' + ethereumjs.Util.privateToAddress(_private_key_buf).toString('hex');
 			
 			console.log('address is: ' + cryptokey.address);
 		}
 		else {
 			// check public key corresponds
-			var public_key = '0x' + ethereumjs.Util.privateToPublic(cryptokey.private_key).toString('hex');
+			var public_key = '0x' + ethereumjs.Util.privateToPublic(_private_key_buf).toString('hex');
 			
 			if (public_key != cryptokey.public_key) {
 				// overwrite
@@ -72,7 +74,7 @@ class CryptoKeyEncryption {
 					this.session.removeCryptoKeyObject(cryptokey);
 				}
 				
-				cryptokey.address = '0x' + ethereumjs.Util.privateToAddress(cryptokey.private_key).toString('hex');
+				cryptokey.address = '0x' + ethereumjs.Util.privateToAddress(_private_key_buf).toString('hex');
 			}
 		}
 		
@@ -361,9 +363,9 @@ class CryptoKeyEncryption {
 		//
 		// signing
 		//
-		
+		var plaintextbuf = ethereumjs.Buffer.Buffer(plaintext, 'utf8');
 
-		var textHashBuffer = ethereumjs.Util.sha256(plaintext);
+		var textHashBuffer = ethereumjs.Util.sha256(plaintextbuf);
 		var texthash = textHashBuffer.toString('hex')
 		
 		console.log( 'text hash is: ', texthash);
@@ -392,7 +394,9 @@ class CryptoKeyEncryption {
 			
 			var cryptokey_address = this.cryptokey.getAddress();
 
-			var textHashBuffer = ethereumjs.Util.sha256(plaintext);
+			var plaintextbuf = ethereumjs.Buffer.Buffer(plaintext, 'utf8');
+
+			var textHashBuffer = ethereumjs.Util.sha256(plaintextbuf);
 			var texthash = textHashBuffer.toString('hex')
 
 			var sig = ethereumjs.Util.fromRpcSig(signature);
@@ -456,7 +460,8 @@ class CryptoKeyEncryption {
 
 		var cryptokeyPassword="123456";
 		var key = ethereumjs.Wallet.generate(cryptokeyPassword);
-		return '0x' + key._privKey.toString('hex');		
+		var _privKey = (key.privateKey ? key.privateKey : key._privKey);
+		return '0x' + _privKey.toString('hex');		
 	}
 
 	
