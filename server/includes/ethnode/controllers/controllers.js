@@ -1382,7 +1382,7 @@ class EthNodeControllers {
 		res.json(jsonresult);
 	}
 
-	web3_contract_call(req, res) {
+	async web3_contract_call(req, res) {
 		// POST
 		var sessionuuid = req.get("sessiontoken");
 		var calltoken = req.get("calltoken");
@@ -1420,7 +1420,8 @@ class EthNodeControllers {
 				var contractinstance = ethnode.getWeb3ContractInstance(contractinstanceuuid, artifactpath, contractaddress);
 				
 				if (methodname) {
-					result = ethnode.web3_method_call(contractinstance, methodname, params)
+					//result = ethnode.web3_method_call(contractinstance, methodname, params)
+					result = await ethnode.web3_method_callAsync(contractinstance, methodname, params)
 				}
 				else {
 					var abidefjsonstring  = req.body.abidef;
@@ -1428,7 +1429,8 @@ class EthNodeControllers {
 						var abidef = JSON.parse(abidefjsonstring);
 						var methodname = abidef.name;
 						
-						result = ethnode.web3_contract_dynamicMethodCall(contractinstance, abidef, params);
+						//result = ethnode.web3_contract_dynamicMethodCall(contractinstance, abidef, params);
+						result = await ethnode.web3_contract_dynamicMethodCallAsync(contractinstance, abidef, params);
 					}
 				}
 				if (result) {

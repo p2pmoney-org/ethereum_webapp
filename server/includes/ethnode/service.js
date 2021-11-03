@@ -756,7 +756,7 @@ class Service {
 				}
 			}
 			else {
-				global.log('WARNING: faucet account has not longer enough funds to top-up accounts!!!');
+				global.log('WARNING: faucet account has no longer enough funds to top-up accounts!!!');
 				
 				topinfo.error = 'faucet account has not longer enough funds to top-up accounts!!!';
 			}

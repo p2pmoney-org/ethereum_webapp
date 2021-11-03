@@ -2553,6 +2553,72 @@ class EthereumNode {
 	}
 	
 	// methods
+	async web3_contract_dynamicMethodCallAsync(web3_contract_instance, abidef, params) {
+		var session = this.session;
+		var global = this.session.getGlobalInstance();
+		
+		var instance = web3_contract_instance.getInstance();
+
+		var contractuid = web3_contract_instance.getContractUUID();
+		var contractaddress = web3_contract_instance.getAddress();
+		
+		var methodname = abidef.name;
+		var signature = abidef.signature;
+		
+		var result = null;
+		
+		global.log('EthereumNode.web3_contract_dynamicMethodCall for method ' + methodname  + ' contractuuid ' + contractuid + ' at address ' + contractaddress);
+		
+		if (this.web3_version == "1.0.x") {
+			// Web3 > 1.0
+			var funcname = instance.methods[signature];
+		}
+		else {
+			// Web3 < 1.0
+			var funcname = instance[methodname];
+		}
+			
+		if (!funcname)
+			return result;
+		
+		result = await new Promise( function(resolve, reject) {
+			
+			var funcback = function (err, res) {
+					
+					if (res) {
+						return resolve(res);
+					}
+					else {
+						var error = 'web3_contract_dynamicMethodCall did not retrieve any result';
+						global.log('error: ' + error);
+
+						return reject('error: ' + error);
+					}
+					
+			};
+			
+			if (this.web3_version == "1.0.x") {
+				// Web3 > 1.0
+				var ret = funcname(...params).call(funcback)
+				.catch(err => {
+				    global.log('catched error in EthereumNode.web3_contract_dynamicMethodCall ' + err);
+				});
+				
+			}
+			else {
+				// Web3 < 1.0
+				var ret = funcname.call(...params, funcback)
+				.catch(err => {
+				    global.log('catched error in EthereumNode.web3_contract_dynamicMethodCall ' + err);
+				});
+				
+			}
+		});
+		
+		
+		return result;
+	}
+
 	web3_contract_dynamicMethodCall(web3_contract_instance, abidef, params) {
 		var session = this.session;
 		var global = this.session.getGlobalInstance();
@@ -2653,6 +2719,98 @@ class EthereumNode {
 		}
 		
 		return abidef;
+	}
+
+	async web3_method_callAsync(web3_contract_instance, methodname, params) {
+		var session = this.session;
+		var global = this.session.getGlobalInstance();
+		
+		if (!web3_contract_instance)
+			throw 'web3_contract_instance is not defined';
+
+		var contractuid = web3_contract_instance.getContractUUID();
+		var contractaddress = web3_contract_instance.getAddress();
+		
+		var instance = web3_contract_instance.getInstance();
+		
+		if (!instance) {
+			global.log('error: EthereumNode.web3_method_callAsync instance is null for contractuuid ' + contractuid + " at address " + contractaddress);
+			throw 'the web3 instance object of  web3_contract_instance is not defined';
+		}
+
+		
+		global.log('EthereumNode.web3_method_callAsync for method ' + methodname + ' contractuuid ' + contractuid + ' at address ' + contractaddress + ' with params ' + JSON.stringify(params));
+		
+		var abi = web3_contract_instance.getAbi();
+		var abidef = this._getMethodAbiDefinition(abi, methodname);
+		var signature = abidef.signature;
+		
+		var funcname;
+
+		if (this.web3_version == "1.0.x") {
+			// Web3 > 1.0
+			funcname = instance.methods[signature];
+		}
+		else {
+			// Web3 == 0.20.x
+			funcname = instance[methodname];
+		}
+		
+		global.log('funcname is ' + JSON.stringify(funcname));
+		
+		var result = null;	
+		
+		try {
+			
+			if (funcname) {
+				
+				result = await new Promise( (resolve, reject) => {
+					var __funcback = (err, res) => {
+					
+						if (res) {
+							global.log('EthereumNode.web3_method_callAsync result  for ' + methodname +' is ' + res);
+							
+							resolve(res);
+						}
+						else {
+							var error = 'EthereumNode.web3_method_callAsync did not retrieve any result';
+							global.log('error: ' + error);
+							
+							resolve(null);
+						}
+					}; 
+	
+					
+ 					if (this.web3_version == "1.0.x") {
+						// Web3 > 1.0
+						var ret = funcname(...params).call(__funcback)
+						.catch(err => {
+							global.log('catched error in EthereumNodeAccess.web3_method_callAsync ' + err);
+							
+							resolve(null);
+						});
+						
+					}
+					else {
+						// Web3 == 0.20.x
+						// using spread operator
+						var ret = funcname.call(...params, __funcback);
+					}
+		
+				});
+			}
+			else {
+				global.log('error: EthereumNode.web3_method_callAsync funcname is null for contractuuid ' + contractuid);
+			}
+		}
+		catch(e) {
+			result = null;
+
+			global.log('exception in EthereumNode.web3_method_callAsync: ' + e);
+			global.log(e.stack);
+		}
+
+		return result;
 	}
 	
 	

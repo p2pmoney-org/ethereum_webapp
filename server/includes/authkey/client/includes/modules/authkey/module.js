@@ -4,7 +4,7 @@ var Module = class {
 	
 	constructor() {
 		this.name = 'authkey';
-		this.current_version = "0.30.10.2021.09.10";
+		this.current_version = "0.30.11.2021.11.03";
 		
 		this.global = null; // put by global on registration
 		this.isready = false;
@@ -274,8 +274,10 @@ var Module = class {
 						
 						if (mvccontroller && mvccontroller.gotoLoginPage)
 							mvccontroller.gotoLoginPage();
-						else 
+						else {
 							console.log('WARNING: mvc controller has no gotoLoginPage method');
+							global.signalEvent('on_gotoLoginPage');
+						} 
 					}
 				}
 				else {
@@ -294,10 +296,12 @@ var Module = class {
 								
 								var mvccontroller = (mvcmodule ? mvcmodule.getControllersObject() : null);
 								
-								if (mvccontroller && mvccontroller.gotoLoginPage)
+								if (mvccontroller && mvccontroller.refreshPage)
 									mvccontroller.refreshPage();
-								else 
+								else  {
 									console.log('WARNING: mvc controller has no refreshPage method');
+									global.signalEvent('on_refreshPage');
+								}
 							}
 							else {
 								console.log('error while loading user from server: ' + err);
@@ -315,6 +319,7 @@ var Module = class {
 								return this._initializeAccounts(session, (err, res) => {	
 									
 									if (app) app.refreshDisplay();
+									else global.signalEvent('on_refreshPage');
 								});
 								
 							}
@@ -564,6 +569,7 @@ var Module = class {
 					return this._initializeAccounts(session, (err, res) => {	
 				
 						if (app) app.refreshDisplay();
+						else global.signalEvent('on_refreshPage');
 						
 						return true;
 					});
@@ -630,6 +636,7 @@ var Module = class {
 				if (loggedout) {
 					
 					if (app) app.refreshDisplay();
+					else global.signalEvent('on_refreshPage');
 					
 				}
 				else {
@@ -816,6 +823,7 @@ var Module = class {
 					}
 			
 					if (app) app.refreshDisplay();
+					else global.signalEvent('on_refreshPage');
 					
 					if (callback)
 						callback(null, vault);
@@ -860,7 +868,8 @@ var Module = class {
 				if (err)
 					alert(err);
 				
-				app.refreshDisplay();
+				if (app) app.refreshDisplay();
+				else global.signalEvent('on_refreshPage');
 				
 				var mvcmodule = global.getModuleObject('mvc');
 				
@@ -868,6 +877,9 @@ var Module = class {
 				
 				if (mvccontroller && mvccontroller.gotoHome) {
 					mvccontroller.gotoHome();
+				}
+				else {
+					global.signalEvent('gotoHome');
 				}
 			});
 		}
@@ -910,6 +922,7 @@ var Module = class {
 					
 					if (vault) {
 						if (app) app.refreshDisplay();
+						else global.signalEvent('on_refreshPage');
 						
 						if (callback)
 							callback(null, vault);
@@ -959,7 +972,8 @@ var Module = class {
 					if (err)
 						alert(err);
 					
-					app.refreshDisplay();
+					if (app) app.refreshDisplay();
+					else global.signalEvent('on_refreshPage');
 					
 					var mvcmodule = global.getModuleObject('mvc');
 					
@@ -967,6 +981,9 @@ var Module = class {
 					
 					if (mvccontroller && mvccontroller.gotoHome) {
 						mvccontroller.gotoHome();
+					}
+					else {
+						global.signalEvent('gotoHome');
 					}
 				});
 			}
