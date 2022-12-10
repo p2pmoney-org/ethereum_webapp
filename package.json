@@ -28,7 +28,7 @@
     "@ethereumjs/tx": "^3.1.4",
     "ethereumjs-util": "^7.0.10",
     "ethereumjs-wallet": "^1.0.1",
-    "express": "^4.16.2",
+    "express": "^4.17.3",
     "express-rate-limit": "^2.9.0",
     "forever": "^0.15.3",
     "keythereum": "^1.0.4",
