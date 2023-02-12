@@ -294,7 +294,7 @@ class ClientContainerControllers {
 		
 		global.log("clicont_localstorage_get called for sessiontoken " + sessionuuid);
 		
-		var keys  = req.body.keys;
+		var keys_string  = req.body.keys;
 		
 		var jsonresult;
 		
@@ -309,6 +309,8 @@ class ClientContainerControllers {
 			var clientcontainer = clicontservice.getClientContainer(session);
 			var localstorageinterface = clientcontainer.getClientInterface('localstorage');
 
+			var keys = JSON.parse(keys_string);
+
 			var value = localstorageinterface.getValue(session, keys);
 			
 			var jsonresult = {status: 1, keys: keys, value: value};
@@ -317,7 +319,7 @@ class ClientContainerControllers {
 			global.log("exception in clicont_localstorage_get for sessiontoken " + sessionuuid + ": " + e);
 			global.log(e.stack);
 
-			jsonresult = {status: 0, error: "exception could get value"};
+			jsonresult = {status: 0, error: "exception could not get value"};
 		}
 
 	  	if (section) section.close();
@@ -331,8 +333,8 @@ class ClientContainerControllers {
 		
 		global.log("clicont_localstorage_get called for sessiontoken " + sessionuuid);
 		
-		var keys  = req.body.keys;
-		var value  = req.body.value;
+		var keys_string  = req.body.keys;
+		var value_string  = req.body.value;
 		
 		var jsonresult;
 		
@@ -347,7 +349,10 @@ class ClientContainerControllers {
 			var clientcontainer = clicontservice.getClientContainer(session);
 			var localstorageinterface = clientcontainer.getClientInterface('localstorage');
 
-			var value = localstorageinterface.setValue(session, keys, value);
+			var keys = JSON.parse(keys_string);
+			var value = JSON.parse(value_string);
+			
+			value = localstorageinterface.setValue(session, keys, value);
 			
 			var jsonresult = {status: 1, keys: keys, value: value};
 		}
@@ -355,7 +360,7 @@ class ClientContainerControllers {
 			global.log("exception in clicont_localstorage_get for sessiontoken " + sessionuuid + ": " + e);
 			global.log(e.stack);
 
-			jsonresult = {status: 0, error: "exception could get value"};
+			jsonresult = {status: 0, error: "exception could set value"};
 		}
 
 	  	if (section) section.close();

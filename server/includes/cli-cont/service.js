@@ -56,16 +56,17 @@ class Service {
 	
 	// service functions
 	_getClientContainerServer() {
+		// OBSOLETE: USE _getClientContainerServerAsync
 		if (this.clientcontainerserver)
 			return this.clientcontainerserver;
-		
-		var ClientContainerServer = require('./model/client-container-server.js');
-		
-		this.clientcontainerserver = new ClientContainerServer(this);
 		
 		// initialize container server
 		var _global = this.global
 		var finished = false;
+		
+		var ClientContainerServer = require('./model/client-container-server.js');
+		
+		this.clientcontainerserver = new ClientContainerServer(this);
 		
 		this.clientcontainerserver.init(function(err, res) {
 			_global.log('container server is initialized');
@@ -81,7 +82,29 @@ class Service {
 	}
 	
 	getClientContainer(serversession) {
+		// OBSOLETE: USE getClientContainerAsync
 		return this._getClientContainerServer().getClientContainer(serversession);
+	}
+
+	async _getClientContainerServerAsync() {
+		if (this.clientcontainerserver)
+			return this.clientcontainerserver;
+		
+		var ClientContainerServer = require('./model/client-container-server.js');
+		
+		this.clientcontainerserver = new ClientContainerServer(this);
+		
+		// initialize container server
+	
+		await this.clientcontainerserver.init();
+		
+		return this.clientcontainerserver;
+	}
+
+	async getClientContainerAsync(serversession) {
+		var clientcontainerserver = await this._getClientContainerServerAsync()
+
+		return clientcontainerserver.getClientContainer(serversession);
 	}
 
 

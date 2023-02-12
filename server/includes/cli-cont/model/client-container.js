@@ -44,7 +44,7 @@ class ClientContainer {
 	}
 	
 	getClientGlobal() {
-		return this.ethereum_core.getGlobalObject();
+		return this.containerserver.ethereum_core.getGlobalObject();
 	}
 	
 	getClientScopeId() {

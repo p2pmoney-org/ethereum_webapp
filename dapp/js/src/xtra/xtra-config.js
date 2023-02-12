@@ -7,7 +7,7 @@
 class XtraConfigModule {
 	constructor() {
 		this.name = 'xtraconfig';
-		this.current_version = "0.30.11.2021.11.03";
+		this.current_version = "0.30.15.2023.02.12";
 		
 		this.global = null; // put by global on registration
 		this.isready = false;
@@ -434,8 +434,15 @@ class XtraConfig {
 		this.allow_remote_access = 'enabled';
 		
 		// webapp rest access
+
+		// TODO: should only server for storage (Xtra_StorageAccess)
 		this.rest_server_url = ':rest_server_url';
 		this.rest_server_api_path = ':rest_server_api_path';
+
+		// TODO: should be used instead of rest_server_url and rest_server_api_path
+		// for ethnode (Xtra_EthereumNodeAccess)
+		this.ethnode_server_url = ':ethnode_server_url';
+		this.ethnode_server_api_path = ':ethnode_server_api_path';
 		
 		// authentication rest access
 		this.authkey_server_url = ':authkey_server_url';
@@ -489,6 +496,13 @@ class XtraConfig {
 		
 		if ( typeof _globalscope !== 'undefined' && _globalscope && _globalscope.simplestore.Config) {
 			
+			// ethnode rest access (if value not specified, take default rest server access)
+			if (this.ethnode_server_url.substring(1) == 'ethnode_server_url')
+				this.ethnode_server_url = this.rest_server_url;
+
+			if (this.ethnode_server_api_path.substring(1) == 'ethnode_server_api_path')
+				this.ethnode_server_api_path = this.rest_server_api_path;
+
 			// authentication rest access (if value not specified, take default rest server access)
 			if (this.authkey_server_url.substring(1) == 'authkey_server_url')
 				this.authkey_server_url = this.rest_server_url;

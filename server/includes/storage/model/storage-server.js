@@ -12,6 +12,41 @@ class StorageServer {
 		var Persistor = require('./interface/database-persistor.js');
 		
 		this.persistor =  new Persistor(service);
+
+		this.authkey_server_passthrough = service.authkey_server_passthrough;
+	}
+
+	getStorageUser(session) {
+		if (this.authkey_server_passthrough === true) {
+			// get session user
+			var user = session.getUser();
+
+			if (!user)
+				return;
+
+			// then find what is the local persisted user
+			var global = this.global;
+
+			var authkeyservice = global.getServiceInstance('authkey');
+			var authserver = authkeyservice.getAuthenticationServerInstance();
+
+			var useruuid = user.getUserUUID();
+			var _safe_useruuid =  authserver._getSafeUserUUID(session, useruuid)
+			var _safe_userdetails = authserver.persistor.getUserArrayFromUUID(_safe_useruuid);
+	
+			var commonservice = global.getServiceInstance('common');
+			var _safe_user = commonservice.createBlankUserInstance();
+
+			_safe_user.setUserUUID(_safe_useruuid);
+			_safe_user.setUserName(_safe_userdetails['username']);
+			_safe_user.setUserEmail(_safe_userdetails['useremail']);
+			_safe_user.setAccountStatus(_safe_userdetails['accountstatus'] ? _safe_userdetails['accountstatus'] : 2);
+
+			return _safe_user;
+		}
+
+		return session.getUser();
+
 	}
 	
 	getUserContent(user, key) {

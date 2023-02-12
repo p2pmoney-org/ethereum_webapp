@@ -220,7 +220,7 @@ class Xtra_EthereumNodeAccess {
     	
     	// we look at session's level to see if value has been overloaded at that level
     	var ethnode_rest_server_url = this.session.getXtraConfigValue('ethnode_server_url');
-    	var ethnode_rest_server_api_path = this.session.getXtraConfigValue('ethnode_server_url');
+    	var ethnode_rest_server_api_path = this.session.getXtraConfigValue('ethnode_server_api_path');
     	
     	if (ethnode_rest_server_url && ethnode_rest_server_api_path) {
     		rest_server_url = ethnode_rest_server_url;

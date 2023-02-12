@@ -627,8 +627,8 @@ class Global {
 	}
 	
 	log(string) {
-		if ((this.enable_log == 0) || (this.execution_env != 'dev'))
-			return; // logging to console disabled
+		if (((this.enable_log != 10)) && ((this.enable_log == 0) || (this.execution_env != 'dev')))
+			return; // logging to console disabled, not force log with 10
 		
 		var line = new Date().toISOString() + ": ";
 		
@@ -1136,7 +1136,73 @@ class Global {
 		return true;
 	}
 	
-	
+	invokeAsyncHooks(hookentry, result, inputparams) {
+		console.log('Global.invokeAsyncHooks called for ' + hookentry);
+		
+		if ((!result) || (Array.isArray(result) === false))
+			throw 'invokeAsyncHooks did not receive an array as result parameter for hookentry: ' + hookentry;
+
+		var hookarray = this.getHookArray(hookentry);
+		result.ret_array = [];
+		
+		
+		// much easier with async/await
+		/*for (var i = 0; i < hookarray.length; i++) {
+			var entry = hookarray[i];
+			var func = entry['function'];
+			var modulename = entry['modulename'];
+			var module = global.getModuleObject(modulename);
+			
+			if (module) {
+				var ret = await func.call(module, result, inputparams)
+				.catch(err =>{
+				});
+				
+				result.ret_array[modulename] = ret;
+				result.ret_array.push(ret);
+				
+				if (result[result.length-1] && (result[result.length-1].module == modulename) && (result[result.length-1].stop === true))
+					break;
+			}
+			
+		}
+				
+		return true;*/
+		
+		
+		return hookarray.reduce( (previousPromise, entry) => {
+			var modulename;
+			
+			return previousPromise.then(() => {
+				var func = entry['function'];
+				modulename = entry['modulename'];
+				var module = this.getModuleObject(modulename);
+				
+				if (module) {
+					return func.call(module, result, inputparams);
+				}
+			})
+			.then((ret) => {
+				if (ret) {
+					result.ret_array[modulename] = ret;
+					result.ret_array.push(ret);
+					
+					if (result[result.length-1] && (result[result.length-1].module == modulename) && (result[result.length-1].stop === true))
+						throw 'break';
+				}
+				return ret;
+			});
+		}, Promise.resolve())
+		.then(()=>{
+			return true;
+		})
+		.catch(err => {
+			if (err != 'break')
+				console.log('error while processing invokeAsyncHooks for ' + hookentry + ': ' + err);
+		});
+		
+	}
+
 	// static
 	static getGlobalInstance() {
 		if (!globalinstance)

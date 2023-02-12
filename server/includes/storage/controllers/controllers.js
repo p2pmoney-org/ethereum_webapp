@@ -54,7 +54,7 @@ class StorageControllers {
 				var storageservice = global.getServiceInstance('storage');
 				var storageserver = storageservice.getStorageServerInstance();
 				
-				var user = session.getUser();
+				var user = storageserver.getStorageUser(session);
 				
 				var content = storageserver.getUserContent(user, key);
 				
@@ -101,7 +101,7 @@ class StorageControllers {
 				var storageservice = global.getServiceInstance('storage');
 				var storageserver = storageservice.getStorageServerInstance();
 				
-				var user = session.getUser();
+				var user = storageserver.getStorageUser(session);
 				
 				storageserver.putUserContent(user, key, content);
 				
@@ -148,7 +148,7 @@ class StorageControllers {
 				var storageservice = global.getServiceInstance('storage');
 				var storageserver = storageservice.getStorageServerInstance();
 				
-				var user = session.getUser();
+				var user = storageserver.getStorageUser(session);
 				
 				storageserver.deleteUserContent(user, key);
 				
@@ -197,7 +197,7 @@ class StorageControllers {
 				var storageservice = global.getServiceInstance('storage');
 				var storageserver = storageservice.getStorageServerInstance();
 				
-				var user = session.getUser();
+				var user = storageserver.getStorageUser(session);
 				
 				storageserver.putUserContent(user, key, content);
 				
@@ -245,7 +245,7 @@ class StorageControllers {
 				var storageservice = global.getServiceInstance('storage');
 				var storageserver = storageservice.getStorageServerInstance();
 				
-				var user = session.getUser();
+				var user = storageserver.getStorageUser(session);
 				
 				var content = storageserver.getUserContent(user, key);
 				

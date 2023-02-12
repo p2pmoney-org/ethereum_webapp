@@ -2756,7 +2756,7 @@ class EthereumNode {
 			funcname = instance[methodname];
 		}
 		
-		global.log('funcname is ' + JSON.stringify(funcname));
+		global.log('funcname is ' + (funcname ? JSON.stringify(funcname.name) : 'unknown'));
 		
 		var result = null;	
 		
@@ -2849,7 +2849,7 @@ class EthereumNode {
 			funcname = instance[methodname];
 		}
 		
-		global.log('funcname is ' + JSON.stringify(funcname));
+		global.log('funcname is ' + (funcname ? JSON.stringify(funcname.name) : 'unknown'));
 		
 		var finished = false;
 		var result = null;		

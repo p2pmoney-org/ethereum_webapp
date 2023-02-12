@@ -427,7 +427,9 @@ class Service {
 
 		global.log('isSessionAnonymous_hook called for ' + this.name + ' on session ' + sessionuuid);
 		
-		if (global.config['authkey_server_url']) {
+		if ((global.config['authkey_server_url']) || (this.authkey_server_passthrough === true)) {
+			// we have a defined/default authentication server
+			// or we delegate to an external authentication server
 			
 			var sessioncontext = this._getSessionTransientContext(session) ;
 			
@@ -487,7 +489,9 @@ class Service {
 
 		global.log('isSessionAuthenticated_hook called for ' + this.name + ' on session ' + sessionuuid);
 		
-		if (global.config['authkey_server_url']) {
+		if ((global.config['authkey_server_url']) || (this.authkey_server_passthrough === true)) {
+			// we have a defined/default authentication server
+			// or we delegate to an external authentication server
 			
 			var sessioncontext = this._getSessionTransientContext(session) ;
 			

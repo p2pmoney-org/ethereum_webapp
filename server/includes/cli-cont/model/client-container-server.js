@@ -23,9 +23,16 @@ class ClientContainerServer {
 		var global = this.global;
 		var self = this;
 		
-		var promise_ethereum_core = this.ethereum_core.init();
+		var promise_ethereum_core;
 		
-		promise_ethereum_core.then(function() {
+		if (this.ethereum_core.initialized !== true)
+		promise_ethereum_core = this.ethereum_core.init();
+		else {
+			// because of bug ethereum_core.init not returning promise (v0.30.10)
+			promise_ethereum_core = Promise.resolve(true);
+		}
+		
+		return promise_ethereum_core.then(function() {
 			global.log('init of ethereum_core done');
 			
 			var _globalscope = global.getExecutionGlobalScope();

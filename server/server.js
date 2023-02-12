@@ -23,7 +23,7 @@ if (process.env.ETHEREUM_WEBAPP_EXEC_DIR) {
 //instantiating global object
 var global = Global.getGlobalInstance();
 
-global.current_version = "0.30.11.2021.11.03";
+global.current_version = "0.30.15.2023.02.12";
 global.version_support = ["0.30", "0.20", "0.14"];
 
 
@@ -71,19 +71,23 @@ try {
 	
 	Service = require('./includes/storage/service.js');
 	global.registerServiceInstance(new Service());
-	
-	Service = require('./includes/ethnode/service.js');
+
+	Service = require('./includes/crypto/service.js');
 	global.registerServiceInstance(new Service());
 	
+	// optional services
+	if (global.config['activate_ethnode'] != 0) {
+		Service = require('./includes/ethnode/service.js');
+		global.registerServiceInstance(new Service());
+	}
+	
 	if (global.config['activate_cli_cont'] == 1) {
-		// cli_cont handle a lot of anonymous requests
+		// cli_cont accepts a lot of anonymous requests
+		// and constitutes a security threat (e.g. access to local storage)
 		// activate only if necessary
 		Service = require('./includes/cli-cont/service.js');
 		global.registerServiceInstance(new Service());
 	}
-	
-	Service = require('./includes/crypto/service.js');
-	global.registerServiceInstance(new Service());
 	
 	// initialization
 	global.initServer();
@@ -125,17 +129,34 @@ global.log("API root path is " + global.route_root_path);
 global.log("REST server url is " + global.config['rest_server_url']);
 global.log("REST server api path is " + global.config['rest_server_api_path']);
 
-if (global.config['authkey_server_url']) global.log("AUTHKEY server url is " + global.config['authkey_server_url']);
-if (global.config['authkey_server_api_path']) global.log("AUTHKEY server api path is " + global.config['authkey_server_api_path']);
-
+if (global.config['authkey_server_url']) global.log("AUTHKEY server url is " + global.config['authkey_server_url']); else global.log("AUTHKEY server url is not defined");
+if (global.config['authkey_server_api_path']) global.log("AUTHKEY server api path is " + global.config['authkey_server_api_path']); else global.log("AUTHKEY server api path is not defined");
+if (global.config['authkey_server_passthrough']) global.log("AUTHKEY server passthrough is " + global.config['authkey_server_passthrough']); else global.log("AUTHKEY server passthrough is not defined");
 
 var ethnode_service = global.getServiceInstance('ethnode');
 
-global.log("****Ethereum****");
-global.log("Web3 provider is " + ethnode_service.web3_provider_url);
-global.log("Web3 port is " + ethnode_service.web3_provider_port);
-global.log("Web3 chain id is " + ethnode_service.web3_provider_chain_id);
-global.log("Web3 network id is " + ethnode_service.web3_provider_network_id);
+if (ethnode_service) {
+	if (global.config['ethnode_server_url']) global.log("ETHNODE server url is " + global.config['ethnode_server_url']); else global.log("ETHNODE server url is not defined");
+	if (global.config['ethnode_server_api_path']) global.log("ETHNODE server api path is " + global.config['ethnode_server_api_path']); else global.log("ETHNODE server api path is not defined");
+	if (global.config['web3_protected_read']) global.log("ETHNODE protected read is " + global.config['web3_protected_read']); else global.log("ETHNODE protected read is not defined");
+	if (global.config['web3_protected_write']) global.log("ETHNODE protected write is " + global.config['web3_protected_write']); else global.log("ETHNODE protected write is not defined");
+	
+	// ethnode
+		global.log("****Ethereum****");
+	global.log("Web3 provider is " + ethnode_service.web3_provider_url);
+	global.log("Web3 port is " + ethnode_service.web3_provider_port);
+	global.log("Web3 chain id is " + ethnode_service.web3_provider_chain_id);
+	global.log("Web3 network id is " + ethnode_service.web3_provider_network_id);
+}
+
+// client container
+var cli_cont_service = global.getServiceInstance('client-container');
+
+if (cli_cont_service) {
+	global.log("****Client Container****");
+	global.log("CLICONT local storage dir is " + global.config['local_storage_dir']);
+}
+
 
 global.log("*********");
 

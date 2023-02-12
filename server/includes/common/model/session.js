@@ -73,8 +73,8 @@ var SessionSection = class {
 				else {
 					// note: as long as we do not pass the SessionSection down
 					// to the the RemoteAuthentication server, we are
-					// force to spawn a new session to keep the authentication
-					// context in this session instead of in the section
+					// forced to spawn a new session to keep the authentication
+					// context in this child session instead of in the section
 					this.session = Session.createBlankSession(global);
 
 					this.session.auth_url_hash = this.auth_url_hash;
@@ -98,10 +98,16 @@ var SessionSection = class {
 		return this.session;
 	}
 
+	_safe_session() {
+		// to get session from section or session objects
+		return this.getSession();
+	}
+	
+
 	isAnonymous() {
 		// we cache the value within the span
 		// of a call materialized by a section
-		if (this.isanonymous !== undefined)
+		if (this.isanonymous != undefined)
 			return this.isanonymous;
 		else {
 			var session = this.getSession();
@@ -114,7 +120,7 @@ var SessionSection = class {
 	isAuthenticated() {
 		// we cache the value within the span
 		// of a call materialized by a section
-		if (this.isauthenticated !== undefined)
+		if (this.isauthenticated != undefined)
 			return this.isauthenticated;
 		else {
 			var session = this.getSession();
@@ -363,6 +369,11 @@ class Session {
 	
 	closeSection(section) {
 		section.close();
+	}
+
+	_safe_session() {
+		// to get session from section or session objects
+		return this;
 	}
 	
 	// child sessions

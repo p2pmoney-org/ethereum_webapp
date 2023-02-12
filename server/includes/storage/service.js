@@ -22,6 +22,9 @@ class Service {
 		
 		this.users = global.readJson("users");
 
+		// authentication context
+		var authkey_server_passthrough = global.getConfigValue('authkey_server_passthrough');
+		this.authkey_server_passthrough = (authkey_server_passthrough == 1 ? true : false);
 	}
 
 	// optional  service functions
