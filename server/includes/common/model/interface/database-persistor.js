@@ -123,7 +123,7 @@ class DataBasePersistor {
 	// sessions
 	_getUserArrayFromUUID(useruuid) {
 		var global = this.global;
-		var array = {};
+		var array = {id: -1};
 		
 		if (!useruuid)
 			return array;

@@ -9,11 +9,22 @@ class DataBasePersistor {
 		this.session = session;
 		this.global = session.global;
 	}
+
+	_getSafeUserUUID() {
+		var global = this.global;
+		var session = this.session;
+
+		var ethnodeservice = global.getServiceInstance('ethnode');
+
+		var _safe_user = ethnodeservice.getEthnodeUser(session);
+
+		return (_safe_user ? _safe_user.getUserUUID() : null);
+	}
 	
 	_getUserArrayFromUUID(useruuid) {
 		var global = this.global;
 		var session = this.session;
-		var array = {};
+		var array = {id: -1};
 		
 		if (!useruuid)
 			return array;
@@ -168,8 +179,10 @@ class DataBasePersistor {
 		var global = this.global;
 		var session = this.session;
 		
-		var user = this.session.getUser();
-		var useruuid = (user ? user.getUserUUID() : null);
+		//var user = this.session.getUser();
+		//var useruuid = (user ? user.getUserUUID() : null);
+		var useruuid = this._getSafeUserUUID();
+
 		var userarray = ( useruuid ? this._getUserArrayFromUUID(useruuid) : {id: -1});
 		
 		var mysqlcon = session.getMySqlConnection();
