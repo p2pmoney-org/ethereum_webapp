@@ -53,7 +53,7 @@ class AuthKeyControllers {
 		}
 		
 		
-		if (!sessionuuid) {
+		if (!sessionuuid || (sessionuuid === 'none')) {
 			// nothing in the session, we use the parameter
 			sessionuuid = sessionid;
 		}

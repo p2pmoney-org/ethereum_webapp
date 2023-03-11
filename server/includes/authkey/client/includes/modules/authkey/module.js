@@ -4,7 +4,7 @@ var Module = class {
 	
 	constructor() {
 		this.name = 'authkey';
-		this.current_version = "0.30.16.2023.02.22";
+		this.current_version = "0.30.17.2023.03.11";
 		
 		this.global = null; // put by global on registration
 		this.isready = false;
@@ -438,6 +438,21 @@ var Module = class {
 		result.push({module: this.name, handled: true});
 		
 		return true;
+	}
+
+	getSessionContext(session, callback) {
+		var context = {};
+
+		if (!session)
+			return Promise.resolve(context);
+
+		context.sessionuuid = session.getSessionUUI();
+		context.remote = (session.activate_authkey_server_access !== false ? true : false);
+
+		if (callback)
+			callback(null, context);
+		
+		return Promise.resolve(context);
 	}
 	
 	// popup login

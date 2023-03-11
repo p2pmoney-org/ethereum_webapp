@@ -591,6 +591,9 @@ class Session {
 		if (array['useruuid'] !== undefined)
 			this.useruuid = array['useruuid'];
 		
+		if (array['createdon'] !== undefined)
+			this.creation_date = array['createdon'];
+		
 		if (array['lastpingon'] !== undefined)
 			this.last_ping_date = array['lastpingon'];
 		
@@ -756,7 +759,7 @@ class Session {
 		var now = Date.now();
 		var session_time_length = this.session_time_length;
 		
-		if ((session_time_length == -1) || ((now - this.last_ping_date) < session_time_length)) {
+		if ((session_time_length == -1) || ((now - this.creation_date) < session_time_length)) {
 			
 			if (this.isauthenticated)
 				return true;
@@ -765,7 +768,7 @@ class Session {
 		}
 		else {
 			if (this.authenticated)
-				global.log('session ' + this.getSessionUUID() + ' has expired after ' + (now - this.last_ping_date) + ' from last ping');
+				global.log('session ' + this.getSessionUUID() + ' has expired after ' + (now - this.creation_date) + ' from creation');
 
 			this.isauthenticated = false;
 			return false;
