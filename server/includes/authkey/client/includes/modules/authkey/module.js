@@ -4,7 +4,7 @@ var Module = class {
 	
 	constructor() {
 		this.name = 'authkey';
-		this.current_version = "0.30.17.2023.03.11";
+		this.current_version = "0.40.20.2023.04.17";
 		
 		this.global = null; // put by global on registration
 		this.isready = false;
@@ -1058,7 +1058,7 @@ var Module = class {
 	
 	getAuthKeyServerAccessInstance(session) {
 		if (session.authkey_server_access_instance)
-			return session.authkey_server_access_instance;
+			return session.authkey_server_access_instance;  // different sessions can have different servers
 		
 		console.log('instantiating AuthKeyServerAccess');
 		

@@ -3,7 +3,48 @@
  */
 'use strict';
 
+class CryptoKey {
+	constructor(session, address) {
+		this.session = session;
+		this.address = (address ? address.trim().toLowerCase() : address);
 
+		const CryptoKeyEncryption = require('./interface/cryptokey-encryption.js');
+		
+		this.cryptoencryption = new CryptoKeyEncryption(session, this);
+	}
+
+	getAddress() {
+		if (this.address)
+			return this.address;
+	}
+
+	setAddress(address) {
+		if (!this.areAddressesEqual(this.address, address)) {
+			this.address = (address ? address.trim().toLowerCase() : address);
+			
+			this.private_key = null;
+			this.public_key = null; // ECE public key
+			this.rsa_public_key = null; // asymmetric
+		}
+	}
+
+	getPrivateKey() {
+		return this.private_key;
+	}
+	
+	setPrivateKey(privkey) {
+		this.private_key = (privkey ? privkey.trim().toLowerCase() : privkey);
+		
+		this.cryptoencryption.setPrivateKey(this.private_key);
+	}
+	
+	isPrivateKeyValid() {
+		if (!this.private_key)
+			return false;
+
+		return this.cryptoencryption.isValidPrivateKey(this.private_key);
+	}
+}
 class CryptoServer {
 	constructor(service) {
 		this.service = service;
@@ -150,8 +191,21 @@ class CryptoServer {
 
 
 		return hash_hex_str.substring(0, length);
-
 	}
+
+	getCryptoKeyEncyptionObject(session, address, private_key) {
+		var CryptoKeyEncryption = require('./interface/cryptokey-encryption.js');
+		
+		var cryptokey = new CryptoKey(session, address);
+
+		if (private_key) {
+			cryptokey.setPrivateKey(private_key);
+		}
+
+		return cryptokey.cryptoencryption;
+	}
+
+
 }
 
 module.exports = CryptoServer;

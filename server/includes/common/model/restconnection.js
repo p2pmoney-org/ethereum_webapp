@@ -150,7 +150,7 @@ class RestConnection  {
 	
 	async rest_get_async(resource) {
 		return new Promise( (resolve, reject) => {
-			restcon.rest_get(resource, function (err, res) {
+			this.rest_get(resource, function (err, res) {
 				if (err) {reject(err);}	else {resolve(res);}
 			});
 		});
@@ -191,7 +191,7 @@ class RestConnection  {
 
 	async rest_post_async(resource, postdata) {
 		return new Promise( (resolve, reject) => {
-			restcon.rest_post(resource, postdata, function (err, res) {
+			this.rest_post(resource, postdata, function (err, res) {
 				if (err) {reject(err);}	else {resolve(res);}
 			});
 		});
@@ -235,7 +235,7 @@ class RestConnection  {
 
 	async rest_put_async(resource, postdata) {
 		return new Promise( (resolve, reject) => {
-			restcon.rest_put(resource, postdata, function (err, res) {
+			this.rest_put(resource, postdata, function (err, res) {
 				if (err) {reject(err);}	else {resolve(res);}
 			});
 		});
@@ -277,7 +277,7 @@ class RestConnection  {
 	
 	async rest_delete_async(resource) {
 		return new Promise( (resolve, reject) => {
-			restcon.rest_delete(resource, function (err, res) {
+			this.rest_delete(resource, function (err, res) {
 				if (err) {reject(err);}	else {resolve(res);}
 			});
 		});

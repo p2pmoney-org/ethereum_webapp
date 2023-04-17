@@ -69,7 +69,7 @@ class EthNodeControllers {
 	
 	
 	// root
-	web3_root(req, res) {
+	async web3_root(req, res) {
 		// GET
 		var sessionuuid = req.get("sessiontoken");
 		var calltoken = req.get("calltoken");
@@ -93,10 +93,11 @@ class EthNodeControllers {
 		
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'web3_root', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
 			var ethnodeservice = this.global.getServiceInstance('ethnode');
+			var canRead = await ethnodeservice.canReadAsync(session);
 			
-			if (ethnodeservice.canRead(session)) {
+			if (canRead) {
 				var ethnode = this.getEthereumNode(session, web3providerurl);
 			
 				web3info = {};
@@ -135,7 +136,7 @@ class EthNodeControllers {
 	}
 	
 	// providers
-	web3_get_provider(req, res) {
+	async web3_get_provider(req, res) {
 		// GET
 		var sessionuuid = req.get("sessiontoken");
 		
@@ -155,10 +156,11 @@ class EthNodeControllers {
 		
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'web3_get_provider', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
 			var ethnodeservice = this.global.getServiceInstance('ethnode');
+			var canRead = await ethnodeservice.canReadAsync(session);
 			
-			if (ethnodeservice.canRead(session)) {
+			if (canRead) {
 				var ethnode = this.getEthereumNode(session);
 			
 				web3info = {};
@@ -194,7 +196,7 @@ class EthNodeControllers {
 		res.json(jsonresult);
 	}
 	
-	web3_add_provider(req, res) {
+	async web3_add_provider(req, res) {
 		// POST
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
@@ -212,10 +214,11 @@ class EthNodeControllers {
 
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'web3_add_provider', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
 			var ethnodeservice = this.global.getServiceInstance('ethnode');
+			var canWrite = await ethnodeservice.canWriteAsync(session);
 			
-			if (ethnodeservice.canWrite(session)) {
+			if (canWrite) {
 				
 				// set new url
 				var ethnode = this.getEthereumNode(session);
@@ -251,7 +254,7 @@ class EthNodeControllers {
 		res.json(jsonresult);
 	}
 	
-	web3_set_provider(req, res) {
+	async web3_set_provider(req, res) {
 		// PUT
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
@@ -269,10 +272,11 @@ class EthNodeControllers {
 
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'web3_set_provider', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
 			var ethnodeservice = this.global.getServiceInstance('ethnode');
+			var canWrite = await ethnodeservice.canWriteAsync(session);
 			
-			if (ethnodeservice.canWrite(session)) {
+			if (canWrite) {
 				
 				// set new url
 				ethnodeservice.setWeb3ProviderFullUrl(session, url);
@@ -331,10 +335,11 @@ class EthNodeControllers {
 		
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'web3_node', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
 			var ethnodeservice = this.global.getServiceInstance('ethnode');
+			var canRead = await ethnodeservice.canReadAsync(session);
 			
-			if (ethnodeservice.canRead(session)) {
+			if (canRead) {
 				var ethnode = this.getEthereumNode(session, web3providerurl);
 			
 				var nodeinfo = await ethnode.web3_getNodeInfoAsync();
@@ -361,6 +366,7 @@ class EthNodeControllers {
 		}
 		catch(e) {
 			global.log("exception in web3_node for sessiontoken " + sessionuuid + ": " + e);
+			global.log(e.stack);
 
 			jsonresult = {status: 0, error: "exception in web3_node"};
 		}
@@ -373,7 +379,7 @@ class EthNodeControllers {
 
 	
 	// account
-	web3_account_balance(req, res) {
+	async web3_account_balance(req, res) {
 		// GET
 		var sessionuuid = req.get("sessiontoken");
 		var calltoken = req.get("calltoken");
@@ -391,13 +397,14 @@ class EthNodeControllers {
 		
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'web3_account_balance', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
 			var ethnodeservice = this.global.getServiceInstance('ethnode');
+			var canRead = await ethnodeservice.canReadAsync(session);
 			
-			if (ethnodeservice.canRead(session)) {
+			if (canRead) {
 				var ethnode = this.getEthereumNode(session, web3providerurl);
 			
-				var balance = ethnode.web3_getAccountBalance(address);
+				var balance = await ethnode.web3_getAccountBalanceAsync(address);
 
 				if (balance !== null) {
 					jsonresult = {status: 1, balance: balance};
@@ -421,7 +428,7 @@ class EthNodeControllers {
 		res.json(jsonresult);
 	}
 
-	web3_account_code(req, res) {
+	async web3_account_code(req, res) {
 		// GET
 		var sessionuuid = req.get("sessiontoken");
 		var calltoken = req.get("calltoken");
@@ -439,13 +446,14 @@ class EthNodeControllers {
 		
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'web3_account_code', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
 			var ethnodeservice = this.global.getServiceInstance('ethnode');
+			var canRead = await ethnodeservice.canReadAsync(session);
 			
-			if (ethnodeservice.canRead(session)) {
+			if (canRead) {
 				var ethnode = this.getEthereumNode(session, web3providerurl);
 			
-				var code = ethnode.web3_getAccountCode(address);
+				var code = await ethnode.web3_getAccountCodeAsync(address);
 
 				if (code !== null) {
 					jsonresult = {status: 1, code: code};
@@ -468,7 +476,7 @@ class EthNodeControllers {
 		res.json(jsonresult);
 	}
 	
-	web3_account_transaction_count(req, res) {
+	async web3_account_transaction_count(req, res) {
 		// GET
 		var sessionuuid = req.get("sessiontoken");
 		var calltoken = req.get("calltoken");
@@ -486,13 +494,14 @@ class EthNodeControllers {
 		
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'web3_account_transaction_count', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
 			var ethnodeservice = this.global.getServiceInstance('ethnode');
+			var canRead = await ethnodeservice.canReadAsync(session);
 			
-			if (ethnodeservice.canRead(session)) {
+			if (canRead) {
 				var ethnode = this.getEthereumNode(session, web3providerurl);
 			
-				var count = ethnode.web3_getTransactionCount(address);
+				var count = await ethnode.web3_getTransactionCountAsync(address);
 
 				if (count !== null) {
 					jsonresult = {status: 1, count: count};
@@ -537,10 +546,11 @@ class EthNodeControllers {
 		
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'web3_account_transaction_count', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
 			var ethnodeservice = this.global.getServiceInstance('ethnode');
+			var canRead = await ethnodeservice.canReadAsync(session);
 			
-			if (ethnodeservice.canRead(session)) {
+			if (canRead) {
 				var ethnode = this.getEthereumNode(session, web3providerurl);
 			
 				var count = await ethnode.web3_getTransactionCountAsync(address, defaultBlock);
@@ -569,7 +579,7 @@ class EthNodeControllers {
 	}
 	
 	// blocks
-	web3_block_current_number(req, res) {
+	async web3_block_current_number(req, res) {
 		// GET
 		var sessionuuid = req.get("sessiontoken");
 		var calltoken = req.get("calltoken");
@@ -586,13 +596,14 @@ class EthNodeControllers {
 		
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'web3_block_current_number', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
 			var ethnodeservice = this.global.getServiceInstance('ethnode');
+			var canRead = await ethnodeservice.canReadAsync(session);
 			
-			if (ethnodeservice.canRead(session)) {
+			if (canRead) {
 				var ethnode = this.getEthereumNode(session, web3providerurl);
 			
-				var blocknumber = ethnode.web3_getHighestBlockNumber();
+				var blocknumber = await ethnode.web3_getHighestBlockNumberAsync();
 
 				if (blocknumber !== -1) {
 					jsonresult = {status: 1, number: blocknumber};
@@ -616,7 +627,7 @@ class EthNodeControllers {
 		res.json(jsonresult);
 	}
 
-	web3_block(req, res) {
+	async web3_block(req, res) {
 		// GET
 		var sessionuuid = req.get("sessiontoken");
 		var calltoken = req.get("calltoken");
@@ -635,13 +646,14 @@ class EthNodeControllers {
 		
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'web3_block', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
 			var ethnodeservice = this.global.getServiceInstance('ethnode');
+			var canRead = await ethnodeservice.canReadAsync(session);
 			
-			if (ethnodeservice.canRead(session)) {
+			if (canRead) {
 				var ethnode = this.getEthereumNode(session, web3providerurl);
 			
-				var blockjson = ethnode.web3_getBlock(blockid, false);
+				var blockjson = await ethnode.web3_getBlockAsync(blockid, false);
 
 				if (blockjson) {
 					jsonresult = {status: 1, data: blockjson};
@@ -665,7 +677,7 @@ class EthNodeControllers {
 		res.json(jsonresult);
 	}
 
-	web3_block_and_transactions(req, res) {
+	async web3_block_and_transactions(req, res) {
 		// GET
 		var sessionuuid = req.get("sessiontoken");
 		var calltoken = req.get("calltoken");
@@ -684,13 +696,14 @@ class EthNodeControllers {
 		
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'web3_block_and_transactions', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
 			var ethnodeservice = this.global.getServiceInstance('ethnode');
+			var canRead = await ethnodeservice.canReadAsync(session);
 			
-			if (ethnodeservice.canRead(session)) {
+			if (canRead) {
 				var ethnode = this.getEthereumNode(session, web3providerurl);
 			
-				var blockjson = ethnode.web3_getBlock(blockid, true);
+				var blockjson = await ethnode.web3_getBlockAsync(blockid, true);
 
 				if (blockjson) {
 					jsonresult = {status: 1, data: blockjson};
@@ -716,7 +729,7 @@ class EthNodeControllers {
 	}
 
 	// transactions
-	web3_transaction(req, res) {
+	async web3_transaction(req, res) {
 		// GET
 		var sessionuuid = req.get("sessiontoken");
 		var calltoken = req.get("calltoken");
@@ -735,13 +748,14 @@ class EthNodeControllers {
 		
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'web3_transaction', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
 			var ethnodeservice = this.global.getServiceInstance('ethnode');
+			var canRead = await ethnodeservice.canReadAsync(session);
 			
-			if (ethnodeservice.canRead(session)) {
+			if (canRead) {
 				var ethnode = this.getEthereumNode(session, web3providerurl);
 			
-				var txjson = ethnode.web3_getTransaction(txhash);
+				var txjson = await ethnode.web3_getTransactionAsync(txhash);
 			
 				if (txjson) {
 					jsonresult = {status: 1, data: txjson};
@@ -766,7 +780,7 @@ class EthNodeControllers {
 		res.json(jsonresult);
 	}
 
-	web3_transaction_receipt(req, res) {
+	async web3_transaction_receipt(req, res) {
 		// GET
 		var sessionuuid = req.get("sessiontoken");
 		var calltoken = req.get("calltoken");
@@ -785,13 +799,14 @@ class EthNodeControllers {
 		
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'web3_transaction_receipt', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
 			var ethnodeservice = this.global.getServiceInstance('ethnode');
+			var canRead = await ethnodeservice.canReadAsync(session);
 			
-			if (ethnodeservice.canRead(session)) {
+			if (canRead) {
 				var ethnode = this.getEthereumNode(session, web3providerurl);
 			
-				var txjson = ethnode.web3_getTransactionReceipt(txhash);
+				var txjson = await ethnode.web3_getTransactionReceiptAsync(txhash);
 
 				if (txjson) {
 					jsonresult = {status: 1, data: txjson};
@@ -816,7 +831,7 @@ class EthNodeControllers {
 		res.json(jsonresult);
 	}
 
-	web3_find_transaction(req, res) {
+	async web3_find_transaction(req, res) {
 		// POST
 		var sessionuuid = req.get("sessiontoken");
 		var calltoken = req.get("calltoken");
@@ -835,13 +850,14 @@ class EthNodeControllers {
 		
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'web3_find_transaction', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
 			var ethnodeservice = this.global.getServiceInstance('ethnode');
+			var canRead = await ethnodeservice.canReadAsync(session);
 			
-			if (ethnodeservice.canRead(session)) {
+			if (canRead) {
 				var ethnode = this.getEthereumNode(session, web3providerurl);
 			
-				var result = ethnode.web3_findTransaction(transactionuuid);
+				var result = await ethnode.web3_findTransactionAsync(transactionuuid);
 		
 				if (result) {
 					jsonresult = {status:1, data: result};
@@ -866,7 +882,7 @@ class EthNodeControllers {
 		res.json(jsonresult);
 	}
 
-	web3_user_transactions(req, res) {
+	async web3_user_transactions(req, res) {
 		// POST
 		var sessionuuid = req.get("sessiontoken");
 		var calltoken = req.get("calltoken");
@@ -886,13 +902,14 @@ class EthNodeControllers {
 				
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'web3_user_transactions', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
 			var ethnodeservice = this.global.getServiceInstance('ethnode');
+			var canRead = await ethnodeservice.canReadAsync(session);
 			
-			if (ethnodeservice.canRead(session)) {
+			if (canRead) {
 				var ethnode = this.getEthereumNode(session, web3providerurl);
 			
-				var txarray = ethnode.web3_getUserTransactions(useruuid);
+				var txarray = await ethnode.web3_getUserTransactionsAsync(useruuid);
 				
 				var result = [];
 				
@@ -941,7 +958,7 @@ class EthNodeControllers {
 
 
 
-	web3_sendtransaction(req, res) {
+	async web3_sendtransaction(req, res) {
 		// POST
 		var sessionuuid = req.get("sessiontoken");
 		var calltoken = req.get("calltoken");
@@ -963,10 +980,11 @@ class EthNodeControllers {
 	
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'web3_sendtransaction', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
 			var ethnodeservice = this.global.getServiceInstance('ethnode');
-
-			if (ethnodeservice.canWrite(session)) {
+			var canWrite = await ethnodeservice.canWriteAsync(session);
+			
+			if (canWrite) {
 				var ethnode = this.getEthereumNode(session, web3providerurl);
 			
 				if (raw) {
@@ -1000,7 +1018,7 @@ class EthNodeControllers {
 	
 					
 					// send raw transaction
-					var result = ethnode.web3_sendRawTransaction(ethereumtransaction);
+					var result = await ethnode.web3_sendRawTransactionAsync(ethereumtransaction);
 				}
 				else {
 					var fromaddress = req.body.from;
@@ -1036,14 +1054,14 @@ class EthNodeControllers {
 					
 					// we unlock the wallet account
 					if (walletaddress) {
-						ethnode.web3_unlockAccount(walletaddress, password, duration);
+						await ethnode.web3_unlockAccountAsync(walletaddress, password, duration);
 					}
 					
-					var result = ethnode.web3_sendTransaction(ethereumtransaction);
+					var result = await ethnode.web3_sendTransactionAsync(ethereumtransaction);
 					
 					// we relock the wallet account
 					if (walletaddress) {
-						ethnode.web3_lockAccount(walletaddress);
+						await ethnode.web3_lockAccountAsync(walletaddress);
 					}
 				}
 				
@@ -1096,10 +1114,11 @@ class EthNodeControllers {
 		
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'web3_artifact_load', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
 			var ethnodeservice = this.global.getServiceInstance('ethnode');
+			var canRead = await ethnodeservice.canReadAsync(session);
 			
-			if (ethnodeservice.canRead(session)) {
+			if (canRead) {
 				var ethnode = this.getEthereumNode(session, web3providerurl);
 			
 				var contractartifact = await ethnode.web3_loadArtifactAsync(artifactpath);
@@ -1138,7 +1157,7 @@ class EthNodeControllers {
 		res.json(jsonresult);
 	}
 
-	web3_contract_load(req, res) {
+	async web3_contract_load(req, res) {
 		// POST
 		var sessionuuid = req.get("sessiontoken");
 		var calltoken = req.get("calltoken");
@@ -1160,10 +1179,11 @@ class EthNodeControllers {
 		
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'web3_contract_load', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
 			var ethnodeservice = this.global.getServiceInstance('ethnode');
+			var canRead = await ethnodeservice.canReadAsync(session);
 			
-			if (ethnodeservice.canRead(session)) {
+			if (canRead) {
 				var ethnode = this.getEthereumNode(session, web3providerurl);
 			
 				var artifact = ethnode.getWeb3ContractArtifact(artifactuid, artifactpath);
@@ -1197,7 +1217,7 @@ class EthNodeControllers {
 		res.json(jsonresult);
 	}
 
-	web3_contract_at(req, res) {
+	async web3_contract_at(req, res) {
 		// POST
 		var sessionuuid = req.get("sessiontoken");
 		var calltoken = req.get("calltoken");
@@ -1219,10 +1239,11 @@ class EthNodeControllers {
 						
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'web3_contract_at', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
 			var ethnodeservice = this.global.getServiceInstance('ethnode');
-		
-			if (ethnodeservice.canRead(session)) {
+			var canRead = await ethnodeservice.canReadAsync(session);
+			
+			if (canRead) {
 				if (contractuuid) {
 					var ethnode = this.getEthereumNode(session, web3providerurl);
 					
@@ -1280,7 +1301,6 @@ class EthNodeControllers {
 		}
 		catch(e) {
 			global.log("exception in web3_contract_at for sessiontoken " + sessionuuid+ " and contractuuid " + contractuuid + " and address " + address +  ": " + e);
-			//global.log(e.stack);
 		}
 		
 
@@ -1292,7 +1312,7 @@ class EthNodeControllers {
 		res.json(jsonresult);
 	}
 
-	web3_contract_new(req, res) {
+	async web3_contract_new(req, res) {
 		// POST
 		var sessionuuid = req.get("sessiontoken");
 		var calltoken = req.get("calltoken");
@@ -1323,17 +1343,18 @@ class EthNodeControllers {
 
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'web3_contract_new', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
 			var ethnodeservice = this.global.getServiceInstance('ethnode');
-
-			if (ethnodeservice.canWrite(session)) {
+			var canWrite = await ethnodeservice.canWriteAsync(session);
+			
+			if (canWrite) {
 				var ethnode = this.getEthereumNode(session, web3providerurl);
 			
 				var contract = ethnode.getWeb3Contract(contractuuid, artifactpath);
 				
 				// we unlock the wallet account
 				if (walletaddress) {
-					ethnode.web3_unlockAccount(walletaddress, password, duration);
+					await ethnode.web3_unlockAccountAsync(walletaddress, password, duration);
 				}
 				
 				var ethereumtransaction = ethnode.createEthereumTransactionInstance(session);
@@ -1346,11 +1367,11 @@ class EthNodeControllers {
 				
 				callparams.push(ethereumtransaction);
 	
-				var contractinstance = ethnode.web3_contract_new(contract, callparams);
+				var contractinstance = await ethnode.web3_contract_newAsync(contract, callparams);
 				
 				// we relock the wallet account
 				if (walletaddress) {
-					ethnode.web3_lockAccount(walletaddress);
+					await ethnode.web3_lockAccountAsync(walletaddress);
 				}
 
 				if (contractinstance) {
@@ -1411,10 +1432,11 @@ class EthNodeControllers {
 		
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'web3_contract_call', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
 			var ethnodeservice = this.global.getServiceInstance('ethnode');
-		
-			if (ethnodeservice.canRead(session)) {
+			var canRead = await ethnodeservice.canReadAsync(session);
+			
+			if (canRead) {
 				var ethnode = this.getEthereumNode(session, web3providerurl);
 			
 				var contractinstance = ethnode.getWeb3ContractInstance(contractinstanceuuid, artifactpath, contractaddress);
@@ -1457,7 +1479,7 @@ class EthNodeControllers {
 		res.json(jsonresult);
 	}
 
-	web3_contract_send(req, res) {
+	async web3_contract_send(req, res) {
 		// POST
 		var sessionuuid = req.get("sessiontoken");
 		var calltoken = req.get("calltoken");
@@ -1494,10 +1516,11 @@ class EthNodeControllers {
 		
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'web3_contract_send', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
 			var ethnodeservice = this.global.getServiceInstance('ethnode');
-
-			if (ethnodeservice.canWrite(session)) {
+			var canWrite = await ethnodeservice.canWriteAsync(session);
+			
+			if (canWrite) {
 				var ethnode = this.getEthereumNode(session, web3providerurl);
 			
 				var contractinstance = ethnode.getWeb3ContractInstance(contractinstanceuuid, artifactpath, contractaddress);
@@ -1506,7 +1529,7 @@ class EthNodeControllers {
 	
 				// we unlock the wallet account
 				if (walletaddress) {
-					ethnode.web3_unlockAccount(walletaddress, password, duration);
+					await ethnode.web3_unlockAccountAsync(walletaddress, password, duration);
 				}
 				
 				var ethereumtransaction = ethnode.createEthereumTransactionInstance(session);
@@ -1519,11 +1542,11 @@ class EthNodeControllers {
 				
 				callparams.push(ethereumtransaction);
 	
-				var result = ethnode.web3_method_sendTransaction(contractinstance, methodname, callparams);
+				var result = await ethnode.web3_method_sendTransactionAsync(contractinstance, methodname, callparams);
 				
 				// we relock the wallet account
 				if (walletaddress) {
-					ethnode.web3_lockAccount(walletaddress);
+					await ethnode.web3_lockAccountAsync(walletaddress);
 				}
 
 				if (result !== null) {
@@ -1574,10 +1597,11 @@ class EthNodeControllers {
 		
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'faucet_top_up', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
 			var ethnodeservice = this.global.getServiceInstance('ethnode');
-		
-			if (ethnodeservice.canRead(session)) {
+			var canRead = await ethnodeservice.canReadAsync(session);
+			
+			if (canRead) {
 				var topinfo = await ethnodeservice.topUpAccountAsync(session, web3providerurl, address);
 			}
 			else {
@@ -1630,10 +1654,11 @@ class EthNodeControllers {
 		
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'faucet_top_up_on', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
 			var ethnodeservice = this.global.getServiceInstance('ethnode');
-		
-			if (ethnodeservice.canRead(session)) {
+			var canRead = await ethnodeservice.canReadAsync(session);
+			
+			if (canRead) {
 				var topinfo = await ethnodeservice.topUpAccountAsync(session, web3providerurl, address, options);
 			}
 			else {

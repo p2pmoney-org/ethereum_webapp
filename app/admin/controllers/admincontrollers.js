@@ -8,7 +8,7 @@ class AdminControllers {
 
 	}
 	
-	_getSessionInstance(req) {
+	async _getSessionInstance(req) {
 		var global = this.global;
 		var adminserver = this.adminserver ;
 
@@ -27,31 +27,32 @@ class AdminControllers {
 		var session;
 
 		if (sessionuuid) {
-			session = Session.getSession(global, sessionuuid);
+			session = await Session.getSessionAsync(global, sessionuuid);
 		}
 		else {
-			session = Session.createBlankSession(global);
+			session = await  Session.createBlankSessionAsync(global);
 			
 			req.query.sessionuuid = session.getSessionUUID();
 			
-			if (adminserver.checkRootBlankPassword() == true) {
-				this._impersonateRoot(session);;
+			let checkRootPassword = await adminserver.checkRootBlankPassword();
+			if (checkRootPassword == true) {
+				await this._impersonateRoot(session);;
 			}
 		}
 		
 		return session;
 	}
 	
-	_isRootSession(session) {
+	async _isRootSession(session) {
 		var user = session.getUser();
 		
-		if (user.getUserName() == 'root')
+		if (user && (user.getUserName() == 'root'))
 			return true;
 		else
 			return false;
 	}
 	
-	_impersonateRoot(session) {
+	async _impersonateRoot(session) {
 		var global = this.global;
 		var commonservice = global.getServiceInstance('common');
 		var user = commonservice.createBlankUserInstance();
@@ -62,21 +63,21 @@ class AdminControllers {
 		
 		user.addRole(superadminrole);
 		
-		session.impersonateUser(user);
+		await session.impersonateUserAsync(user);
 	}
 	
-	_setupDone() {
+	async _setupDone() {
 		var global = this.global;
 		var adminserver = this.adminserver ;
 
 		return adminserver.checkRootBlankPassword() != true;
 	}
 	
-	get_index(req, res, next) {
+	async get_index(req, res, next) {
 		var global = this.global;
 		var adminserver = this.adminserver ;
 		
-		var session = this._getSessionInstance(req);
+		var session = await this._getSessionInstance(req);
 		
 		var data = {};
 		
@@ -104,8 +105,10 @@ class AdminControllers {
 		var serverdata = {};
 		var sessiondata = {};
 		var navigationdata = {};
+
+		var _setupDone = await this._setupDone();
 		
-		if (this._setupDone())
+		if (_setupDone)
 			serverdata.setupdone = true;
 		else
 			serverdata.setupdone = false;
@@ -120,7 +123,10 @@ class AdminControllers {
 		data['session'] = sessiondata;
 		data['navigation'] = navigationdata;
 
-		if (!session.isAuthenticated() || !this._isRootSession(session)) {
+		var isAuthenticated = await session.isAuthenticatedAsync();
+		var isRootSession = await this._isRootSession(session);
+
+		if (!isAuthenticated || !isRootSession) {
 			global.log('session NOT logged under root');
 
 			sessiondata.islogged = false;
@@ -175,17 +181,17 @@ class AdminControllers {
 				
 				case 1:
 					// container status
-					this.prepareContainerStatusView(req, session, data);
+					await this.prepareContainerStatusView(req, session, data);
 					break;
 			
 				case 2:
 					// server status
-					this.prepareApplicationConfigView(req, session, data);
+					await this.prepareApplicationConfigView(req, session, data);
 					break;
 				
 				case 3: {
 					// managing users
-					this.prepareUsersView(req, session, data);
+					await this.prepareUsersView(req, session, data);
 					
 					var operation = req.query.operation;
 					
@@ -195,7 +201,7 @@ class AdminControllers {
 						req.body.operation = req.query.operation;
 						req.body.keyuuid = req.query.keyuuid;
 
-						this.handleUsersSubmit(req, session);
+						await this.handleUsersSubmit(req, session);
 					}
 				}
 					break;
@@ -212,7 +218,7 @@ class AdminControllers {
 		res.render('index', data);
 	}
 	
-	post_index(req, res, next) {
+	async post_index(req, res, next) {
 		var global = this.global;
 		
 		global.log('AdminControllers.post_index called');
@@ -223,21 +229,21 @@ class AdminControllers {
 		
 		var adminserver = global.getServiceInstance('admin').getAdminServer();
 
-		var session = this._getSessionInstance(req);
+		var session = await this._getSessionInstance(req);
 		
 		switch(action) {
 			case 'install':
-				this.handleInstall(req, session);
+				await this.handleInstall(req, session);
 				break;
 			case 'login':
-				this.handleLogin(req, session);
+				await this.handleLogin(req, session);
 				break;
 			case 'application':
-				this.handleApplicationConfigSubmit(req, session);
+				await this.handleApplicationConfigSubmit(req, session);
 				req.tab = 'application';
 				break;
 			case 'users':
-				this.handleUsersSubmit(req, session);
+				await this.handleUsersSubmit(req, session);
 				req.tab = 'users';
 				break;
 			default:
@@ -248,13 +254,13 @@ class AdminControllers {
 	}
 	
 	// views
-	prepareContainerStatusView(req, session, data) {
+	async prepareContainerStatusView(req, session, data) {
 		var global = this.global;
 		var adminserver = this.adminserver ;
 
 		// read launcher.config
 		var launchvariables = [];
-		var launchconfig = adminserver.readLaunchConfig(session);
+		var launchconfig = await adminserver.readLaunchConfig(session);
 		
 		for (var key in launchconfig) {
 		    if (launchconfig.hasOwnProperty(key)) {
@@ -269,21 +275,24 @@ class AdminControllers {
 		data['launchvariables'] = launchvariables;
 	}
 	
-	prepareApplicationConfigView(req, session, data) {
-		if (!session.hasSuperAdminPrivileges())
+	async prepareApplicationConfigView(req, session, data) {
+		var hasSuperAdminPrivilegesAsync = await session.hasSuperAdminPrivilegesAsync();
+		if (!hasSuperAdminPrivilegesAsync)
 			throw 'only a super admin can see the application config';
 
 		var global = this.global;
 		var adminserver = this.adminserver ;
 		
 		var mysqlversion = 'mysql server not running';
+		var checkDataBaseServer = await adminserver.checkDataBaseServer();
 
-		if (adminserver.checkDataBaseServer()) {
-			mysqlversion = global.getMySqlConnection().getMysqlServerVersion();
+		if (checkDataBaseServer) {
+			let mysqlcon = await global.getMySqlConnectionAsync();
+			mysqlversion = await mysqlcon.getMysqlServerVersionAsync();
 		}
 		else {
 			data['message'] = 'you should restart the container';
-			data['message'] = adminserver._pingMysqlHost();
+			data['message'] = await adminserver._pingMysqlHost();
 		}
 		 
 		// form
@@ -303,7 +312,7 @@ class AdminControllers {
 
 		// read launcher.config
 		var appvariables = [];
-		var appconfig = adminserver.getApplicationInfoList(session);
+		var appconfig = await adminserver.getApplicationInfoList(session);
 		
 		for (var key in appconfig) {
 		    if (appconfig.hasOwnProperty(key)) {
@@ -327,7 +336,7 @@ class AdminControllers {
 		datauser['accountstatus'] = user.getAccountStatus();
 	}
 	
-	prepareUsersView(req, session, data) {
+	async prepareUsersView(req, session, data) {
 		var global = this.global;
 		var adminserver = this.adminserver;
 		
@@ -338,7 +347,7 @@ class AdminControllers {
 
 		if (!selecteduseruuid) {
 			// get list of user
-			var users = adminserver.getUsers(session);
+			var users = await adminserver.getUsers(session);
 			
 			
 			for (var i = 0; i < users.length; i++) {
@@ -352,7 +361,7 @@ class AdminControllers {
 		}
 		else {
 			// get user and his/her keys
-			var selecteduser = adminserver.getUserFromUUID(session, selecteduseruuid);
+			var selecteduser = await adminserver.getUserFromUUID(session, selecteduseruuid);
 			
 			
 			if (selecteduser) {
@@ -368,7 +377,7 @@ class AdminControllers {
 				// keys
 				data['selecteduser'].keys = [];
 				
-				var keys = adminserver.getUserKeys(session, selecteduseruuid);
+				var keys = await adminserver.getUserKeys(session, selecteduseruuid);
 				
 				for (var i = 0; i < keys.length; i++) {
 					var userkey = keys[i];
@@ -386,32 +395,37 @@ class AdminControllers {
 	}
 
 	// submit
-	handleLogout(req) {
+	async handleLogout(req) {
 		var global = this.global;
 		var adminserver = this.adminserver;
-		var session = this._getSessionInstance(req);
+		var session = await this._getSessionInstance(req);
 		
-		session.disconnectUser();
+		await session.disconnectUserAsync();
 	}
 
-	handleLogin(req, session) {
+	async handleLogin(req, session) {
 		var global = this.global;
 		var adminserver = this.adminserver;
-		var session = this._getSessionInstance(req);
+		var session = await this._getSessionInstance(req);
 		
 		global.log('AdminControllers.handleLogin called');
 
-		if (!session.isAuthenticated()) {
-			var password = (req.body ? req.body.password : null);
+		var isAuthenticated = await session.isAuthenticatedAsync();
+		var isRootSession = await this._isRootSession(session);
+
+		if (!isAuthenticated) {
+
+			let password = (req.body ? req.body.password : null);
+			let checkMysqlRootPassword = await adminserver.checkMysqlRootPassword(password);
 			
-			if (adminserver.checkMysqlRootPassword(password)) {
-				this._impersonateRoot(session);
+			if (checkMysqlRootPassword) {
+				await this._impersonateRoot(session);
 			}
 			
 		}
 	}
 
-	handleInstall(req, session) {
+	async handleInstall(req, session) {
 		var installinputs = {}
 		
 		installinputs.rootpassword = (req.body ? req.body.rootpassword : null);
@@ -430,29 +444,31 @@ class AdminControllers {
 		global.log('AdminControllers.handleInstall called');
 		
 		var adminserver = this.adminserver ;
-		var session = this._getSessionInstance(req);
+		var session = await this._getSessionInstance(req);
+		var changeMysqlRootPassword = await adminserver.changeMysqlRootPassword(null, installinputs.rootpassword);
 		
-		if (adminserver.changeMysqlRootPassword(null, installinputs.rootpassword)) {
-			this._impersonateRoot(session);;
+		if (changeMysqlRootPassword) {
+			await this._impersonateRoot(session);;
 			
-			adminserver.installMysqlTables(session, installinputs);
+			await adminserver.installMysqlTables(session, installinputs);
 			
-			adminserver.installWebappConfig(session, installinputs);
+			await adminserver.installWebappConfig(session, installinputs);
 			
-			adminserver.installFinal();
+			await adminserver.installFinal();
 			
 			// reload application
 			global.reload();
 		}
 	}
 	
-	handleApplicationConfigSubmit(req, session) {
+	async handleApplicationConfigSubmit(req, session) {
 		var global = this.global;
 		var adminserver = this.adminserver;
 		
 		global.log('AdminControllers.handleApplicationConfigSubmit called');
 		
-		if (!session.hasSuperAdminPrivileges())
+		var hasSuperAdminPrivilegesAsync = await session.hasSuperAdminPrivilegesAsync();
+		if (!hasSuperAdminPrivilegesAsync)
 			throw 'only a super admin can change the application configuration';
 
 		var config = global.config;
@@ -473,7 +489,7 @@ class AdminControllers {
 		global.reload();
 	}
 	
-	handleUsersSubmit(req, session) {
+	async handleUsersSubmit(req, session) {
 		var global = this.global;
 		var adminserver = this.adminserver;
 		
@@ -488,28 +504,28 @@ class AdminControllers {
 		var useruuid = (req.body.useruuid ? req.body.useruuid : null);
 		
 		if (!useruuid) {
-			adminserver.addUser(session, username, useremail, userpassword);
+			await adminserver.addUser(session, username, useremail, userpassword);
 		}
 		else {
 			var operation = (req.body.operation ? req.body.operation : null);
 			
 			switch(operation) {
 				case 'modify': {
-					adminserver.saveUser(session, useruuid, username, useremail, userpassword);
+					await adminserver.saveUser(session, useruuid, username, useremail, userpassword);
 				}
 				break;
 				
 				case 'addkey': {
 					var privatekey = req.body.privatekey;
 					
-					adminserver.addUserKey(session, useruuid, privatekey);
+					await adminserver.addUserKey(session, useruuid, privatekey);
 				}
 				break;
 				
 				case 'deletekey': {
 					var keyuuid = req.body.keyuuid;
 					
-					adminserver.deleteUserKey(session, useruuid, keyuuid);
+					await adminserver.deleteUserKey(session, useruuid, keyuuid);
 				}
 				break;
 				

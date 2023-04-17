@@ -496,7 +496,8 @@ class EthereumNode {
 			global.setExecutionVariable(cachename, web3syncingcache);
 		}
 
-		var key = JSON.stringify(web3.currentProvider);
+		//var key = JSON.stringify(web3.currentProvider); // cirular exception
+		var key = JSON.stringify({host: web3.currentProvider.host, withCredentials: web3.currentProvider.withCredentials, connected: web3.currentProvider.connected});
 
 		var syncing = web3syncingcache.getValue(key);
 		
@@ -558,7 +559,8 @@ class EthereumNode {
 			global.setExecutionVariable(cachename, web3syncingcache);
 		}
 
-		var key = JSON.stringify(web3.currentProvider);
+		//var key = JSON.stringify(web3.currentProvider); // cirular exception
+		var key = JSON.stringify({host: web3.currentProvider.host, withCredentials: web3.currentProvider.withCredentials, connected: web3.currentProvider.connected});
 
 		var syncing = web3syncingcache.getValue(key);
 		
@@ -1045,6 +1047,45 @@ class EthereumNode {
 
 		return result;
 	}
+
+	async web3_unlockAccountAsync(address, password, duration) {
+		var global = this.session.getGlobalInstance();
+		var self = this;
+		
+		global.log('EthereumNode.web3_unlockAccountAsync unlocking account ' + address + ' for ' + duration + ' seconds.');
+		
+		var web3 = this.getWeb3Instance();
+		
+		if (this.web3_version == "1.0.x") {
+			// Web3 > 1.0
+			var funcname = web3.eth.personal.unlockAccount;
+			
+		}
+		else {
+			// Web3 == 0.20.x
+			var funcname = web3.personal.unlockAccount;
+		}
+		
+		return new Promise(function (resolve, reject) {
+			try {
+				
+				return funcname(address, password, duration, function(err, res) {
+					if (!err) {
+						return resolve(res);
+					}
+					else {
+						reject('web3 error: ' + err);
+					}
+				
+				});
+			}
+			catch(e) {
+				reject('web3 exception: ' + e);
+			}
+			
+		});
+
+	}
 	
 	web3_lockAccount(address) {
 		var global = this.session.getGlobalInstance();
@@ -1102,6 +1143,46 @@ class EthereumNode {
 		{global.deasync().runLoopOnce();}
 
 		return result;
+	}
+
+	async web3_lockAccountAsync(address) {
+		var global = this.session.getGlobalInstance();
+		
+		global.log('EthereumNode.web3_lockAccountAsync locking  account ' + address);
+		
+		var web3 = this.getWeb3Instance();
+
+		if (this.web3_version == "1.0.x") {
+			// Web3 > 1.0
+			var funcname = web3.eth.personal.lockAccount;
+		}
+		else {
+			// Web3 == 0.20.x
+			var funcname = web3.personal.lockAccount;
+		}
+		
+
+		return new Promise(function (resolve, reject) {
+			try {
+				
+				return funcname(address, function(err, res) {
+					if (!err) {
+						return resolve(res);
+					}
+					else {
+						global.log('EthereumNode.web3_lockAccount err is ' + err);
+						reject('web3 error: ' + err);
+					}
+				
+				});
+			}
+			catch(e) {
+				global.log('EthereumNode.web3_lockAccount exception is ' + e);
+				reject('web3 exception: ' + e);
+			}
+			
+		});
+
 	}
 	
 	// blocks
@@ -1300,6 +1381,35 @@ class EthereumNode {
 		return blockjson;
 	}
 
+	async web3_getBlockAsync(blockid, bWithTransactions) {
+		var self = this;
+		var session = this.session;
+		var global = this.session.getGlobalInstance();
+
+		var blockjson = await new Promise(function (resolve, reject) {
+			try {
+				var web3 = self.getWeb3Instance();
+				
+				return web3.eth.getBlock(blockid, bWithTransactions, function(err, res) {
+					if (!err) {
+						blockjson = res;
+						return resolve(res);
+					}
+					else {
+						reject('web3 error: ' + err);
+					}
+				
+				});
+			}
+			catch(e) {
+				reject('web3 exception: ' + e);
+			}
+			
+		});
+		
+		return blockjson;
+	}
+
 	web3_findTransaction(transactionuuid) {
 		var self = this
 		var session = this.session;
@@ -1311,12 +1421,106 @@ class EthereumNode {
 			return this.web3_getTransaction(transactionhash);
 	}
 	
+	async web3_findTransactionAsync(transactionuuid) {
+		var self = this
+		var session = this.session;
+		var global = this.session.getGlobalInstance();
+		
+		var transactionhash = await this.persistor.getTansactionHashAsync(transactionuuid);
+		
+		if (transactionhash)
+			return this.web3_getTransaction(transactionhash);
+	}
+	
 	web3_getUserTransactions(useruuid) {
 		var self = this
 		var session = this.session;
 		var global = this.session.getGlobalInstance();
 		
 		var transactionlogarray = this.persistor.getUserTansactionLogs(useruuid);
+		
+		var txarray = [];
+		
+		var txmap = Object.create(null); // create a map to keep transactionuuid
+		
+		for (var i = 0; i < transactionlogarray.length; i++) {
+			var transactionlog = transactionlogarray[i];
+			
+			var transactionuuid = transactionlog['transactionuuid'];
+			var action = transactionlog['action'];
+			
+			if (transactionuuid in txmap) {
+				var tx = txmap[transactionuuid]
+			}
+			else {
+				// first time for this transactionuuid
+				// create array for transaction and put it in map
+				//var tx = [];
+				var tx = this.createEthereumTransactionInstance();
+				
+				tx['transactionuuid'] = transactionuuid;
+				
+				txmap[transactionuuid] = tx;
+			}
+			
+			// fill tx from the different logs
+			if (action == 1) {
+				tx['transactionuuid'] = transactionlog['transactionuuid'];
+				tx['creationdate'] = transactionlog['creationdate'];
+				
+				if ((typeof tx['status'] !== 'undefined') && (tx['status'] !== 'completed'))
+					tx['status'] = 'started';
+				
+				// parse log
+				try {
+					var txjsonstring = transactionlog['log'].toString('utf8');
+					var txjson =  JSON.parse(txjsonstring);
+					
+					if (txjson['web3providerurl'])
+						tx['web3providerurl'] = txjson['web3providerurl'];
+				}
+				catch(e) {
+				}
+			}
+			else if (action == 500) {
+				try {
+					var txjsonstring = transactionlog['log'].toString('utf8');
+					var txjson =  JSON.parse(txjsonstring);
+					
+					tx['from'] = txjson['from'];
+					tx['to'] = txjson['to'];
+					tx['value'] = txjson['value'];
+				}
+				catch(e) {
+				}
+				
+			}
+			else if (action == 1000) {
+				tx['transactionhash'] = transactionlog['transactionhash'];
+
+				tx['status'] = 'completed';
+			}
+		}
+		
+		// fill txarray for completed transaction
+		for (var key in txmap) {
+			var tx = txmap[key];
+			
+			if (!tx) continue;
+			
+			txarray.push(tx);
+		}
+
+		
+		return txarray;
+	}
+
+	async web3_getUserTransactionsAsync(useruuid) {
+		var self = this
+		var session = this.session;
+		var global = this.session.getGlobalInstance();
+		
+		var transactionlogarray = await this.persistor.getUserTansactionLogsAsync(useruuid);
 		
 		var txarray = [];
 		
@@ -1646,8 +1850,6 @@ class EthereumNode {
 		var self = this
 		var session = this.session;
 		
-		var result;
-		
 		var raw = ethtransaction.getRawData();
 		var ethereum_transaction_uuid = ((ethtransaction.getTransactionUUID() !== null) ? ethtransaction.getTransactionUUID() : session.guid());
 		
@@ -1655,9 +1857,13 @@ class EthereumNode {
 		var web3providerurl = this.getWeb3ProviderFullUrl();
 		var logString = JSON.stringify({web3providerurl: web3providerurl, raw: raw});
 		
-		this._saveTransactionLog(ethereum_transaction_uuid, 'sendRawTransaction', 1, logString);
+		await this._saveTransactionLogAsync(ethereum_transaction_uuid, 'sendRawTransaction', 1, logString);
+				
+		// log transaction pending
+		var jsonstring = JSON.stringify(ethtransaction.getTxJson());
+		await this._saveTransactionLogAsync(ethereum_transaction_uuid, 'sendRawTransaction', 500, jsonstring);
 
-		return new Promise( function(resolve, reject) {
+		var result = await new Promise( function(resolve, reject) {
 			var web3 = self.getWeb3Instance();
 
 			var __transactioncallback = function(err, res) {
@@ -1665,20 +1871,16 @@ class EthereumNode {
 				global.log('EthereumNode.web3_sendRawTransactionAsync transactionHash is ' + transactionHash);
 		
 				if (!err) {
-					result = transactionHash;
-					
 					ethtransaction.setTransactionHash(transactionHash);
 					
 					// log success of transaction
-					self._saveTransactionLog(ethereum_transaction_uuid, 'sendRawTransaction', 1000, JSON.stringify(transactionHash), transactionHash);
+					self._saveTransactionLogAsync(ethereum_transaction_uuid, 'sendRawTransaction', 1000, JSON.stringify(transactionHash), transactionHash);
 					
-					return resolve(transactionHash);
+					resolve(transactionHash);
 				}
 				else {
-					result = null;
-					
 					// log error of transaction
-					self._saveTransactionLog(ethereum_transaction_uuid, 'sendRawTransaction', -500, err);
+					self._saveTransactionLogAsync(ethereum_transaction_uuid, 'sendRawTransaction', -500, err);
 	
 					var error = 'web3 error: ' + err;
 					global.log('error: ' + error);
@@ -1697,25 +1899,14 @@ class EthereumNode {
 			}
 		
 		})
-		.then(() => {
-			return result;
-		})
 		.catch(function (err) {
 			global.log("EthereumNode.web3_sendRawTransactionAsync promise rejected: " + err);
 			
 			// log exception of transaction
-			self._saveTransactionLog(ethereum_transaction_uuid, 'sendRawTransaction', -100, err);
-
-			result = null;
-			
-			return result;
+			self._saveTransactionLogAsync(ethereum_transaction_uuid, 'sendRawTransaction', -100, err);
 		});
 		
-		
-		// log transaction pending
-		var jsonstring = JSON.stringify(ethtransaction.getTxJson());
-		this._saveTransactionLog(ethereum_transaction_uuid, 'sendRawTransaction', 500, jsonstring);
-		
+		return result;
 	}
 	
 	web3_sendTransaction(ethtransaction) {
@@ -1828,6 +2019,102 @@ class EthereumNode {
 		return result;
 	}
 	
+	async web3_sendTransactionAsync(ethtransaction) {
+		var global = this.session.getGlobalInstance();
+		
+		global.log('EthereumNode.web3_sendTransactionAsync called');
+		
+		var self = this
+		var session = this.session;
+		
+		var fromaddress = ethtransaction.getFromAddress();
+		var toaddress = ethtransaction.getToAddress();
+		var amount = ethtransaction.getValue();
+		var gas = ethtransaction.getGas();
+		var gasPrice = ethtransaction.getGasPrice();
+		var txdata = ethtransaction.getData();
+		var nonce = ethtransaction.getNonce();
+		
+		var web3providerurl = this.getWeb3ProviderFullUrl();
+		var params = {from: fromaddress, to: toaddress, value: amount, gas: gas, gasPrice: gasPrice, data: txdata, nonce: nonce, web3providerurl: web3providerurl};
+		var ethereum_transaction_uuid = ((ethtransaction.getTransactionUUID() !== null) ? ethtransaction.getTransactionUUID() : session.guid());
+		
+		// log start of transaction
+		var ethereum_transaction_uuid = session.guid();
+		var logString = JSON.stringify(params);
+
+		// log start of transaction
+		await this._saveTransactionLogAsync(ethereum_transaction_uuid, 'sendTransaction', 1, logString);
+
+		// log transaction pending
+		var jsonstring = JSON.stringify(ethtransaction.getTxJson());
+		await this._saveTransactionLogAsync(ethereum_transaction_uuid, 'sendTransaction', 500, jsonstring);
+
+		var result = await new Promise( function(resolve, reject) {
+			var web3 = self.getWeb3Instance();
+
+			var __transactioncallback = function(err, res) {
+				var transactionHash = res;
+				global.log('EthereumNode.web3_sendTransaction transactionHash is ' + transactionHash);
+		         
+				if (!err) {
+					ethtransaction.setTransactionHash(transactionHash);
+					
+					// log success of transaction
+					self._saveTransactionLogAsync(ethereum_transaction_uuid, 'sendTransaction', 1000, JSON.stringify(transactionHash), transactionHash);
+
+					resolve(transactionHash);
+				}
+				else {
+
+					// log error of transaction
+					self._saveTransactionLogAsync(ethereum_transaction_uuid, 'sendTransaction', -500, err);
+					
+					var error = 'web3 error: ' + err;
+					global.log('error: ' + error);
+					
+					reject('web3 error: ' + err);
+				}
+			};
+			
+			var txjson = {from: fromaddress,
+					to: toaddress,
+					gas: gas, 
+					gasPrice: gasPrice,
+				};
+			
+			if (nonce)
+				txjson.nonce = nonce;
+			
+			if (txdata)
+				txjson.data = txdata;
+	
+			// amount conversion to Wei
+			if (self.web3_version == "1.0.x") {
+				// Web3 > 1.0
+				if (amount)
+					txjson.value = web3.utils.toWei(amount, 'ether');
+			}
+			else {
+				// Web3 == 0.20.x
+				if (amount)
+					txjson.value = web3.toWei(amount, 'ether');
+			}
+	
+			// unsigned send (node will sign thanks to the unlocking of account)
+			web3.eth.sendTransaction(txjson, __transactioncallback);
+		})
+		.catch(function (err) {
+		     global.log("EthereumNode.web3_sendTransaction promise rejected: " + err);
+		     
+			// log exception of transaction
+			self._saveTransactionLogAsync(ethereum_transaction_uuid, 'sendTransaction', -100, err);
+
+		});
+		
+		
+		return result;
+	}
 
 	//
 	// contracts
@@ -2415,6 +2702,164 @@ class EthereumNode {
 		return web3_contract_instance;
 	}
 
+	async web3_contract_newAsync(web3contract, params) {
+		var session = this.session;
+		var global = this.session.getGlobalInstance();
+		var web3 = this.getWeb3Instance();
+		
+		global.log("EthereumNode.web3_contract_newAsync called for contract " + web3contract.getContractName());
+		
+		var finished = false;
+		var contractinstance = null;
+		var address = null;
+
+		var self = this;
+		
+		// log start of transaction
+		var methodname = 'new';
+		
+		let ethereumtransaction = params[params.length - 1];
+		let args = params.slice(0,-1);
+		let txjson = ethereumtransaction.getTxJson();
+
+		var ethereum_transaction_uuid = (ethereumtransaction.getTransactionUUID() !== null ? ethereumtransaction.getTransactionUUID()  : session.guid());
+		
+		var transactionHash;
+		
+		var logcall = args.slice();
+		logcall.push(txjson);
+		
+		var web3providerurl = this.getWeb3ProviderFullUrl();
+		var logString = JSON.stringify({web3providerurl: web3providerurl, call: logcall});
+		
+		// log transaction created
+		await this._saveTransactionLogAsync(ethereum_transaction_uuid, methodname, 1, logString);
+		
+		var web3_contract_instance = new ContractInstanceProxy(web3contract.contractuuid, null, web3contract, null);
+		
+		var abi = web3contract.getAbi();
+		var bytecode = web3contract.getByteCode();
+		
+		if (!bytecode)
+			throw 'no byte code, can not deploy contract';
+
+		// log transaction pending
+		var jsonstring = JSON.stringify(ethereumtransaction.getTxJson());
+		await this._saveTransactionLogAsync(ethereum_transaction_uuid, methodname, 500, jsonstring);
+
+
+		try {
+			if (this.web3_version == "1.0.x") {
+				// Web3 > 1.0
+				
+				await new web3.eth.Contract(abi).deploy({
+		              data: bytecode,
+		              arguments: args
+				})
+				.send(txjson)
+				.on('error', function(error){ 
+					global.log('notification of error while deploying contract: ' + error);
+					
+					// log error of transaction
+					self._saveTransactionLog(ethereum_transaction_uuid, methodname, -500, error);
+
+					web3_contract_instance = null;
+				})
+				.on('transactionHash', function(txhash){
+					transactionHash = txhash;
+					global.log('transaction hash of contract deployment is: ' + transactionHash);
+				})
+				.on('receipt', function(receipt){
+				   global.log('transaction receipt says contract deployed at: ' + receipt.contractAddress);
+				})
+				.on('confirmation', function(confirmationNumber, receipt){
+					//global.log('confirmation number for contract deployed at ' + receipt.contractAddress + ' is: ' + confirmationNumber);
+				})
+				.then(function(instance){
+				    var address = instance.options.address;
+				    
+					global.log('EthereumNode.web3_contract_new contract deployed at address: ' + address);
+					
+					web3_contract_instance['address'] = address;
+					web3_contract_instance['web3contractinstance'] = instance;
+					
+					var logjson = {address: address, contractname: web3contract.getContractName(), contractuuid: web3contract.contractuuid, transactionHash: transactionHash};
+					
+					// log success of transaction
+					self._saveTransactionLogAsync(ethereum_transaction_uuid, methodname, 1000, JSON.stringify(logjson), transactionHash);
+					
+					return web3_contract_instance;
+				})				
+				.catch(err => {
+				    global.log('catched error in EthereumNode.web3_contract_new ' + err);
+					
+					// log exception of transaction
+					self._saveTransactionLogAsync(ethereum_transaction_uuid, methodname, -100, err);
+
+					web3_contract_instance = null;
+					finished = true;
+				});
+				
+			}
+			else {
+				// Web3 == 0.20.x
+				await web3.eth.contract.new(abi, params, function(err, instance) {
+					if (!err) {
+						global.log('contract deployed at ' + res);
+						var address = res;
+						
+						web3_contract_instance['address'] = address;
+						web3_contract_instance['web3contractinstance'] = self.web3_contract_load_at(abi, address);
+						
+						contractinstance = web3_contract_instance;
+						
+						return web3_contract_instance;
+					}
+					else {
+						global.log('error deploying contract: ' + err);
+					}
+					
+				})
+				.then(instance=> {
+					
+					if (instance) {
+						address = instance.address;
+						
+						// log success of transaction
+						var logjson = {address: address, contractname: web3contract.getContractName(), contractuuid: web3contract.contractuuid, transactionHash: transactionHash};
+						self._saveTransactionLogAsync(ethereum_transaction_uuid, methodname, 1000, JSON.stringify(logjson), transactionHash);
+						
+						global.log('EthereumNode.web3_contract_new contract deployed at address: ' + address);
+					}
+					else {
+						// log error of transaction
+						self._saveTransactionLogAsync(ethereum_transaction_uuid, methodname, -500, 'transaction failed');
+
+						global.log('EthereumNode.web3_contract_new failed')
+					}
+				})				
+				.catch(err => {
+				    global.log('catched error in EthereumNode.web3_contract_new ' + err);
+					
+					// log exception of transaction
+					self._saveTransactionLogAsync(ethereum_transaction_uuid, methodname, -100, err);
+
+					web3_contract_instance = null;
+				});
+			}
+
+		}
+		catch(e) {
+			// log exception of transaction
+			self._saveTransactionLogAsync(ethereum_transaction_uuid, methodname, -101, e);
+
+			global.log('error in EthereumNode.web3_contract_new(): ' + e);
+		}
+		
+	
+		return web3_contract_instance;
+	}
+
 	web3_contract_at(web3contract, address) {
 		var global = this.session.getGlobalInstance();
 		
@@ -2936,6 +3381,18 @@ class EthereumNode {
 		
 		this.persistor.putTransactionLog(ethereum_transaction_uuid, methodname, action, log, transactionHash);
 	}
+
+	async _saveTransactionLogAsync(ethereum_transaction_uuid, methodname, action, log, transactionHash) {
+		// action values
+		// 1 start of call
+		// 500 transaction pending
+		// 1000 transaction completed
+		// -100 transaction error
+		// -101 transaction exception
+		// -500 transaction failed
+		
+		return this.persistor.putTransactionLogAsync(ethereum_transaction_uuid, methodname, action, log, transactionHash);
+	}
 	
 	web3_method_sendTransaction(web3_contract_instance, methodname, params) {
 		var session = this.session;
@@ -3111,7 +3568,169 @@ class EthereumNode {
 		return transactionHash;
 	}
 
+	async web3_method_sendTransactionAsync(web3_contract_instance, methodname, params) {
+		var session = this.session;
+		var global = this.session.getGlobalInstance();
+		
+		if (!web3_contract_instance)
+			throw 'web3_contract_instance is not defined';
 
+		var instance = web3_contract_instance.getInstance();
+		
+		if (!instance) {
+			global.log('error: EthereumNode.web3_method_sendTransactionAsync instance is null for contractuuid ' + contractuid);
+			throw 'web3_contract_instance instance is not defined';
+			
+		}
+		var contractuid = web3_contract_instance.getContractUUID();
+		var contractaddress = web3_contract_instance.getAddress();
+		
+		let ethereumtransaction = params[params.length - 1];
+		let args = params.slice(0,-1);
+		let txjson = ethereumtransaction.getTxJson();
+
+		var ethereum_transaction_uuid = (ethereumtransaction.getTransactionUUID() !== null ? ethereumtransaction.getTransactionUUID()  : session.guid());
+
+		var paramstring = JSON.stringify(args);
+		
+		global.log('EthereumNode.web3_method_sendTransactionAsync for method ' + methodname + ' contractuuid ' + contractuid + ' at address ' + contractaddress + ' with params ' + paramstring);
+		
+		var transactionHash;
+
+		var self = this;
+		
+		// log start of transaction
+		var web3providerurl = this.getWeb3ProviderFullUrl();
+		var logString = JSON.stringify({web3providerurl: web3providerurl, args: args});
+		await this._saveTransactionLogAsync(ethereum_transaction_uuid, methodname, 1, logString);
+
+		// log transaction pending
+		var jsonstring = JSON.stringify(ethereumtransaction.getTxJson());
+		await this._saveTransactionLogAsync(ethereum_transaction_uuid, methodname, 500, jsonstring);
+		
+		
+		
+		try {
+			var abi = web3_contract_instance.getAbi();
+			var abidef = this._getMethodAbiDefinition(abi, methodname);
+			
+			
+			var methodname = abidef.name;
+			var signature = abidef.signature;
+			
+
+			if (this.web3_version == "1.0.x") {
+				// Web3 > 1.0
+				var funcname = instance.methods[signature];
+			}
+			else {
+				// Web3 == 0.20.x
+				var funcname = instance[methodname];
+			}
+			
+			if (funcname) {
+				if (this.web3_version == "1.0.x") {
+					// Web3 > 1.0
+					
+					await funcname(...args)
+					.send(txjson)
+					.on('error', function(error){ 
+						global.log('notification of error while sending transaction: ' + error);
+						
+						// log error of transaction
+						self._saveTransactionLogAsync(ethereum_transaction_uuid, methodname, -500, error);
+
+						transactionHash = null;
+					})
+					.on('transactionHash', function(txHash){
+						 global.log('transaction hash of web3_method_sendTransactionAsync is: ' + txHash);
+					})
+					.on('receipt', function(receipt){
+					   global.log('transaction receipt for web3_method_sendTransactionAsync received');
+					})
+					.on('confirmation', function(confirmationNumber, receipt){
+						//global.log('confirmation number for contract deployed at ' + receipt.contractAddress + ' is: ' + confirmationNumber);
+					})
+					.then(function(res){
+						transactionHash = res.transactionHash;
+						
+						global.log('EthereumNode.web3_method_sendTransactionAsync result is: ' + JSON.stringify(res));
+						
+						// log success of transaction
+						self._saveTransactionLogAsync(ethereum_transaction_uuid, methodname, 1000, JSON.stringify(res), transactionHash);
+						
+						return transactionHash;
+					})				
+					.catch(err => {
+					    global.log('catched error in EthereumNode.web3_method_sendTransactionAsync ' + err);
+						
+						// log exception of transaction
+						self._saveTransactionLogAsync(ethereum_transaction_uuid, methodname, -100, err);
+
+						transactionHash = null;
+					});
+					
+				}
+				else {
+					// Web3 == 0.20.x
+					await funcname.send(...args, txjson, function(err, instance) {
+						if (!err) {
+							global.log('transaction hash of web3_method_sendTransactionAsync is: ' + res);
+							
+							return res;
+						}
+						else {
+							global.log('error in web3_method_sendTransactionAsync: ' + err);
+						}
+						
+					})
+					.then(res => {
+						
+						if (res) {
+							transactionHash = res;
+							
+							// log success of transaction
+							self._saveTransactionLogAsync(ethereum_transaction_uuid, methodname, 1000, JSON.stringify(transactionHash), transactionHash);
+							
+							global.log('EthereumNode.web3_contract_new result is: ' + res);
+						}
+						else {
+							// log error of transaction
+							self._saveTransactionLogAsync(ethereum_transaction_uuid, methodname, -500, 'transaction failed');
+
+							global.log('EthereumNode.web3_method_sendTransactionAsync failed')
+						}
+
+					})				
+					.catch(err => {
+					    global.log('catched error in EthereumNode.web3_method_sendTransactionAsync ' + err);
+						
+						// log exception of transaction
+						self._saveTransactionLogAsync(ethereum_transaction_uuid, methodname, -100, err);
+
+						transactionHash = null;
+					});
+				}			
+			}
+			else {
+				global.log('error: EthereumNode.web3_method_sendTransactionAsync funcname is null for contractuuid ' + contractuid);
+			}
+		
+
+
+		}
+		catch(e) {
+			// log exception of transaction
+			self._saveTransactionLogAsync(ethereum_transaction_uuid, methodname, -101, e);
+			
+			transactionHash = null;
+
+			global.log('exception in EthereumNode.web3_method_sendTransactionAsync: ' + e);
+		}
+		
+
+		return transactionHash;
+	}
 }
 
 module.exports = EthereumNode;

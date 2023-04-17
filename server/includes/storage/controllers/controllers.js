@@ -30,7 +30,7 @@ class StorageControllers {
 	//
 	// User storage API
 	//
-	user_storage(req, res) {
+	async user_storage(req, res) {
 		// POST
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
@@ -48,15 +48,16 @@ class StorageControllers {
 		
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'user_storage', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
+			var isAuthenticated = await session.isAuthenticatedAsync();
 			
-			if (session.isAuthenticated()) {
+			if (isAuthenticated) {
 				var storageservice = global.getServiceInstance('storage');
 				var storageserver = storageservice.getStorageServerInstance();
 				
-				var user = storageserver.getStorageUser(session);
+				var user = await storageserver.getStorageUserAsync(session);
 				
-				var content = storageserver.getUserContent(user, key);
+				var content = await storageserver.getUserContentAsync(user, key);
 				
 				jsonresult = {status: 1, useruuid: user.getUserUUID(), key: key, content: content};
 			}
@@ -76,7 +77,7 @@ class StorageControllers {
 		res.json(jsonresult);
 	}
 
-	put_user_storage(req, res) {
+	async put_user_storage(req, res) {
 		// PUT
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
@@ -95,15 +96,16 @@ class StorageControllers {
 		
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'put_user_storage', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
+			var isAuthenticated = await session.isAuthenticatedAsync();
 			
-			if (session.isAuthenticated()) {
+			if (isAuthenticated) {
 				var storageservice = global.getServiceInstance('storage');
 				var storageserver = storageservice.getStorageServerInstance();
 				
-				var user = storageserver.getStorageUser(session);
+				var user = await storageserver.getStorageUserAsync(session);
 				
-				storageserver.putUserContent(user, key, content);
+				await storageserver.putUserContentAsync(user, key, content);
 				
 				jsonresult = {status: 1, useruuid: user.getUserUUID(), key: key, content: content};
 			}
@@ -124,7 +126,7 @@ class StorageControllers {
 		res.json(jsonresult);
 	}
 
-	delete_user_storage(req, res) {
+	async delete_user_storage(req, res) {
 		// DELETE
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
@@ -142,15 +144,16 @@ class StorageControllers {
 		
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'put_user_storage', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
+			var isAuthenticated = await session.isAuthenticatedAsync();
 			
-			if (session.isAuthenticated()) {
+			if (isAuthenticated) {
 				var storageservice = global.getServiceInstance('storage');
 				var storageserver = storageservice.getStorageServerInstance();
 				
-				var user = storageserver.getStorageUser(session);
+				var user = await storageserver.getStorageUserAsync(session);
 				
-				storageserver.deleteUserContent(user, key);
+				await storageserver.deleteUserContentAsync(user, key);
 				
 				jsonresult = {status: 1, useruuid: user.getUserUUID(), key: key};
 			}
@@ -172,7 +175,7 @@ class StorageControllers {
 	
 	
 	// imports
-	user_import(req, res) {
+	async user_import(req, res) {
 		// PUT
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
@@ -191,15 +194,16 @@ class StorageControllers {
 		
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'user_import', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
+			var isAuthenticated = await session.isAuthenticatedAsync();
 			
-			if (session.isAuthenticated()) {
+			if (isAuthenticated) {
 				var storageservice = global.getServiceInstance('storage');
 				var storageserver = storageservice.getStorageServerInstance();
 				
-				var user = storageserver.getStorageUser(session);
+				var user = await storageserver.getStorageUserAsync(session);
 				
-				storageserver.putUserContent(user, key, content);
+				await storageserver.putUserContentAsync(user, key, content);
 				
 				jsonresult = {status: 1, useruuid: user.getUserUUID(), key: key, content: content};
 			}
@@ -221,7 +225,7 @@ class StorageControllers {
 	}
 
 	// exports
-	user_export(req, res) {
+	async user_export(req, res) {
 		// POST
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
@@ -239,15 +243,16 @@ class StorageControllers {
 		
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'user_export', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
+			var isAuthenticated = await session.isAuthenticatedAsync();
 			
-			if (session.isAuthenticated()) {
+			if (isAuthenticated) {
 				var storageservice = global.getServiceInstance('storage');
 				var storageserver = storageservice.getStorageServerInstance();
 				
-				var user = storageserver.getStorageUser(session);
+				var user = await storageserver.getStorageUserAsync(session);
 				
-				var content = storageserver.getUserContent(user, key);
+				var content = await storageserver.getUserContentAsync(user, key);
 				
 				jsonresult = {status: 1, useruuid: user.getUserUUID(), key: key, content: content};
 			}

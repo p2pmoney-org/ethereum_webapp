@@ -54,14 +54,14 @@ class Service {
 		global.registerHook('installMysqlTables_hook', this.name, this.installMysqlTables_hook);
 		global.registerHook('installWebappConfig_hook', this.name, this.installWebappConfig_hook);
 
-		global.registerHook('copyDappFiles_hook', this.name, this.copyDappFiles_hook);
+		global.registerHook('copyDappFiles_asynchook', this.name, this.copyDappFiles_asynchook);
 
 		global.registerHook('registerRoutes_hook', this.name, this.registerRoutes_hook);
 
 		global.registerHook('config_network_hook', this.name, this.config_network_hook);
 
 		global.registerHook('getUserContent_hook', this.name, this.getUserContent_hook);
-		global.registerHook('putUserContent_hook', this.name, this.putUserContent_hook);
+		global.registerHook('putUserContent_asynchook', this.name, this.putUserContent_asynchook);
 	}
 	
 	//
@@ -200,13 +200,13 @@ class Service {
 	}
 
 	
-	copyDappFiles_hook(result, params) {
+	async copyDappFiles_asynchook(result, params) {
 		var global = this.global;
 		var path = require('path');
 		
 		var webapp_service = params[0];
 		
-		global.log('copyDappFiles_hook called for ' + this.name);
+		global.log('copyDappFiles_asynchook called for ' + this.name);
 		
 		if (webapp_service.overload_dapp_files != 1) {
 			// we add config values to let client know what
@@ -444,10 +444,10 @@ class Service {
 		return array;
 	}
 	
-	putUserContent_hook(result, params) {
+	async putUserContent_asynchook(result, params) {
 		var global = this.global;
 
-		global.log('putUserContent_hook called for ' + this.name);
+		global.log('putUserContent_asynchook called for ' + this.name);
 		
 		var user = params[0];
 		var key = params[1];
@@ -492,7 +492,7 @@ class Service {
 			// difference on a single element if arrays are not equivalent
 			if (usercontentarray) {
 				try {
-					usercontentarray = this._atomizeUserContentSync(user, key, usercontentarray);
+					usercontentarray = await this._atomizeUserContentAsync(user, key, usercontentarray);
 					var atomizedarray = usercontentarray;
 					//global.log('ELEMENTS IN ATOMIZED ARRAY IS: ' + (atomizedarray ? atomizedarray.length : 0));
 					//global.log('ATOMIZED ARRAY IS: ' + JSON.stringify(atomizedarray));
@@ -717,11 +717,25 @@ class Service {
 			return session.isAuthenticated();
 	}
 	
+	async canReadAsync(session) {
+		if (this.protected_read != true)
+			return true;
+		else
+			return session.isAuthenticatedAsync();
+	}
+	
 	canWrite(session) {
 		if (this.protected_write === false)
 			return true;
 		else
 			return session.isAuthenticated();
+	}
+	
+	async canWriteAsync(session) {
+		if (this.protected_write === false)
+			return true;
+		else
+			return session.isAuthenticatedAsync();
 	}
 	
 	// faucet

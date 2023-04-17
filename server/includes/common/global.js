@@ -215,11 +215,14 @@ class Global {
 		
 		params.push(this);
 
-		var ret = this.invokeHooks('postInitServer_hook', result, params);
+		var ret = this.invokeHooks('postInitServer_hook', result, params); // sync post init
 
 		if (ret && result && result.length) {
 			console.log('postInitServer_hook result is ' + JSON.stringify(result));			
 		}
+
+		// spawn async post init
+		this.invokeAsyncHooks('postInitServer_asynchook', result, params);
 
 	}
 	
@@ -346,7 +349,41 @@ class Global {
 		
 		// wait to turn into synchronous call
 		while(!finished)
-		{require('deasync').runLoopOnce();}
+		{this.deasync().runLoopOnce();}
+
+		return bSuccess;
+	}
+
+	async saveJsonAsync(jsonname, jsoncontent) {
+		var bSuccess = false;
+		var fs = require('fs');
+		var path = require('path');
+
+		var jsonFileName;
+		var jsonPath;
+		var jsonFile;
+		
+		try {
+			jsonFileName = jsonname + ".json";
+			
+			jsonPath = path.join(this.execution_dir, './settings', jsonFileName);
+		
+			var jsonstring = JSON.stringify(jsoncontent);
+
+			await new Promise( (resolve, reject) => {
+				fs.writeFile(jsonPath, jsonstring, 'utf8', function() {
+					bSuccess = true;
+				
+					resolve(true);
+				});
+			});
+				
+
+			
+		}
+		catch(e) {
+			this.log('exception writing json file: ' + e.message); 
+		}
 
 		return bSuccess;
 	}
@@ -494,7 +531,25 @@ class Global {
 	    
 	    // wait to turn into synchronous call
 		while(!finished)
-		{require('deasync').runLoopOnce();}
+		{this.deasync().runLoopOnce();}
+
+		return output;
+	}
+	
+	async executeCmdLineAsync(cmdline) {
+		var child_process = require('child_process');
+		var output = false;
+		
+		var self = this;
+		self.log('executing command line: ' + cmdline);
+
+		await new Promise( (resolve, reject) => {
+			child_process.exec(cmdline, function(error, stdout, stderr){ 
+				self.log('stdout is ' + JSON.stringify(stdout));
+				output = stdout; 
+				resolve(true);
+			});
+		});
 
 		return output;
 	}
@@ -538,7 +593,46 @@ class Global {
 			
 			// wait to turn into synchronous call
 			while(!finished)
-			{require('deasync').runLoopOnce();}
+			{this.deasync().runLoopOnce();}
+			
+		}
+		else {
+			this.log('source directory does not exist: ' + sourcedir);
+		}
+		
+	}
+
+	async copydirectoryAsync(sourcedir, destdir) {
+		var self = this;
+		var fs = require('fs');
+		
+		if (this._checkFileExist(fs, sourcedir)) {
+			
+			if (!this._checkFileExist(fs, destdir)) {
+				this.log('destination directory does not exist: ' + destdir);
+				this.log('creating destination directory: ' + destdir);
+				this.createdirectory(destdir);
+			}
+			
+			var ncp = require('ncp').ncp;
+			 
+			ncp.limit = 5; 
+			 
+			//self.log('copying all files from ' + sourcedir + ' to '+ destdir);
+
+			await new Promise( (resolve, reject) => {
+				ncp(sourcedir, destdir, function (err) {
+				
+					if (err) {
+						self.log('error while copying dapp directory ' + err);
+						resolve(false);
+					}
+				 
+					resolve(true);
+					//self.log(sourcedir + ' copied in '+ destdir);
+				});
+			});
+			
 			
 		}
 		else {
@@ -558,17 +652,33 @@ class Global {
 			return require(module);
 	}
 	
-	/*buildWeb3ProviderUrl(web3_provider_url, web3_provider_port) {
-		if ((web3_provider_port) && (web3_provider_port !== "") && (web3_provider_port !== 80))
-			return web3_provider_url + ':' + web3_provider_port;
-		else
-			return web3_provider_url;
+	async getMySqlConnectionAsync() {
+		if (!this.mysqlconnectionpool) {
+			this.mysqlconnectionpool = [];
+		}
+		
+		if (this.mysqlconnectionpool.length) {
+			// could do round robin
+			return this.mysqlconnectionpool[0];
+		}
+		
+		var MySqlConnection = require('./model/mysqlcon.js')
+		
+		var sqlcon = new MySqlConnection(this, this.mysql_host, this.mysql_port, this.mysql_database, this.mysql_username, this.mysql_password);
+		
+		if (this.mysql_table_prefix)
+			sqlcon.setTablePrefix(this.mysql_table_prefix);
+		
+		this.mysqlconnectionpool.push(sqlcon);
+		
+		this.log('growing mysqlconnectionpool to ' + this.mysqlconnectionpool.length);
+		
+		// increment to never end connection
+		await sqlcon.openAsync();
+		
+		return sqlcon;
 	}
-	
-	getWeb3ProviderFullUrl() {
-		return this.buildWeb3ProviderUrl(this.web3_provider_url, this.web3_provider_port);
-	}*/
-	
+
 	getMySqlConnection() {
 		if (!this.mysqlconnectionpool) {
 			this.mysqlconnectionpool = [];
@@ -596,7 +706,6 @@ class Global {
 		return sqlcon;
 	}
 	
-
 	overrideConsoleLog() {
 		if (this.overrideconsolelog == true)
 			return;
@@ -727,10 +836,63 @@ class Global {
 		
 		// wait to turn into synchronous call
 		while(!finished)
-		{require('deasync').runLoopOnce();}
+		{this.deasync().runLoopOnce();}
 		
 		return result;
 	}
+
+	async tail_fileAsync(filepath, nlines) {
+		var fs = require("fs");
+
+		let getLastLines = function (filename, lineCount, callback) {
+		  let stream = fs.createReadStream(filename, {
+		    flags: "r",
+		    encoding: "utf-8",
+		    fd: null,
+		    mode: 438, // 0666 in Octal
+		    bufferSize: 64 * 1024
+		  });
+
+		  let data = "";
+		  let lines = [];
+		  
+		  stream.on("data", function (moreData) {
+		    data += moreData;
+		    
+		    let worklines = data.split('\r');
+		    
+		    let end = worklines.length;
+		    let start = (worklines.length - lineCount > 0 ? worklines.length - lineCount : 0);
+		    
+		    lines = worklines.slice(start, end);
+		    
+		    data = lines.join('\r');
+		  });
+
+		  stream.on("error", function () {
+		    callback("Error");
+		  });
+
+		  stream.on("end", function () {
+		    callback(null, lines);
+		  });
+
+		};
+		
+		var result = [];
+
+		await new Promise( (resolve, reject) => {
+			getLastLines(filepath, nlines, function (err, lines) {
+				if (!err)
+					result = lines;
+				
+				resolve(true);
+			});
+		});		
+		
+		return result;
+	}
+
 	
 	tail_log_file(filename = 'server', nlines = 200) {
 		var logPath;
@@ -744,6 +906,21 @@ class Global {
 		
 		return lines;
 	}
+
+	async tail_log_fileAsync(filename = 'server', nlines = 200) {
+		var logPath;
+		
+		if (filename == 'server')
+			logPath = this.logPath;
+		else
+			logPath = this.log_directory() + '/' + filename + '.log';
+		
+		var lines = await this.tail_fileAsync(logPath, nlines);
+		
+		return lines;
+	}
+	
+
 	
 	createTracker(name) {
 		var Tracker = class {
@@ -811,6 +988,10 @@ class Global {
 	
 	// deasync
 	deasync() {
+		console.log('DO NOT USE deasync!!!');
+		//debugger;
+		// uncomment to track use and rewire calls
+		// to async version of methods
 		if (this._deasync)
 			return this._deasync;
 		
@@ -1150,18 +1331,18 @@ class Global {
 		/*for (var i = 0; i < hookarray.length; i++) {
 			var entry = hookarray[i];
 			var func = entry['function'];
-			var modulename = entry['modulename'];
-			var module = global.getModuleObject(modulename);
+			var servicename = entry['servicename'];
+			var service = this.getServiceInstance(servicename);
 			
-			if (module) {
-				var ret = await func.call(module, result, inputparams)
+			if (service) {
+				var ret = await func.call(service, result, inputparams)
 				.catch(err =>{
 				});
 				
-				result.ret_array[modulename] = ret;
+				result.ret_array[servicename] = ret;
 				result.ret_array.push(ret);
 				
-				if (result[result.length-1] && (result[result.length-1].module == modulename) && (result[result.length-1].stop === true))
+				if (result[result.length-1] && (result[result.length-1].service == servicename) && (result[result.length-1].stop === true))
 					break;
 			}
 			
@@ -1171,23 +1352,23 @@ class Global {
 		
 		
 		return hookarray.reduce( (previousPromise, entry) => {
-			var modulename;
+			var servicename;
 			
 			return previousPromise.then(() => {
 				var func = entry['function'];
-				modulename = entry['modulename'];
-				var module = this.getModuleObject(modulename);
-				
-				if (module) {
-					return func.call(module, result, inputparams);
+				var servicename = entry['servicename'];
+				var service = this.getServiceInstance(servicename);
+					
+				if (service) {
+					return func.call(service, result, inputparams);
 				}
 			})
 			.then((ret) => {
 				if (ret) {
-					result.ret_array[modulename] = ret;
+					result.ret_array[servicename] = ret;
 					result.ret_array.push(ret);
 					
-					if (result[result.length-1] && (result[result.length-1].module == modulename) && (result[result.length-1].stop === true))
+					if (result[result.length-1] && (result[result.length-1].service == servicename) && (result[result.length-1].stop === true))
 						throw 'break';
 				}
 				return ret;

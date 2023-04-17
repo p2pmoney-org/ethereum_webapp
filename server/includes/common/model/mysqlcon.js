@@ -37,14 +37,22 @@ class MySqlConnection {
 		
 		return isactive;
 	}
-	
-	_connect() {
+
+	async isActiveAsync() {
+		await this.openAsync();
+		
+		var isactive = this.connectionactive;
+		
+		await this.closeAsync();
+		
+		return isactive;
+	}
+
+	async _connectAsync() {
 		var global = this.global;
 		
 		global.log("connecting to mysql database");
 		
-		var finished = false;
-
 		try {
 			var mysql = require('mysql');
 			
@@ -64,24 +72,49 @@ class MySqlConnection {
 				password: password
 			});
 			
-			this.connection.connect(function(err) {
-				if (err) {
-					global.log("error connecting to mysql database: " + err);
-					
-					self.connectionactive = false;
-					finished = true;
+			await new Promise((resolve, reject) => {
+				this.connection.connect(function(err) {
+					if (err) {
+						global.log("error connecting to mysql database: " + err);
+						
+						self.connectionactive = false;
+						reject(err);
+					}
+					else {
+						global.log("successfully connected to mysql database: " + database);
+	
+						self.connectionactive = true;
+						resolve(true);
+					}
+				
+				});
+			});
 
-					//throw err;
-				}
-				else {
-					global.log("successfully connected to mysql database: " + database);
+			
+		}
+		catch(e) {
+			this.connectionactive = false;
+			
+			global.log("exception connecting to mysql database; " + e);
+		}
 
-					self.connectionactive = true;
-					finished = true;
-				}
-			
-			});	
-			
+	}
+	
+	_connect() {
+		var global = this.global;
+		
+		global.log("connecting to mysql database");
+		
+		var finished = false;
+
+		try {
+			this._connectAsync()
+			.then( () => {
+				finished = true;
+			})
+			.catch(err => {
+				finished = true;
+			});
 		}
 		catch(e) {
 			this.connectionactive = false;
@@ -113,6 +146,27 @@ class MySqlConnection {
 		
 		return output;
 	}
+
+	async getMysqlServerVersionAsync() {
+		var global = this.global;
+		var output = false;
+		
+		var sql = 'SELECT VERSION();';
+		
+		await this.openAsync();
+		
+		var result = await this.executeAsync(sql);
+		
+		if (result) {
+			output = result.rows[0]['VERSION()'];
+		}
+		
+		await this.closeAsync();
+		
+		return output;
+	}
+	
+
 	
 	open() {
 		if (this.opencount > 0) {
@@ -125,8 +179,39 @@ class MySqlConnection {
 		this._connect();
 		this.opencount = 1;
 	}
+
+	async openAsync() {
+		if (this.opencount > 0) {
+			this.opencount++;
+			console.log('incrementing connection to mysql server ' + this.opencount);
+			return;
+		}
+		
+		console.log('opening connection to mysql server');
+		await this._connectAsync();
+		this.opencount = 1;
+	}
+	
+
 	
 	close() {
+		this.opencount--;
+		console.log('decrementing connection to mysql server ' + this.opencount);
+		
+		if (this.opencount <= 0) {
+			if (this.connection) {
+				console.log('ending connection to mysql server');
+				this.connection.end();
+				this.connection = null;
+				this.connectionactive = false;
+			}
+			
+			this.opencount = 0;
+		}
+		
+	}
+	
+	async closeAsync() {
 		this.opencount--;
 		console.log('decrementing connection to mysql server ' + this.opencount);
 		
@@ -159,7 +244,22 @@ class MySqlConnection {
 	
 	execute(queryString) {
 		
-		if (!this.connection)
+/*  		var global = this.global;
+
+		var finished = false;
+
+		var result = {};
+
+		this.executeAsync(queryString)
+		.then( (res) => {
+			result = res;
+			finished = true;
+		})
+		.catch(err => {
+			finished = true;
+		}); */
+ 
+ 		if (!this.connection)
 			this._connect();
 		
 		var global = this.global;
@@ -198,8 +298,9 @@ class MySqlConnection {
 	
 	async executeAsync(queryString) {
 		
-		if (!this.connection)
-			this._connect();
+		if (!this.connection) {
+			await this._connectAsync();
+		}
 		
 		var global = this.global;
 
@@ -211,18 +312,16 @@ class MySqlConnection {
 			return result;
 		
 		return new Promise((resolve, reject) => {
-			this.connection.query(queryString, function(err, rows, fields) {
-				// if (err) throw err;
-				
+			this.connection.query(queryString, (err, rows, fields) => {
 				if (!err) {
 					result['rows'] = rows;
 					result['fields'] = fields;
+					resolve(result);
 				}
 				else {
 					global.log("error in MySqlConnection.executeAsync: " + err);
+					reject(err);
 				}
-				
-				resolve(result);
 			});
 		})
 		.then((res) => {

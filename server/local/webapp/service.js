@@ -57,9 +57,9 @@ class Service {
 		
 		global.registerHook('installWebappConfig_hook', this.name, this.installWebappConfig_hook);
 		
-		global.registerHook('postInitServer_hook', this.name, this.postInitServer_hook);
+		global.registerHook('postInitServer_asynchook', this.name, this.postInitServer_asynchook);
 
-		global.registerHook('copyDappFiles_hook', this.name, this.copyDappFiles_hook);
+		global.registerHook('copyDappFiles_asynchook', this.name, this.copyDappFiles_asynchook);
 
 		global.registerHook('registerRoutes_hook', this.name, this.registerRoutes_hook);
 	}
@@ -105,21 +105,21 @@ class Service {
 		result.push({service: this.name, handled: true});
 	}
 	
-	postInitServer_hook(result, params) {
+	async postInitServer_asynchook(result, params) {
 		var global = this.global;
 
-		global.log('postInitServer_hook called for ' + this.name);
+		global.log('postInitServer_asynchook called for ' + this.name);
 		
 		
 		if (this.copy_dapp_files == 1) {
 			global.log("Copying DAPP app directory")
 			// copy dapp files to webapp dir
-			this.copyDappFiles();
+			await this.copyDappFilesAsync();
 
 			if (this.overload_dapp_files == 1) {
 				global.log("Overloading DAPP files")
 				// copy files to standard dapp
-				this.overloadDappFiles();
+				await this.overloadDappFilesAsync();
 			}
 			
 			// invoke hook to let services process post assembly operations (e.g. minify daoo)
@@ -130,10 +130,11 @@ class Service {
 			params.push(this);
 			params.push(global);
 
-			var ret = global.invokeHooks('postAssembleDappFiles_hook', result, params);
+			var ret = global.invokeHooks('postAssembleDappFiles_hook', result, params); // legacy sync
+			ret = await global.invokeAsyncHooks('postAssembleDappFiles_asynchook', result, params);
 			
 			if (ret && result && result.length) {
-				global.log('postAssembleDappFiles_hook result is ' + JSON.stringify(result));
+				global.log('postAssembleDappFiles_asynchook result is ' + JSON.stringify(result));
 			}
 
 			
@@ -141,11 +142,11 @@ class Service {
 		
 	}
 
-	copyDappFiles_hook(result, params) {
+	async copyDappFiles_asynchook(result, params) {
 		var global = this.global;
 		var path = require('path');
 
-		global.log('copyDappFiles_hook called for ' + this.name);
+		global.log('copyDappFiles_asynchook called for ' + this.name);
 		
 		// add event to ./app/js/src/constants.js
 		var nowtime = Date.now();
@@ -182,7 +183,7 @@ class Service {
 		return this.apikeys;
 	}
 	
-	copyDappFiles() {
+	async copyDappFilesAsync() {
 		var global = this.global;
 		var path = require('path');
 		var fs = require('fs');
@@ -193,7 +194,7 @@ class Service {
 		var sourcepath;
 		var destdir = this.webapp_app_dir;
 		
-		global.copydirectory(sourcedir, destdir);
+		await global.copydirectoryAsync(sourcedir, destdir);
 		
 		// compiled contracts
 		
@@ -206,7 +207,7 @@ class Service {
 		sourcedir = path.join(this.dapp_root_base_dir, './build');
 		destdir = path.join(this.webapp_app_dir, '../build');
 		
-		global.copydirectory(sourcedir, destdir);
+		await global.copydirectoryAsync(sourcedir, destdir);
 		
 		// invoke hooks to let other services copy their own client files (e.g. in external folders) 
 		// or enrich standard files (e.g. put events in constant.js) 
@@ -217,15 +218,17 @@ class Service {
 		params.push(this);
 		params.push(global);
 
-		var ret = global.invokeHooks('copyDappFiles_hook', result, params);
+		var ret = global.invokeHooks('copyDappFiles_hook', result, params); // legacy
+		ret = await global.invokeAsyncHooks('copyDappFiles_asynchook', result, params);
 		
 		if (ret && result && result.length) {
-			global.log('copyDappFiles_hook result is ' + JSON.stringify(result));
+			global.log('copyDappFiles_asynchook result is ' + JSON.stringify(result));
 		}
 		
 	}
 	
-	overloadDappFiles() {
+
+	async overloadDappFilesAsync() {
 		var global = this.global;
 		var fs = require('fs');
 		var path = require('path');
@@ -254,7 +257,7 @@ class Service {
 		if (global._checkFileExist(fs, sourcedir)) {
 			destdir = (this.copy_dapp_files ? path.join(this.webapp_app_dir, './js/src/xtra/interface') : path.join(this.dapp_root_exec_dir, './app/js/src/xtra/interface'));
 			
-			global.copydirectory(sourcedir, destdir);
+			await global.copydirectoryAsync(sourcedir, destdir);
 		}
 		
 		// copy modules in includes/modules
@@ -264,7 +267,7 @@ class Service {
 			//destdir = (this.copy_dapp_files ? path.join(this.webapp_app_dir, './includes/modules') : path.join(this.dapp_root_exec_dir, './app/includes/modules'));
 			destdir = (this.copy_dapp_files ? path.join(this.webapp_app_dir, './js/src/xtra/modules') : path.join(this.dapp_root_exec_dir, './app/js/src/xtra/modules'));
 			
-			global.copydirectory(sourcedir, destdir);
+			await global.copydirectoryAsync(sourcedir, destdir);
 		}
 		
 		// copy modules in dapps
@@ -273,7 +276,7 @@ class Service {
 		if (global._checkFileExist(fs, sourcedir)) {
 			destdir = (this.copy_dapp_files ? path.join(this.webapp_app_dir, './dapps') : path.join(this.dapp_root_exec_dir, './app/dapps'));
 			
-			global.copydirectory(sourcedir, destdir);
+			await global.copydirectoryAsync(sourcedir, destdir);
 		}
 		
 		
@@ -285,7 +288,8 @@ class Service {
 		params.push(this);
 		params.push(global);
 
-		var ret = global.invokeHooks('overloadDappFiles_hook', result, params);
+		var ret = global.invokeHooks('overloadDappFiles_hook', result, params); // legacy sync
+		ret = await global.invokeAsyncHooks('overloadDappFiles_asynchook', result, params);
 		
 		if (ret && result && result.length) {
 			global.log('overloadDappFiles_hook result is ' + JSON.stringify(result));

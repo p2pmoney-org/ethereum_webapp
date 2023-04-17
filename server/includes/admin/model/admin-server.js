@@ -15,13 +15,13 @@ class AdminServer {
 	//
 	// database
 	//
-	_getLocalMysqlServerVersion() {
+	async _getLocalMysqlServerVersion() {
 		var global = this.global;
 		var output = false;
 		
 		var cmd = 'mysqld --version';
 		
-		var result = global.executeCmdLine(cmd);
+		var result = await global.executeCmdLineAsync(cmd);
 		
 		if (result !== false) {
 			output = result;
@@ -30,15 +30,15 @@ class AdminServer {
 		return output;
 	}
 	
-	_pingMysqlHost() {
+	async _pingMysqlHost() {
 		var global = this.global;
 		var output = false;
 		
-		var mysqlcon = global.getMySqlConnection();
+		var mysqlcon = await global.getMySqlConnectionAsync();
 
 		var cmd = 'mysql --host=' + mysqlcon.host + ' --port=' + mysqlcon.port;
 		
-		var result = global.executeCmdLine(cmd);
+		var result = await global.executeCmdLineAsync(cmd);
 		
 		if (result !== false) {
 			output = result;
@@ -47,7 +47,7 @@ class AdminServer {
 		return output;
 	}
 	
-	checkDataBaseServer() {
+	async checkDataBaseServer() {
 		var global = this.global;
 
 		global.log('AdminServer.checkDataBaseConnection called');
@@ -55,8 +55,8 @@ class AdminServer {
 		var mysqlversion = false;
 
 		try {
-			var mysqlcon = global.getMySqlConnection();
-			mysqlversion = mysqlcon.getMysqlServerVersion();
+			var mysqlcon = await global.getMySqlConnectionAsync();
+			mysqlversion = await mysqlcon.getMysqlServerVersionAsync();
 		}
 		catch(e) {
 			global.log('Exception: ' + e);
@@ -68,32 +68,34 @@ class AdminServer {
 		return true;
 	}
 
-	checkRootBlankPassword() {
+	async checkRootBlankPassword() {
 		var global = this.global;
 
 		global.log('AdminServer.checkRootBlankPassword called');
 
-		var mysqlcon = global.getMySqlConnection().clone();
+		var org_mysqlcon = await global.getMySqlConnectionAsync();
+		var mysqlcon = org_mysqlcon.clone();
 
 		mysqlcon.database = null;
 		mysqlcon.username = 'root';
 		mysqlcon.password = null;
 		
 		try {
-			if (mysqlcon.isActive()) {
+			let isActive = await mysqlcon.isActiveAsync();
+			if (isActive) {
 				var sql = "SHOW DATABASES;";
 				
 				// open connection
-				mysqlcon.open();
+				await mysqlcon.openAsync();
 				
 				// execute query
-				var result = mysqlcon.execute(sql);
+				var result = await mysqlcon.executeAsync(sql);
 				
 				global.log('root still has no password');
 				//global.log('result is ' + JSON.stringify(result));
 				
 				// close connection
-				mysqlcon.close();
+				await mysqlcon.closeAsync();
 				
 				return true;
 			}
@@ -108,36 +110,37 @@ class AdminServer {
 		}
 	}
 
-	checkDataBase(databasename) {
+	async checkDataBase(databasename) {
 		var global = this.global;
 		var result = [];
 		
 		global.log('AdminServer.checkDataBase called');
 		
-		this.checkDataBaseConnection()
+		await this.checkDataBaseConnection()
 		
 		return result;
 	}
 	
-	checkDataBaseConnection() {
+	async checkDataBaseConnection() {
 		var global = this.global;
 
 		global.log('AdminServer.checkDataBaseConnection called');
 
-		var mysqlcon = global.getMySqlConnection();
+		var mysqlcon = await global.getMySqlConnectionAsync();
 
 		try {
 			// open connection
-			mysqlcon.open();
+			await mysqlcon.openAsync();
 			
-			if (mysqlcon.isActive()) {
+			let isActive = await mysqlcon.isActiveAsync();
+			if (isActive) {
 				var sql = "SHOW DATABASES;";
 				
 				// execute query
-				var result = mysqlcon.execute(sql);
+				var result = await mysqlcon.executeAsync(sql);
 				
 				// close connection
-				mysqlcon.close();
+				await mysqlcon.closeAsync();
 				
 				return true;
 			}
@@ -165,20 +168,22 @@ class AdminServer {
 
 	
 	// save config file
-	saveConfig(session) {
-		if (!session.hasSuperAdminPrivileges())
+	async saveConfig(session) {
+		var hasSuperAdminPrivilegesAsync = await session.hasSuperAdminPrivilegesAsync();
+		if (!hasSuperAdminPrivilegesAsync)
 			throw 'only a super admin can save application config';
 
 		var global = this.global;
 
 		var config = global.config;
 		
-		global.saveJson('config', config);
+		await global.saveJsonAsync('config', config);
 	}
 	
 	// read launch.config
-	readLaunchConfig(session) {
-		if (!session.hasSuperAdminPrivileges())
+	async readLaunchConfig(session) {
+		var hasSuperAdminPrivilegesAsync = await session.hasSuperAdminPrivilegesAsync();
+		if (!hasSuperAdminPrivilegesAsync)
 			throw 'only a super admin can read launch config';
 
 		var global = this.global;
@@ -188,8 +193,9 @@ class AdminServer {
 		return global.readVariableFile(filepath);
 	}
 	
-	getApplicationInfoList(session) {
-		if (!session.hasSuperAdminPrivileges())
+	async getApplicationInfoList(session) {
+		var hasSuperAdminPrivilegesAsync = await session.hasSuperAdminPrivilegesAsync();
+		if (!hasSuperAdminPrivilegesAsync)
 			throw 'only a super admin can read application info';
 		
 		var variables = {};
@@ -211,32 +217,34 @@ class AdminServer {
 	}
 	
 	// mysql
-	checkMysqlRootPassword(password) {
+	async checkMysqlRootPassword(password) {
 		if (!password)
 			throw 'You must provide a password';
 		
 		var global = this.global;
 
-		var mysqlcon = global.getMySqlConnection().clone();
+		var org_mysqlcon = await global.getMySqlConnectionAsync();
+		var mysqlcon = org_mysqlcon.clone();
 
 		mysqlcon.database = null;
 		mysqlcon.username = 'root';
 		mysqlcon.password = password;
 		
 		try {
-			if (mysqlcon.isActive()) {
+			let isActive = await mysqlcon.isActiveAsync();
+			if (isActive) {
 				var sql = "SHOW DATABASES;";
 				
 				// open connection
-				mysqlcon.open();
+				await mysqlcon.openAsync();
 				
 				// execute query
-				var result = mysqlcon.execute(sql);
+				var result = await mysqlcon.executeAsync(sql);
 				
 				global.log('result is ' + JSON.stringify(result));
 				
 				// close connection
-				mysqlcon.close();
+				await mysqlcon.closeAsync();
 				
 				return true;
 			}
@@ -250,7 +258,7 @@ class AdminServer {
 		
 	}
 	
-	changeMysqlRootPassword(oldpassword, newpassword) {
+	async changeMysqlRootPassword(oldpassword, newpassword) {
 		if (!oldpassword && !this.checkRootBlankPassword())
 			throw 'Can not change root password without current password';
 		
@@ -258,7 +266,8 @@ class AdminServer {
 		
 		global.log('AdminServer.changeMysqlRootPassword called');
 
-		var mysqlcon = global.getMySqlConnection().clone();
+		var org_mysqlcon = await global.getMySqlConnectionAsync();
+		var mysqlcon = org_mysqlcon.clone();
 
 		mysqlcon.database = null;
 		mysqlcon.username = 'root';
@@ -269,23 +278,23 @@ class AdminServer {
 			var sql = "ALTER USER 'root'@'localhost' IDENTIFIED BY '" + newpassword + "';";
 			
 			// open connection
-			mysqlcon.open();
+			await mysqlcon.openAsync();
 			
 			global.log('execute query: ' + sql);
 
 			// execute query
-			var result = mysqlcon.execute(sql);
+			var result = await mysqlcon.executeAsync(sql);
 			
 			
 			global.log('result is ' + JSON.stringify(result));
 			
 			sql = "GRANT ALL PRIVILEGES ON *.* TO root@localhost;";
-			result = mysqlcon.execute(sql);
+			result = await mysqlcon.executeAsync(sql);
 			sql = "FLUSH PRIVILEGES;";
-			result = mysqlcon.execute(sql);
+			result = await mysqlcon.executeAsync(sql);
 			
 			// close connection
-			mysqlcon.close();
+			await mysqlcon.closeAsync();
 			
 			return true;
 		}
@@ -296,45 +305,46 @@ class AdminServer {
 		
 	}
 	
-	_createDatabase(mysqlcon, databasename) {
+	async _createDatabase(mysqlcon, databasename) {
 		var sql = 'CREATE DATABASE IF NOT EXISTS ' + databasename + ";";
 		
 		// open connection
-		mysqlcon.open();
+		await mysqlcon.open();
 		
 		// execute query
-		var result = mysqlcon.execute(sql);
+		var result = await mysqlcon.executeAsync(sql);
 		
 		// close connection
-		mysqlcon.close();
+		await mysqlcon.close();
 	}
 	
-	_createWebappuser(mysqlcon, webappdatabase, webappuser, webappuserpassword) {
+	async _createWebappuser(mysqlcon, webappdatabase, webappuser, webappuserpassword) {
 		var sql = "CREATE USER '" + webappuser + "'@'localhost' IDENTIFIED BY '" + webappuserpassword + "';";
 		
 		// open connection
-		mysqlcon.open();
+		await mysqlcon.openAsync();
 		
 		// execute query
-		var result = mysqlcon.execute(sql);
+		var result = await mysqlcon.executeAsync(sql);
 		
 		sql = "GRANT ALL PRIVILEGES ON " + webappdatabase + ".* TO '" + webappuser + "'@'localhost';";
-		result = mysqlcon.execute(sql);
+		result = await mysqlcon.executeAsync(sql);
 		
 		// close connection
-		mysqlcon.close();
+		await mysqlcon.close();
 	}
 	
-	_createMysqlWebappTables(mysqlcon, webappdatabase) {
+	async _createMysqlWebappTables(mysqlcon, webappdatabase) {
 		
 	}
 	
-	installMysqlTables(session, inputs) {
+	async installMysqlTables(session, inputs) {
 		var global = this.global;
 		
 		var rootpassword = inputs.rootpassword;
 		
-		if (!session.hasSuperAdminPrivileges())
+		var hasSuperAdminPrivilegesAsync = await session.hasSuperAdminPrivilegesAsync();
+		if (!hasSuperAdminPrivilegesAsync)
 			throw 'only root can install mysql tables';
 
 		var result = [];
@@ -343,7 +353,8 @@ class AdminServer {
 		
 		params.push(session);
 		
-		var mysqlcon = global.getMySqlConnection().clone();
+		var org_mysqlcon = await global.getMySqlConnectionAsync();
+		var mysqlcon = org_mysqlcon.clone();
 
 		mysqlcon.database = null;
 		mysqlcon.username = 'root';
@@ -360,24 +371,25 @@ class AdminServer {
 		var webappuserpassword = inputs.mysql_password;
 		var webappdatabase = inputs.mysql_database;
 		
-		this._createDatabase(mysqlcon, webappdatabase);
+		await this._createDatabase(mysqlcon, webappdatabase);
 		mysqlcon.database = webappdatabase;
 		
 		// create webapp user and grant rights
-		this._createWebappuser(mysqlcon, webappdatabase, webappuser, webappuserpassword);
+		await this._createWebappuser(mysqlcon, webappdatabase, webappuser, webappuserpassword);
 		
 		// create globalparameters table
-		this._createMysqlWebappTables(mysqlcon, webappdatabase);
+		await this._createMysqlWebappTables(mysqlcon, webappdatabase);
 		
 		// invoke hooks to let services add their tables
-		var ret = global.invokeHooks('installMysqlTables_hook', result, params);
+		var ret = global.invokeHooks('installMysqlTables_hook', result, params); // legacy sync
+		ret = global.invokeAsyncHooks('installMysqlTables_asynchook', result, params);
 		
 		if (ret && result && result.length) {
 			global.log('installMysqlTables_hook result is ' + JSON.stringify(result));
 		}
 	}
 	
-	installWebappConfig(session, inputs) {
+	async installWebappConfig(session, inputs) {
 		var global = this.global;
 
 		var config = {};
@@ -428,7 +440,7 @@ class AdminServer {
 		global.saveJson('config', config);
 	}
 	
-	installFinal() {
+	async installFinal() {
 		var global = this.global;
 		
 		var currentversion = global.getCurrentVersion();
@@ -443,26 +455,28 @@ class AdminServer {
 	}
 	
 	// user management
-	getUsers(session) {
+	async getUsers(session) {
 		var global = this.global;
-		if (!session.hasSuperAdminPrivileges())
+		var hasSuperAdminPrivilegesAsync = await session.hasSuperAdminPrivilegesAsync();
+		if (!hasSuperAdminPrivilegesAsync)
 			throw 'only a superadmin can get the list of users';
 		
 		var authkeyservice = global.getServiceInstance('authkey');
 		
 		var authserver = authkeyservice.getAuthenticationServerInstance() 
 
-		var users = authserver.getUsers(session);
+		var users = await authserver.getUsersAsync(session);
 		
 		return users;
 	}
 	
-	addUser(session, username, useremail, userpassword) {
+	async addUser(session, username, useremail, userpassword) {
 		var global = this.global;
 		
 		global.log('AdminServer.addUser called');
 		
-		if (!session.hasSuperAdminPrivileges())
+		var hasSuperAdminPrivilegesAsync = await session.hasSuperAdminPrivilegesAsync();
+		if (!hasSuperAdminPrivilegesAsync)
 			throw 'only a superadmin can add a user';
 		
 		var commonservice = global.getServiceInstance('common');
@@ -487,15 +501,16 @@ class AdminServer {
 		var pepper = null;
 		var passwordobject = authkeyservice.createPasswordObjectInstance(clearpassword, salt, pepper, hashmethod);
 		
-		authserver.saveUserPassword(session, user.getUserUUID(), passwordobject);
+		await authserver.saveUserPasswordAsync(session, user.getUserUUID(), passwordobject);
 	}
 	
-	saveUser(session, useruuid, username, useremail, userpassword) {
+	async saveUser(session, useruuid, username, useremail, userpassword) {
 		var global = this.global;
 		
 		global.log('AdminServer.saveUser called for useruuid ' + useruuid);
 
-		if (!session.hasSuperAdminPrivileges())
+		var hasSuperAdminPrivilegesAsync = await session.hasSuperAdminPrivilegesAsync();
+		if (!hasSuperAdminPrivilegesAsync)
 			throw 'only a superadmin can save a user';
 		
 		var commonservice = global.getServiceInstance('common');
@@ -504,12 +519,12 @@ class AdminServer {
 		var authserver = authkeyservice.getAuthenticationServerInstance() 
 
 		// save user
-		var user = authserver.getUserFromUUID(session, useruuid);
+		var user = await authserver.getUserFromUUIDAsync(session, useruuid);
 		
 		user.setUserName(username);
 		user.setUserEmail(useremail);
 		
-		authserver.saveUser(session, user);
+		await authserver.saveUserAsync(session, user);
 		
 		if (userpassword && (userpassword.length > 0)) {
 			// save password, if changed
@@ -519,14 +534,15 @@ class AdminServer {
 			var pepper = null;
 			var passwordobject = authkeyservice.createPasswordObjectInstance(clearpassword, salt, pepper, hashmethod);
 			
-			authserver.saveUserPassword(session, user.getUserUUID(), passwordobject);
+			await authserver.saveUserPasswordAsync(session, user.getUserUUID(), passwordobject);
 		}
 	}
 	
-	getUserFromUUID(session, useruuid) {
+	async getUserFromUUID(session, useruuid) {
 		var global = this.global;
 		
-		if (!session.hasSuperAdminPrivileges())
+		var hasSuperAdminPrivilegesAsync = await session.hasSuperAdminPrivilegesAsync();
+		if (!hasSuperAdminPrivilegesAsync)
 			throw 'only a superadmin can get a user';
 		
 		var global = this.global;
@@ -535,11 +551,12 @@ class AdminServer {
 		
 		var authserver = authkeyservice.getAuthenticationServerInstance(); 
 		
-		return authserver.getUserFromUUID(session, useruuid);
+		return authserver.getUserFromUUIDAsync(session, useruuid);
 	}
 	
-	getUserKeys(session, useruuid) {
-		if (!session.hasSuperAdminPrivileges())
+	async getUserKeys(session, useruuid) {
+		var hasSuperAdminPrivilegesAsync = await session.hasSuperAdminPrivilegesAsync();
+		if (!hasSuperAdminPrivilegesAsync)
 			throw 'only a superadmin can get list of keys';
 		
 		var global = this.global;
@@ -548,11 +565,12 @@ class AdminServer {
 		
 		var authserver = authkeyservice.getAuthenticationServerInstance() 
 
-		return authserver.getUserKeysFromUserUUID(session, useruuid);
+		return authserver.getUserKeysFromUserUUIDAsync(session, useruuid);
 	}
 	
-	addUserKey(session, useruuid, privatekey) {
-		if (!session.hasSuperAdminPrivileges())
+	async addUserKey(session, useruuid, privatekey) {
+		var hasSuperAdminPrivilegesAsync = await session.hasSuperAdminPrivilegesAsync();
+		if (!hasSuperAdminPrivilegesAsync)
 			throw 'only a superadmin can get add a key';
 		
 		var global = this.global;
@@ -570,11 +588,12 @@ class AdminServer {
 		cryptokey.setKeyUUID(keyuuid);
 		cryptokey.setType(type);
 
-		return authserver.addUserKey(session, useruuid, cryptokey);
+		return authserver.addUserKeyAsync(session, useruuid, cryptokey);
 	}
 	
-	deleteUserKey(session, useruuid, keyuuid) {
-		if (!session.hasSuperAdminPrivileges())
+	async deleteUserKey(session, useruuid, keyuuid) {
+		var hasSuperAdminPrivilegesAsync = await session.hasSuperAdminPrivilegesAsync();
+		if (!hasSuperAdminPrivilegesAsync)
 			throw 'only a superadmin can get add a key';
 		
 		var global = this.global;
@@ -583,7 +602,7 @@ class AdminServer {
 		
 		var authserver = authkeyservice.getAuthenticationServerInstance();
 		
-		return authserver.removeUserKey(session, useruuid, keyuuid);
+		return authserver.removeUserKeyAsync(session, useruuid, keyuuid);
 	}
 }
 

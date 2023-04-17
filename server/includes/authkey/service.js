@@ -45,14 +45,16 @@ class Service {
 		
 		global.registerHook('installMysqlTables_hook', this.name, this.installMysqlTables_hook);
 
-		global.registerHook('copyDappFiles_hook', this.name, this.copyDappFiles_hook);
-		global.registerHook('overloadDappFiles_hook', this.name, this.overloadDappFiles_hook);
+		global.registerHook('copyDappFiles_asynchook', this.name, this.copyDappFiles_asynchook);
+		global.registerHook('overloadDappFiles_asynchook', this.name, this.overloadDappFiles_asynchook);
 
 		global.registerHook('registerRoutes_hook', this.name, this.registerRoutes_hook);
 
-		global.registerHook('createSession_hook', this.name, this.createSession_hook);
-		global.registerHook('isSessionAnonymous_hook', this.name, this.isSessionAnonymous_hook);
-		global.registerHook('isSessionAuthenticated_hook', this.name, this.isSessionAuthenticated_hook);
+		global.registerHook('createSession_asynchook', this.name, this.createSession_asynchook);
+		global.registerHook('removeSession_asynchook', this.name, this.removeSession_asynchook);
+
+		global.registerHook('isSessionAnonymous_asynchook', this.name, this.isSessionAnonymous_asynchook);
+		global.registerHook('isSessionAuthenticated_asynchook', this.name, this.isSessionAuthenticated_asynchook);
 	}
 	
 	//
@@ -164,10 +166,10 @@ class Service {
 		return true;
 	}
 	
-	copyDappFiles_hook(result, params) {
+	async copyDappFiles_asynchook(result, params) {
 		var global = this.global;
 
-		global.log('copyDappFiles_hook called for ' + this.name);
+		global.log('copyDappFiles_asynchook called for ' + this.name);
 
 		var webapp_service = params[0];
 		
@@ -195,7 +197,7 @@ class Service {
 		if (global._checkFileExist(fs, sourcedir)) {
 			destdir = path.join(dapp_dir, './app/includes/interface');
 			
-			global.copydirectory(sourcedir, destdir);
+			await global.copydirectoryAsync(sourcedir, destdir);
 		}
 		
 		// copy modules in /app/js/src/xtra/modules
@@ -204,7 +206,7 @@ class Service {
 		if (global._checkFileExist(fs, sourcedir)) {
 			destdir = path.join(dapp_dir, './app/includes/modules');
 			
-			global.copydirectory(sourcedir, destdir);
+			await global.copydirectoryAsync(sourcedir, destdir);
 		}
 		
 		// add load of client modules to config.js
@@ -301,10 +303,10 @@ class Service {
 		result.push({service: this.name, handled: true});
 	}
 	
-	overloadDappFiles_hook(result, params) {
+	overloadDappFiles_asynchook(result, params) {
 		var global = this.global;
 
-		global.log('overloadDappFiles_hook called for ' + this.name);
+		global.log('overloadDappFiles_asynchook called for ' + this.name);
 		
 	}
 
@@ -326,6 +328,38 @@ class Service {
 		authkeyroutes.registerRoutes();
 		
 		result.push({service: this.name, handled: true});
+	}
+
+	async _getUserFromRemoteAuthenticationServerAsync(session) {
+		var global = this.global;
+		var remoteauthenticationserver = this.getRemoteAuthenticationServerInstance();
+		
+		var user = await remoteauthenticationserver.getUserAsync(session);
+		
+		if (user) {
+			var useruuid = user.getUserUUID();
+
+			if (useruuid) {
+				// check if user exists in our database
+				var authenticationserver = this.getAuthenticationServerInstance();
+				var userexists = await authenticationserver.userExistsFromUUIDAsync(session, useruuid);
+				
+				if (!userexists) {
+					global.log('remote user not found in database, inserting user with uuid: ' + useruuid);
+					
+					// save user
+					user.altloginmethod = 'remote-authkey-server';
+					
+					authenticationserver.saveUser(session, user);
+				}
+				else {
+					global.log('remote user found in database with uuid: ' + useruuid);
+				}
+			}
+			
+		}
+		
+		return user;
 	}
 
 	_getUserFromRemoteAuthenticationServer(session) {
@@ -359,7 +393,8 @@ class Service {
 		return user;
 	}
 	
-	createSession_hook(result, params) {
+
+	async createSession_asynchook(result, params) {
 		var global = this.global;
 		
 		var session = params[0];
@@ -369,22 +404,39 @@ class Service {
 		
 		var sessionuuid = session.getSessionUUID();
 
-		global.log('createSession_hook called for ' + this.name + ' on session ' + sessionuuid);
+		global.log('createSession_asynchook called for ' + this.name + ' on session ' + sessionuuid);
 		
 		if (global.config['authkey_server_url']) {
 			
-			var user = this._getUserFromRemoteAuthenticationServer(session);
+			var user = await this._getUserFromRemoteAuthenticationServerAsync(session);
 			
 			if (user) {
 				
 				// attach user to session
-				session.impersonateUser(user);
+				await session.impersonateUserAsync(user);
 				
 			}
 
 			result.push({service: this.name, handled: true});
 		}
 		
+		
+		return true;
+	}
+
+	async removeSession_asynchook(result, params) {
+		var global = this.global;
+		
+		var session = params[0];
+		
+		if (!session)
+			return false;
+		
+		var sessionuuid = session.getSessionUUID();
+
+		global.log('removeSession_asynchook called for ' + this.name + ' on session ' + sessionuuid);
+		
+		result.push({service: this.name, handled: true});
 		
 		return true;
 	}
@@ -412,7 +464,8 @@ class Service {
 		return session.getUser().isSuperAdmin();
 	}
 
-	isSessionAnonymous_hook(result, params) {
+
+	async isSessionAnonymous_asynchook(result, params) {
 		var global = this.global;
 		
 		var session = params[0];
@@ -425,7 +478,7 @@ class Service {
 		
 		var sessionuuid = session.getSessionUUID();
 
-		global.log('isSessionAnonymous_hook called for ' + this.name + ' on session ' + sessionuuid);
+		global.log('isSessionAnonymous_asynchook called for ' + this.name + ' on session ' + sessionuuid);
 		
 		if ((global.config['authkey_server_url']) || (this.authkey_server_passthrough === true)) {
 			// we have a defined/default authentication server
@@ -445,7 +498,7 @@ class Service {
 			
 			global.log('checking remote user details');
 			
-			var user = this._getUserFromRemoteAuthenticationServer(session);
+			var user = await this._getUserFromRemoteAuthenticationServerAsync(session);
 
 			
 			if (user) {
@@ -456,14 +509,14 @@ class Service {
 					global.log('remote user not found in session, inserting user with uuid: ' + useruuid);
 					
 					// impersonate user
-					session.impersonateUser(user);
+					await session.impersonateUserAsync(user);
 				}
 				
 			}
 			else {
 				if (session.user) {
 					global.log('remote session became anonymous, set local session accordingly');
-					session.disconnectUser();
+					await session.disconnectUserAsync();
 				}
 			}
 
@@ -473,8 +526,9 @@ class Service {
 		
 		return true;
 	}
+	
 
-	isSessionAuthenticated_hook(result, params) {
+	async isSessionAuthenticated_asynchook(result, params) {
 		var global = this.global;
 		
 		var session = params[0];
@@ -487,7 +541,7 @@ class Service {
 		
 		var sessionuuid = session.getSessionUUID();
 
-		global.log('isSessionAuthenticated_hook called for ' + this.name + ' on session ' + sessionuuid);
+		global.log('isSessionAuthenticated_asynchook called for ' + this.name + ' on session ' + sessionuuid);
 		
 		if ((global.config['authkey_server_url']) || (this.authkey_server_passthrough === true)) {
 			// we have a defined/default authentication server
@@ -508,7 +562,7 @@ class Service {
 			global.log('checking remote session details');
 			var remoteauthenticationserver = this.getRemoteAuthenticationServerInstance();
 			
-			var sessionstatus = remoteauthenticationserver.getSessionStatus(session);
+			var sessionstatus = await remoteauthenticationserver.getSessionStatusAsync(session);
 			
 			if (sessionstatus) {
 				var isauthenticated = sessionstatus['isauthenticated'];
@@ -527,7 +581,7 @@ class Service {
 				
 				if (session.user) {
 					global.log('remote session does not exist and local session thinks is is not anonymous');
-					session.disconnectUser();
+					await session.disconnectUserAsync();
 				}
 			}
 

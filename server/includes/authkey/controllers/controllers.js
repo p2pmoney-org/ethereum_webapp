@@ -26,7 +26,7 @@ class AuthKeyControllers {
 	//
 	// auth API
 	//
-	authorize(req, res) {
+	async authorize(req, res) {
 		// GET
 		var global = this.global;
 		var authkeyservice = global.getServiceInstance('authkey');
@@ -37,7 +37,7 @@ class AuthKeyControllers {
 	  	res.json(jsonresult);
 	}
 	
-	session_status(req, res) {
+	async session_status(req, res) {
 		// POST or GET
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken"); // in the sessiontoken header
@@ -70,11 +70,11 @@ class AuthKeyControllers {
 			var Session = commonservice.Session;
 
 			var section = Session.openSessionSection(global, sessionuuid, 'session_status', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
 
 			if (session) {
-				var isanonymous = session.isAnonymous();
-				var isauthenticated = session.isAuthenticated();
+				var isanonymous = await session.isAnonymousAsync();
+				var isauthenticated = await session.isAuthenticatedAsync();
 				
 				// return user details
 				jsonresult = {status: 1, sessionuuid: sessionuuid, isanonymous: isanonymous, isauthenticated: isauthenticated};
@@ -95,7 +95,7 @@ class AuthKeyControllers {
 	}
 
 	
-	session_authenticate(req, res) {
+	async session_authenticate(req, res) {
 		// POST
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
@@ -113,17 +113,18 @@ class AuthKeyControllers {
 		var jsonresult;
 		
 		try {
-			if (authenticationserver.authenticateUser(username, password)) {
+			let authenticated = await authenticationserver.authenticateUserAsync(username, password)
+			if (authenticated) {
 				// authenticate session
 				var commonservice = global.getServiceInstance('common');
 				var Session = commonservice.Session;
 
 				var section = Session.openSessionSection(global, sessionuuid, 'session_authenticate', calltokenjson);
-				var session = section.getSession();
+				var session = await section.getSessionAsync();
 				
-				var user = authenticationserver.getUser(session, username);
+				var user = await authenticationserver.getUserAsync(session, username);
 				
-				session.impersonateUser(user);
+				await session.impersonateUserAsync(user);
 				
 				// return user details
 				jsonresult = {status: 1, useruuid: user.getUserUUID(), username: user.getUserName(), useremail: user.getUserEmail()};
@@ -143,7 +144,7 @@ class AuthKeyControllers {
 	  	res.json(jsonresult);
 	}
 
-	session_logout(req, res) {
+	async session_logout(req, res) {
 		// POST
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
@@ -164,11 +165,11 @@ class AuthKeyControllers {
 			var Session = commonservice.Session;
 
 			var section = Session.openSessionSection(global, sessionuuid, 'session_logout', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
 			var user = (session ? session.getUser() : null);
 
 			if (user && (user.getUserUUID() == useruuid)) {
-				session.logout();
+				await session.logoutAsync();
 				
 				// return user details
 				jsonresult = {status: 1, useruuid: user.getUserUUID(), username: user.getUserName(), useremail: user.getUserEmail()};
@@ -188,7 +189,7 @@ class AuthKeyControllers {
 	  	res.json(jsonresult);
 	}
 
-	session_getUser(req, res) {
+	async session_getUser(req, res) {
 		// GET
 		var global = this.global;
 		
@@ -211,9 +212,10 @@ class AuthKeyControllers {
 				var Session = commonservice.Session;
 
 				var section = Session.openSessionSection(global, sessionuuid, 'session_getUser', calltokenjson);
-				var session = section.getSession();
+				var session = await section.getSessionAsync();
+				var isAnonymous = await session.isAnonymousAsync();
 				
-				if (!session.isAnonymous()) {
+				if (!isAnonymous) {
 					var user = session.getUser();
 					
 					jsonresult = {status: 1, useruuid: user.getUserUUID(), username: user.getUserName(), useremail: user.getUserEmail()};
@@ -237,7 +239,7 @@ class AuthKeyControllers {
 	  	res.json(jsonresult);
 	}
 
-	session_updateUser(req, res) {
+	async session_updateUser(req, res) {
 		// PUT
 		var global = this.global;
 		
@@ -264,15 +266,16 @@ class AuthKeyControllers {
 				var Session = commonservice.Session;
 
 				var section = Session.openSessionSection(global, sessionuuid, 'session_updateUser', calltokenjson);
-				var session = section.getSession();
+				var session = await section.getSessionAsync();
+				var isAuthenticated = await session.isAuthenticatedAsync();
 				
-				if (session.isAuthenticated()) {
-					var user = session.getUser();
+				if (isAuthenticated) {
+						var user = session.getUser();
 
 					if ((user.getUserUUID() == useruuid) && (authkeyservice.isValidEmail(session, useremail))) {
 						user.setUserEmail(useremail);
 
-						authenticationserver.saveUser(session, user);
+						await authenticationserver.saveUserAsync(session, user);
 					}
 					
 					jsonresult = {status: 1, useruuid: user.getUserUUID(), username: user.getUserName(), useremail: user.getUserEmail()};
@@ -299,7 +302,7 @@ class AuthKeyControllers {
 	//
 	// key API
 	//
-	session_getCryptoKeys(req, res) {
+	async session_getCryptoKeys(req, res) {
 		// GET
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
@@ -318,11 +321,12 @@ class AuthKeyControllers {
 		
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'session_getCryptoKeys', calltokenjson);
-			var session = section.getSession();
-			
-			if (session.isAuthenticated()) {
-				// get user details
-				var userkeys = authenticationserver.getUserCryptoKeys(session);
+			var session = await section.getSessionAsync();
+			var isAuthenticated = await session.isAuthenticatedAsync();
+				
+			if (isAuthenticated) {
+			// get user details
+				var userkeys = await authenticationserver.getUserCryptoKeysAsync(session);
 				
 				var keysjson = [];
 				
@@ -344,9 +348,9 @@ class AuthKeyControllers {
 					var user = session.getUser();
 					var useruuid = user.getUserUUID();
 					
-					authenticationserver.addUserKey(session, useruuid, cryptokey);
+					await authenticationserver.addUserKeyAsync(session, useruuid, cryptokey);
 					
-					userkeys = authenticationserver.getUserCryptoKeys(session);
+					userkeys = await authenticationserver.getUserCryptoKeysAsync(session);
 				}
 				
 				for (var i = 0; i < userkeys.length; i++) {
@@ -380,7 +384,7 @@ class AuthKeyControllers {
 	  	res.json(jsonresult);
 	}
 	
-	user_addKey(req, res) {
+	async user_addKey(req, res) {
 		// PUT
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
@@ -408,10 +412,11 @@ class AuthKeyControllers {
 		
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'user_addKey', calltokenjson);
-			var session = section.getSession();
-			
-			if (session.isAuthenticated()) {
-				var user = authenticationserver.getUserFromUUID(session, useruuid);
+			var session = await section.getSessionAsync();
+			var isAuthenticated = await session.isAuthenticatedAsync();
+				
+			if (isAuthenticated) {
+				var user = await authenticationserver.getUserFromUUIDAsync(session, useruuid);
 				
 				var type = 0; // crypto key
 				var keyuuid = session.guid();
@@ -428,7 +433,7 @@ class AuthKeyControllers {
 				
 				cryptokey.setDescription(description);
 				
-				authenticationserver.addUserKey(session, useruuid, cryptokey);
+				await authenticationserver.addUserKeyAsync(session, useruuid, cryptokey);
 				
 				jsonresult = {status: 1, useruuid: useruuid, key_uuid: keyuuid}
 				//global.log("session_getKeys called for sessiontoken "+ sessionuuid + " jsonresult is " + JSON.stringify(jsonresult));
@@ -452,7 +457,7 @@ class AuthKeyControllers {
 	//
 
 
-	session_getAccountKeys(req, res) {
+	async session_getAccountKeys(req, res) {
 		// GET
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
@@ -471,11 +476,12 @@ class AuthKeyControllers {
 		
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'session_getAccountKeys', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
+			var isAuthenticated = await session.isAuthenticatedAsync();
 			
-			if (session.isAuthenticated()) {
+			if (isAuthenticated) {
 				// get user details
-				var userkeys = authenticationserver.getUserAccountKeys(session);
+				var userkeys = await authenticationserver.getUserAccountKeysAsync(session);
 			
 				
 				var keysjson = [];
@@ -513,7 +519,7 @@ class AuthKeyControllers {
 	  	res.json(jsonresult);
 	}
 
-	user_addAccount(req, res) {
+	async user_addAccount(req, res) {
 		// PUT
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
@@ -541,10 +547,11 @@ class AuthKeyControllers {
 		
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'user_addAccount', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
+			var isAuthenticated = await session.isAuthenticatedAsync();
 			
-			if (session.isAuthenticated()) {
-				var user = authenticationserver.getUserFromUUID(session, useruuid);
+			if (isAuthenticated) {
+				var user = await authenticationserver.getUserFromUUIDAsync(session, useruuid);
 				
 				var type = 1; // ethereum transaction account
 				var keyuuid = session.guid();
@@ -561,7 +568,7 @@ class AuthKeyControllers {
 				
 				cryptokey.setDescription(description);
 				
-				authenticationserver.addUserKey(session, useruuid, cryptokey);
+				await authenticationserver.addUserKeyAsync(session, useruuid, cryptokey);
 				
 				jsonresult = {status: 1, useruuid: useruuid, account_uuid: keyuuid}
 				//global.log("session_getKeys called for sessiontoken "+ sessionuuid + " jsonresult is " + JSON.stringify(jsonresult));
@@ -572,7 +579,6 @@ class AuthKeyControllers {
 		}
 		catch(e) {
 			global.log("exception in user_addAccount for sessiontoken " + sessionuuid + ": " + e);
-			console.log(e.stack);
 
 			jsonresult = {status: 0, error: "exception could add account"};
 		}
@@ -582,7 +588,7 @@ class AuthKeyControllers {
 	  	res.json(jsonresult);
 	}
 
-	user_updateAccount(req, res) {
+	async user_updateAccount(req, res) {
 		// PUT
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
@@ -611,18 +617,19 @@ class AuthKeyControllers {
 		
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'user_updateAccount', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
+			var isAuthenticated = await session.isAuthenticatedAsync();
 			
-			if (session.isAuthenticated()) {
-				var user = authenticationserver.getUserFromUUID(session, useruuid);
+			if (isAuthenticated) {
+				var user = await authenticationserver.getUserFromUUIDAsync(session, useruuid);
 				
-				var cryptokey = authenticationserver.getUserAccountKeyFromUUID(session, accountuuid);
+				var cryptokey = await authenticationserver.getUserAccountKeyFromUUIDAsync(session, accountuuid);
 				
 				if (cryptokey) {
 					// we update only the description
 					cryptokey.setDescription(description);
 					
-					authenticationserver.saveUserKey(session, useruuid, cryptokey);
+					await authenticationserver.saveUserKeyAsync(session, useruuid, cryptokey);
 					
 					jsonresult = {status: 1, useruuid: useruuid, account_uuid: accountuuid}
 					
@@ -649,7 +656,7 @@ class AuthKeyControllers {
 	  	res.json(jsonresult);
 	}
 
-	user_reactivateAccount(req, res) {
+	async user_reactivateAccount(req, res) {
 		// PUT
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
@@ -672,17 +679,18 @@ class AuthKeyControllers {
 		
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'user_reactivateAccount', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
+			var isAuthenticated = await session.isAuthenticatedAsync();
 			
-			if (session.isAuthenticated()) {
-				var user = authenticationserver.getUserFromUUID(session, useruuid);
+			if (isAuthenticated) {
+				var user = await authenticationserver.getUserFromUUIDAsync(session, useruuid);
 				
 				// we ask getUserKeyFromUUID because deactivate account won't show in getUserAccountKeyFromUUID
-				var cryptokey = authenticationserver.getUserKeyFromUUID(session, accountuuid);
+				var cryptokey = await authenticationserver.getUserKeyFromUUIDAsync(session, accountuuid);
 				
 				if (cryptokey) {
 					// we deactivate the key
-					authenticationserver.reactivateUserKey(session, useruuid, cryptokey);
+					await authenticationserver.reactivateUserKeyAsync(session, useruuid, cryptokey);
 					
 					jsonresult = {status: 1, useruuid: useruuid, account_uuid: accountuuid}
 					
@@ -707,7 +715,7 @@ class AuthKeyControllers {
 	  	res.json(jsonresult);
 	}
 
-	user_deactivateAccount(req, res) {
+	async user_deactivateAccount(req, res) {
 		// PUT
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
@@ -730,16 +738,17 @@ class AuthKeyControllers {
 		
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'user_deactivateAccount', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
+			var isAuthenticated = await session.isAuthenticatedAsync();
 			
-			if (session.isAuthenticated()) {
-				var user = authenticationserver.getUserFromUUID(session, useruuid);
+			if (isAuthenticated) {
+				var user = await authenticationserver.getUserFromUUIDAsync(session, useruuid);
 				
-				var cryptokey = authenticationserver.getUserAccountKeyFromUUID(session, accountuuid);
+				var cryptokey = await authenticationserver.getUserAccountKeyFromUUIDAsync(session, accountuuid);
 
 				if (cryptokey) {
 					// we deactivate the key
-					authenticationserver.deactivateUserKey(session, useruuid, cryptokey);
+					await authenticationserver.deactivateUserKeyAsync(session, useruuid, cryptokey);
 					
 					jsonresult = {status: 1, useruuid: useruuid, account_uuid: accountuuid}
 					
@@ -764,7 +773,7 @@ class AuthKeyControllers {
 	  	res.json(jsonresult);
 	}
 
-	user_removeAccount(req, res) {
+	async user_removeAccount(req, res) {
 		// PUT
 		var global = this.global;
 		var sessionuuid = req.get("sessiontoken");
@@ -787,12 +796,13 @@ class AuthKeyControllers {
 		
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'user_removeAccount', calltokenjson);
-			var session = section.getSession();
+			var session = await section.getSessionAsync();
+			var isAuthenticated = await session.isAuthenticatedAsync();
 			
-			if (session.isAuthenticated()) {
-				var user = authenticationserver.getUserFromUUID(session, useruuid);
+			if (isAuthenticated) {
+				var user = await authenticationserver.getUserFromUUIDAsync(session, useruuid);
 				
-				var cryptokey = authenticationserver.getUserAccountKeyFromUUID(session, accountuuid);
+				var cryptokey = await authenticationserver.getUserAccountKeyFromUUIDAsync(session, accountuuid);
 				
 				if (cryptokey) {
 					// we deactivate the key

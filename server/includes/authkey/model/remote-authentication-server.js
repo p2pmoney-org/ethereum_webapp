@@ -78,6 +78,49 @@ class RemoteAuthenticationServer {
 
 		return sessionuuid;
 	}
+
+	async getSessionStatusAsync(session) {
+		var global = this.global;
+		var sessionuuid = this._getSessionUUID(session);
+		
+		var restcon = this._getSessionRestConnection(session);
+		
+		var sessionstatus = [];
+		
+		sessionstatus['sessionuuid'] = sessionuuid;
+
+		console.log('RemoteAuthenticationServer.getSessionStatusAsync called for ' + sessionuuid + ' on ' + restcon.rest_server_url);
+		
+		try {
+			var resource = "/session/" + sessionuuid;
+
+			sessionstatus = await new Promise( (resolve, reject) => {
+				restcon.rest_get(resource, function (err, res) {
+					let status = [];
+					if (res) {
+						global.log('success calling ' + resource + ' result is: ' + JSON.stringify(res));
+						
+						status['isauthenticated'] = res['isauthenticated'];
+						status['isanonymous'] = res['isanonymous'];
+	
+						resolve(status);
+					}
+					else {
+						global.log('rest error calling ' + resource);
+						reject(err);
+					}
+			});
+			
+
+				
+			});
+		}
+		catch(e) {
+			global.log('rest exception: ' + e);
+		}
+		
+		return sessionstatus;
+	}
 	
 	getSessionStatus(session) {
 		var global = this.global;
@@ -122,8 +165,8 @@ class RemoteAuthenticationServer {
 		
 		return sessionstatus;
 	}
-	
-	getUserDetails(session) {
+
+	async getUserDetailsAsync(session) {
 		var global = this.global;
 		var self = this;
 		var sessionuuid = this._getSessionUUID(session);
@@ -152,7 +195,81 @@ class RemoteAuthenticationServer {
 		// not in cache (or dimmed obsolete)
 		var restcon = this._getSessionRestConnection(session);
 		
+		console.log('RemoteAuthenticationServer.getUserDetailsAsync called for ' + sessionuuid + ' on ' + restcon.rest_server_url);
+
+		try {
+			var resource = "/session/" + sessionuuid + "/user";
+			
+			userdetails = await new Promise( (resolve, reject) => {
+				restcon.rest_get(resource, function (err, res) {
+					if (res) {
+						global.log('success calling ' + resource +' result is: ' + JSON.stringify(res));
+						
+						if (res['status'] == 1)
+						resolve(res);
+						else
+						reject('no result');
+					}
+					else {
+						global.log('rest error calling ' + resource);
+						reject(err);
+					}
+					
+				});
+			});
+
+		}
+		catch(e) {
+			global.log('rest exception: ' + e);
+		}
+		
+		// put in cache
+		if ((userdetails) && (userdetails['useruuid']))
+		userdetailcache.putValue(key, userdetails);
+		
+		return userdetails;
+	}
+	
+	getUserDetails(session) {
+		var global = this.global;
+		var self = this;
+		var sessionuuid = this._getSessionUUID(session);
+
+		var rest_details = this._getSessionRestDetails(session);
+		var rest_server_url = rest_details.rest_server_url;
+		var	rest_server_api_path = rest_details.rest_server_api_path;
+		
+		// look if it is in cache
+		var cachename = 'authkey_remoteuserdetails';
+		var userdetailcache = global.getExecutionVariable(cachename);
+		
+		if (!userdetailcache) {
+			userdetailcache = global.createCacheObject(cachename);
+			userdetailcache.setValidityLimit(300000); // 5 mn
+			global.setExecutionVariable(cachename, userdetailcache);
+		}
+
+		var key = sessionuuid + '@' + rest_server_url + rest_server_api_path;
+		
+		var userdetails = userdetailcache.getValue(key);
+		
+		if ((userdetails) && (userdetails['useruuid']))
+			return userdetails;
+		
+		// not in cache (or dimmed obsolete)
 		var finished = false;
+		
+		this.getUserDetailsAsync(session)
+		.then((res) => {
+			userdetails = res;
+			finished = true;
+		})
+		.catch(err => {
+			finished = true;
+		});
+		
+
+/* 		var restcon = this._getSessionRestConnection(session);
 		
 		console.log('RemoteAuthenticationServer.getUserDetails called for ' + sessionuuid + ' on ' + restcon.rest_server_url);
 
@@ -178,7 +295,7 @@ class RemoteAuthenticationServer {
 		catch(e) {
 			global.log('rest exception: ' + e);
 			finished = true;
-		}
+		} */
 		
 		// wait to turn into synchronous call
 		while(!finished)
@@ -189,6 +306,20 @@ class RemoteAuthenticationServer {
 		userdetailcache.putValue(key, userdetails);
 		
 		return userdetails;
+	}
+	
+	async getUserAsync(session) {
+		var userdetails = await this.getUserDetailsAsync(session);
+		
+		if (!userdetails)
+			return;
+		
+		var global = this.global;
+		var commonservice = global.getServiceInstance('common');
+		
+		var user = this._getUserFromArray(commonservice, userdetails);
+		
+		return user;
 	}
 	
 	getUser(session) {
