@@ -4,7 +4,7 @@ var Module = class {
 	
 	constructor() {
 		this.name = 'authkey';
-		this.current_version = "0.40.20.2023.04.17";
+		this.current_version = "0.40.21.2023.04.20";
 		
 		this.global = null; // put by global on registration
 		this.isready = false;

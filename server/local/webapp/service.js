@@ -17,6 +17,8 @@ class Service {
 		this.port = null;
 
 		this.apikeys = [];
+
+		this.cors_tokens = ["sessiontoken", "accesstoken", "apikey", "calltoken"];
 	}
 	
 	loadService() {
@@ -369,10 +371,14 @@ class Service {
 		app.use(logger('dev'));
 
 		// allow Cross Origin Resource Share
+		var tokens_string = "";
+		for (var i = 0; i < this.cors_tokens.length; i++) { tokens_string += ", " + this.cors_tokens[i];}
+
 		app.use(function(req, res, next) {
 			var origin = "*"; // domain allowed to cross
 			var headers = "Origin, X-Requested-With, Content-Type, Accept"; // standard fields
-			headers += ", sessiontoken, accesstoken, apikey, calltoken"; // specific fields
+
+			headers += tokens_string; // specific fields (e.g. ", sessiontoken, accesstoken, apikey, calltoken")
 			
 			res.header("Access-Control-Allow-Origin", origin);
 			res.header("Access-Control-Allow-Headers", headers);

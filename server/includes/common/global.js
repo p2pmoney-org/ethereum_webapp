@@ -1259,7 +1259,7 @@ class Global {
 			entry['function'] = hookfunction;
 			entry['priority'] = 0; // default
 			
-			console.log('registering hook '+ hookentry + ' for ' + servicename);
+			//console.log('registering hook '+ hookentry + ' for ' + servicename);
 			
 			if (bAddEntry) {
 				console.log('registering hook '+ hookentry + ' for ' + servicename);

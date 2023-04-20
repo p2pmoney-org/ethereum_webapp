@@ -70,7 +70,8 @@ class AdminControllers {
 		var global = this.global;
 		var adminserver = this.adminserver ;
 
-		return adminserver.checkRootBlankPassword() != true;
+		let checkRootPassword = await adminserver.checkRootBlankPassword();
+		return checkRootPassword != true;
 	}
 	
 	async get_index(req, res, next) {
