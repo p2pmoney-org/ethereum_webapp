@@ -1263,7 +1263,7 @@ class Session {
 	async getMySqlConnectionAsync() {
 		var global = this.global;
 		
-		return global.getMySqlConnectionAsynce();
+		return global.getMySqlConnectionAsync();
 	}
 	
 	// rest calls

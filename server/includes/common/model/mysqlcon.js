@@ -71,7 +71,29 @@ class MySqlConnection {
 				user: user,
 				password: password
 			});
+
+			// catch errors
+			this.connection.on('error', (err) => {
+				global.log("error on connection to mysql database: " + err);
+				try {
+					global.log("error on connection opencount was: " + this.opencount);
+					if (this.connection) {
+						console.log('ending connection on error');
+						this.connection.end();
+						this.connection = null;
+						this.connectionactive = false;
+					}
+					else {
+						console.log('this.connection was null!');
+						this.connectionactive = false;
+					}	
+				}
+				catch(e) {
+					global.log("exception in onConnectionError: " + e);
+				}
+			});
 			
+			// connects
 			await new Promise((resolve, reject) => {
 				this.connection.connect(function(err) {
 					if (err) {

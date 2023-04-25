@@ -492,7 +492,7 @@ class DataBasePersistor {
 		var sql = "SELECT * FROM " + tablename + " WHERE SessionUUID = " + _sessionuuid + ";";
 		
 		// open connection
-		await mysqlcon.open();
+		await mysqlcon.openAsync();
 		
 		// execute query
 		var result = await mysqlcon.executeAsync(sql);

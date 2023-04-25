@@ -86,7 +86,7 @@ class DataBasePersistor {
 		var sql = "SELECT * FROM " + tablename + " WHERE UserUUID = " + _useruuid + ";";
 		
 		// open connection
-		await mysqlcon.openAsynce();
+		await mysqlcon.openAsync();
 		
 		// execute query
 		var result = await mysqlcon.executeAsync(sql);
@@ -396,7 +396,7 @@ class DataBasePersistor {
 		var CreationDate = mysqlcon.escape(new Date());
 		
 		// open connection
-		mysqlcon.open();
+		await mysqlcon.openAsync();
 		
 		sql = `INSERT INTO ` +  tablename + ` (
 				transaction_uuid,
@@ -470,7 +470,7 @@ class DataBasePersistor {
 		var global = this.global;
 		var session = this.session;
 		
-		var mysqlcon = await session.getMySqlConnectionAsynce();
+		var mysqlcon = await session.getMySqlConnectionAsync();
 		
 		var tablename = mysqlcon.getTableName('ethereum_transactions_logs');
 		var _ethereum_transaction_uuid = mysqlcon.escape(ethereum_transaction_uuid);
@@ -481,7 +481,7 @@ class DataBasePersistor {
 		await mysqlcon.openAsync();
 		
 		// execute query
-		var result = await mysqlcon.executeAsynce(sql);
+		var result = await mysqlcon.executeAsync(sql);
 		
 		
 		var transactionHash;
@@ -500,7 +500,7 @@ class DataBasePersistor {
 		
 		
 		// close connection
-		await mysqlcon.closeAsynce();
+		await mysqlcon.closeAsync();
 			
 			
 		return transactionHash;
