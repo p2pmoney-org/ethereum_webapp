@@ -73,7 +73,7 @@ class DataBasePersistor {
 		var mysqlcon = await global.getMySqlConnectionAsync();
 		
 		var tablename = mysqlcon.getTableName('globalparameters');
-		var _key = mysqlcon.escape(key);
+		var _key = await mysqlcon.escapeAsync(key);
 		
 		var sql = "SELECT * FROM " + tablename + " WHERE \`Key\` = " + _key + ";";
 		
@@ -209,8 +209,8 @@ class DataBasePersistor {
 		var mysqlcon = await global.getMySqlConnectionAsync();
 		
 		var tablename = mysqlcon.getTableName('globalparameters');
-		var _key = mysqlcon.escape(key);
-		var _value = mysqlcon.escape(value);
+		var _key = await mysqlcon.escapeAsync(key);
+		var _value = await mysqlcon.escapeAsync(value);
 		
 		var sql;
 		
@@ -290,7 +290,7 @@ class DataBasePersistor {
 		var mysqlcon = await global.getMySqlConnectionAsync();
 		
 		var tablename = mysqlcon.getTableName('users');
-		var _useruuid = mysqlcon.escape(useruuid);
+		var _useruuid = await mysqlcon.escapeAsync(useruuid);
 		
 		var sql = "SELECT * FROM " + tablename + " WHERE UserUUID = " + _useruuid + ";";
 		
@@ -383,7 +383,7 @@ class DataBasePersistor {
 		var mysqlcon = await global.getMySqlConnectionAsync();
 		
 		var tablename = mysqlcon.getTableName('users');
-		var _userid = mysqlcon.escape(userid);
+		var _userid = await mysqlcon.escapeAsync(userid);
 		
 		var sql = "SELECT * FROM " + tablename + " WHERE UserId = " + _userid + ";";
 		
@@ -487,7 +487,7 @@ class DataBasePersistor {
 		var mysqlcon = await global.getMySqlConnectionAsync();
 		
 		var tablename = mysqlcon.getTableName('sessions');
-		var _sessionuuid = mysqlcon.escape(sessionuuid);
+		var _sessionuuid = await mysqlcon.escapeAsync(sessionuuid);
 		
 		var sql = "SELECT * FROM " + tablename + " WHERE SessionUUID = " + _sessionuuid + ";";
 		
@@ -611,8 +611,8 @@ class DataBasePersistor {
 		
 		var mysqlcon = global.getMySqlConnection();
 		
-		var createdon = mysqlcon.escape(new Date(array['createdon']));
-		var lastpingon = mysqlcon.escape(new Date(array['lastpingon']));
+		var createdon = await mysqlcon.escapeAsync(new Date(array['createdon']));
+		var lastpingon = await mysqlcon.escapeAsync(new Date(array['lastpingon']));
 		var isauthenticated = (array['isauthenticated'] == true ? 1 : 0);;
 		var sessionvariables = array['sessionvariables'];
 
@@ -737,8 +737,8 @@ class DataBasePersistor {
 		
 		var mysqlcon = await global.getMySqlConnectionAsync();
 		
-		var createdon = mysqlcon.escape(new Date(array['createdon']));
-		var lastpingon = mysqlcon.escape(new Date(array['lastpingon']));
+		var createdon = await mysqlcon.escapeAsync(new Date(array['createdon']));
+		var lastpingon = await mysqlcon.escapeAsync(new Date(array['lastpingon']));
 		var isauthenticated = (array['isauthenticated'] == true ? 1 : 0);;
 
 		

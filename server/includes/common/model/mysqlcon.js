@@ -364,6 +364,14 @@ class MySqlConnection {
 		return this.connection.escape(val);
 	}
 	
+	async escapeAsync(val) {
+		if (!this.connection) {
+			await this._connectAsync();
+		}
+
+		return this.connection.escape(val);
+	}
+	
 	escapeId(id) {
 		if (!this.connection)
 			this._connect();
@@ -374,7 +382,14 @@ class MySqlConnection {
 		return this.connection.escapeId(id);
 	}
 	
-	
+	async escapeIdAsync(id) {
+		if (!this.connection) {
+			await this._connectAsync();
+		}
+
+		return this.connection.escapeId(id);
+	}
+		
 }
 
 module.exports = MySqlConnection;

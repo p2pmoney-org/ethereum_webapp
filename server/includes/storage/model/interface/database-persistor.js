@@ -69,7 +69,7 @@ class DataBasePersistor {
 		var mysqlcon = await global.getMySqlConnectionAsync();
 		
 		var tablename = mysqlcon.getTableName('users');
-		var _useruuid = mysqlcon.escape(useruuid);
+		var _useruuid = await mysqlcon.escapeAsync(useruuid);
 		
 		var sql = "SELECT * FROM " + tablename + " WHERE UserUUID = " + _useruuid + ";";
 		
@@ -157,8 +157,8 @@ class DataBasePersistor {
 		var mysqlcon = await global.getMySqlConnectionAsync();
 		
 		var tablename = mysqlcon.getTableName('storage_users');
-		var _useruuid = mysqlcon.escape(useruuid);
-		var _key = mysqlcon.escape(key);
+		var _useruuid = await mysqlcon.escapeAsync(useruuid);
+		var _key = await mysqlcon.escapeAsync(key);
 		
 		var sql = "SELECT * FROM " + tablename + " WHERE " + tablename + ".UserUUID=" + _useruuid + " AND " + tablename + ".Key=" + _key + ";";
 		
@@ -244,7 +244,7 @@ class DataBasePersistor {
 
 		var mysqlcon = await global.getMySqlConnectionAsync();
 		
-		var contentstring = mysqlcon.escape(content);
+		var contentstring = await mysqlcon.escapeAsync(content);
 		
 		var tablename = mysqlcon.getTableName('storage_users');
 		
@@ -324,8 +324,8 @@ class DataBasePersistor {
 		var mysqlcon = await global.getMySqlConnectionAsync();
 		
 		var tablename = mysqlcon.getTableName('storage_users');
-		var _useruuid = mysqlcon.escape(useruuid);
-		var _key = mysqlcon.escape(key);
+		var _useruuid = await mysqlcon.escapeAsync(useruuid);
+		var _key = await mysqlcon.escapeAsync(key);
 		
 		var sql;
 		

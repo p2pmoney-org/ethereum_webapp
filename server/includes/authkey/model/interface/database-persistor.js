@@ -165,7 +165,7 @@ class DataBasePersistor {
 		var mysqlcon = await global.getMySqlConnectionAsync();
 		
 		var tablename = mysqlcon.getTableName('users');
-		var _useruuid = mysqlcon.escape(useruuid);
+		var _useruuid = await mysqlcon.escapeAsync(useruuid);
 		
 		var sql = "SELECT * FROM " + tablename + " WHERE UserUUID = " + _useruuid + ";";
 		
@@ -264,7 +264,7 @@ class DataBasePersistor {
 		var mysqlcon = await global.getMySqlConnectionAsync();
 		
 		var tablename = mysqlcon.getTableName('users');
-		var _username = mysqlcon.escape(username);
+		var _username = await mysqlcon.escapeAsync(username);
 		
 		var sql = "SELECT * FROM " + tablename + " WHERE UserName = " + _username + ";";
 		
@@ -398,8 +398,8 @@ class DataBasePersistor {
 
 		var mysqlcon = await global.getMySqlConnectionAsync();
 		
-		var registrationon = mysqlcon.escape((array['registrationon'] ? new Date(array['registrationon']) : new Date()));
-		var lastmodificationon = mysqlcon.escape((array['lastmodificationon'] ? new Date(array['lastmodificationon']) : new Date()));
+		var registrationon = await mysqlcon.escapeAsync((array['registrationon'] ? new Date(array['registrationon']) : new Date()));
+		var lastmodificationon = await mysqlcon.escapeAsync((array['lastmodificationon'] ? new Date(array['lastmodificationon']) : new Date()));
 		
 		var tablename = mysqlcon.getTableName('users');
 		
@@ -606,7 +606,7 @@ class DataBasePersistor {
 		
 		var tablename = mysqlcon.getTableName('users');
 		var keystablename = mysqlcon.getTableName('keys');
-		var _useruuid = mysqlcon.escape(useruuid);
+		var _useruuid = await mysqlcon.escapeAsync(useruuid);
 		
 		var sql = "SELECT * FROM " + tablename;
 		sql += " INNER JOIN " + keystablename;
@@ -723,7 +723,7 @@ class DataBasePersistor {
 		
 		var tablename = mysqlcon.getTableName('users');
 		var keystablename = mysqlcon.getTableName('keys');
-		var _username = mysqlcon.escape(username);
+		var _username = await mysqlcon.escapeAsync(username);
 		
 		var sql = "SELECT * FROM " + tablename;
 		sql += " INNER JOIN " + keystablename;
@@ -838,8 +838,8 @@ class DataBasePersistor {
 		
 		var usertablename = mysqlcon.getTableName('users');
 		var keystablename = mysqlcon.getTableName('keys');
-		var _useruuid = mysqlcon.escape(useruuid);
-		var _keyuuid = mysqlcon.escape(keyuuid);
+		var _useruuid = await mysqlcon.escapeAsync(useruuid);
+		var _keyuuid = await mysqlcon.escapeAsync(keyuuid);
 		
 		var sql = "SELECT * FROM " + usertablename;
 		sql += " INNER JOIN " + keystablename;
@@ -957,13 +957,13 @@ class DataBasePersistor {
 		var mysqlcon = await global.getMySqlConnectionAsync();
 		
 		var tablename = mysqlcon.getTableName('keys');
-		var _useruuid = mysqlcon.escape(useruuid);
-		var _keyuuid = mysqlcon.escape(keyuuid);
-		var _privatekey = (privatekey ? mysqlcon.escape(privatekey) : null);
-		var _publickey = (publickey ? mysqlcon.escape(publickey) : null);
-		var _address = (address ? mysqlcon.escape(address) : null);
-		var _rsapublickey = (rsapublickey ? mysqlcon.escape(rsapublickey) : null);
-		var _description = (description ? mysqlcon.escape(description) : null);
+		var _useruuid = await mysqlcon.escapeAsync(useruuid);
+		var _keyuuid = await mysqlcon.escapeAsync(keyuuid);
+		var _privatekey = (privatekey ? (await mysqlcon.escapeAsync(privatekey)) : null);
+		var _publickey = (publickey ? (await mysqlcon.escapeAsync(publickey)) : null);
+		var _address = (address ? (await mysqlcon.escapeAsync(address)) : null);
+		var _rsapublickey = (rsapublickey ? (await mysqlcon.escapeAsync(rsapublickey)) : null);
+		var _description = (description ? (await mysqlcon.escapeAsync(description)) : null);
 		
 		var sql;
 		
@@ -1046,8 +1046,8 @@ class DataBasePersistor {
 		var mysqlcon = await global.getMySqlConnectionAsync();
 		
 		var tablename = mysqlcon.getTableName('keys');
-		var _keyuuid = mysqlcon.escape(keyuuid);
-		var _description = mysqlcon.escape(description);
+		var _keyuuid = await mysqlcon.escapeAsync(keyuuid);
+		var _description = await mysqlcon.escapeAsync(description);
 		
 		var sql;
 		
@@ -1135,7 +1135,7 @@ class DataBasePersistor {
 		var mysqlcon = await global.getMySqlConnectionAsync();
 		
 		var tablename = mysqlcon.getTableName('keys');
-		var _keyuuid = mysqlcon.escape(keyuuid);
+		var _keyuuid = await mysqlcon.escapeAsync(keyuuid);
 		
 		var sql;
 		
@@ -1223,7 +1223,7 @@ class DataBasePersistor {
 		var mysqlcon = await global.getMySqlConnectionAsync();
 		
 		var tablename = mysqlcon.getTableName('keys');
-		var _keyuuid = mysqlcon.escape(keyuuid);
+		var _keyuuid = await mysqlcon.escapeAsync(keyuuid);
 		
 		var sql;
 		
@@ -1282,7 +1282,7 @@ class DataBasePersistor {
 		var mysqlcon = await global.getMySqlConnectionAsync();
 		
 		var tablename = mysqlcon.getTableName('keys');
-		var _keyuuid = mysqlcon.escape(keyuuid);
+		var _keyuuid = await mysqlcon.escapeAsync(keyuuid);
 		
 		var sql;
 		

@@ -81,7 +81,7 @@ class DataBasePersistor {
 		var mysqlcon = await session.getMySqlConnectionAsync();
 		
 		var tablename = mysqlcon.getTableName('users');
-		var _useruuid = mysqlcon.escape(useruuid);
+		var _useruuid = await mysqlcon.escapeAsync(useruuid);
 		
 		var sql = "SELECT * FROM " + tablename + " WHERE UserUUID = " + _useruuid + ";";
 		
@@ -176,7 +176,7 @@ class DataBasePersistor {
 		var mysqlcon = await session.getMySqlConnectionAsync();
 		
 		var tablename = mysqlcon.getTableName('ethereum_transactions_logs');
-		var _ethereum_transaction_uuid = mysqlcon.escape(ethereum_transaction_uuid);
+		var _ethereum_transaction_uuid = await mysqlcon.escapeAsync(ethereum_transaction_uuid);
 		
 		var sql = "SELECT * FROM " + tablename + " WHERE "+ tablename + ".transaction_uuid = " + _ethereum_transaction_uuid + ";";
 		
@@ -393,7 +393,7 @@ class DataBasePersistor {
 		
 		var sql;
 		
-		var CreationDate = mysqlcon.escape(new Date());
+		var CreationDate = await mysqlcon.escapeAsync(new Date());
 		
 		// open connection
 		await mysqlcon.openAsync();
@@ -473,7 +473,7 @@ class DataBasePersistor {
 		var mysqlcon = await session.getMySqlConnectionAsync();
 		
 		var tablename = mysqlcon.getTableName('ethereum_transactions_logs');
-		var _ethereum_transaction_uuid = mysqlcon.escape(ethereum_transaction_uuid);
+		var _ethereum_transaction_uuid = await mysqlcon.escapeAsync(ethereum_transaction_uuid);
 		
 		var sql = "SELECT * FROM " + tablename + " WHERE "+ tablename + ".transaction_uuid = " + _ethereum_transaction_uuid + " AND "+ tablename + ".action = 1000;";
 		
