@@ -43,7 +43,7 @@ class Service {
 		
 		var global = this.global;
 		
-		global.registerHook('installMysqlTables_hook', this.name, this.installMysqlTables_hook);
+		global.registerHook('installMysqlTables_asynchook', this.name, this.installMysqlTables_asynchook);
 
 		global.registerHook('copyDappFiles_asynchook', this.name, this.copyDappFiles_asynchook);
 		global.registerHook('overloadDappFiles_asynchook', this.name, this.overloadDappFiles_asynchook);
@@ -60,10 +60,10 @@ class Service {
 	//
 	// hooks
 	//
-	installMysqlTables_hook(result, params) {
+	async installMysqlTables_asynchook(result, params) {
 		var global = this.global;
 
-		global.log('installMysqlTables_hook called for ' + this.name);
+		global.log('installMysqlTables_asynchook called for ' + this.name);
 		
 
 		var session = params[0];
@@ -74,7 +74,7 @@ class Service {
 		var sql;
 		
 		// open connection
-		mysqlcon.open();
+		await mysqlcon.openAsync();
 		
 		// users table
 		tablename = mysqlcon.getTableName('users');
@@ -102,7 +102,7 @@ class Service {
 				)`;
 		
 		// execute query
-		var res = mysqlcon.execute(sql);
+		var res = await mysqlcon.executeAsync(sql);
 		
 
 		// roles table
@@ -117,7 +117,7 @@ class Service {
 				)`;
 		
 		// execute query
-		var res = mysqlcon.execute(sql);
+		var res = await mysqlcon.executeAsync(sql);
 		
 		// insert values
 		sql = "INSERT INTO " + tablename + "(`RoleId`, `RoleValue`, `RoleName`) VALUES ('1', '1', 'SuperAdmin')";
@@ -132,7 +132,7 @@ class Service {
 				)`;
 		
 		// execute query
-		var res = mysqlcon.execute(sql);
+		var res = await mysqlcon.executeAsync(sql);
 		
 		
 		// keys table
@@ -154,11 +154,11 @@ class Service {
 				)`;
 		
 		// execute query
-		var res = mysqlcon.execute(sql);
+		var res = await mysqlcon.executeAsync(sql);
 		
 		
 		// close connection
-		mysqlcon.close();
+		await mysqlcon.closeAsync();
 		
 
 		result.push({service: this.name, handled: true});

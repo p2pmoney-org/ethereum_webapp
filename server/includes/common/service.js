@@ -25,23 +25,23 @@ class Service {
 		
 		var global = this.global;
 		
-		global.registerHook('installMysqlTables_hook', this.name, this.installMysqlTables_hook);
+		global.registerHook('installMysqlTables_asynchook', this.name, this.installMysqlTables_asynchook);
 	}
 	
 	//
 	// hooks
 	//
-	installMysqlTables_hook(result, params) {
+	async installMysqlTables_asynchook(result, params) {
 		var global = this.global;
 
-		global.log('installMysqlTables_hook called for ' + this.name);
+		global.log('installMysqlTables_asynchook called for ' + this.name);
 		
 
 		var session = params[0];
 		var mysqlcon = params[1];
 		
 		// open connection
-		mysqlcon.open();
+		await mysqlcon.openAsync();
 		
 		// we create tables
 		var tablename;
@@ -58,7 +58,7 @@ class Service {
 				)`;
 		
 		// execute query
-		var res = mysqlcon.execute(sql);
+		var res = await mysqlcon.executeAsync(sql);
 		
 		// sessions tables
 		tablename = mysqlcon.getTableName('sessions');
@@ -77,11 +77,11 @@ class Service {
 				)`;
 		
 		// execute query
-		var res = mysqlcon.execute(sql);
+		var res = await mysqlcon.executeAsync(sql);
 		
 		
 		// close connection
-		mysqlcon.close();
+		await mysqlcon.closeAsync();
 		
 
 		result.push({module: this.name, handled: true});

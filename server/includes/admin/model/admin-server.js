@@ -309,13 +309,13 @@ class AdminServer {
 		var sql = 'CREATE DATABASE IF NOT EXISTS ' + databasename + ";";
 		
 		// open connection
-		await mysqlcon.open();
+		await mysqlcon.openAsync();
 		
 		// execute query
 		var result = await mysqlcon.executeAsync(sql);
 		
 		// close connection
-		await mysqlcon.close();
+		await mysqlcon.closeAsync();
 	}
 	
 	async _createWebappuser(mysqlcon, webappdatabase, webappuser, webappuserpassword) {
@@ -331,7 +331,7 @@ class AdminServer {
 		result = await mysqlcon.executeAsync(sql);
 		
 		// close connection
-		await mysqlcon.close();
+		await mysqlcon.closeAsync();
 	}
 	
 	async _createMysqlWebappTables(mysqlcon, webappdatabase) {
@@ -382,7 +382,7 @@ class AdminServer {
 		
 		// invoke hooks to let services add their tables
 		var ret = global.invokeHooks('installMysqlTables_hook', result, params); // legacy sync
-		ret = global.invokeAsyncHooks('installMysqlTables_asynchook', result, params);
+		ret = await global.invokeAsyncHooks('installMysqlTables_asynchook', result, params);
 		
 		if (ret && result && result.length) {
 			global.log('installMysqlTables_hook result is ' + JSON.stringify(result));
@@ -430,14 +430,15 @@ class AdminServer {
 		params.push(session);
 		params.push(config);
 
-		var ret = global.invokeHooks('installWebappConfig_hook', result, params);
+		var ret = global.invokeHooks('installWebappConfig_hook', result, params); // legacy sync
+		ret = await global.invokeAsyncHooks('installWebappConfig_asynchook', result, params);
 		
 		if (ret && result && result.length) {
 			global.log('installWebappConfig_hook result is ' + JSON.stringify(result));
 		}
 		
 		// save json
-		global.saveJson('config', config);
+		global.saveJsonAsync('config', config);
 	}
 	
 	async installFinal() {
