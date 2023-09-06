@@ -289,6 +289,14 @@ class Global {
 		
 		return new CacheObject(this, name);
 	}
+
+	getBaseDir() {
+		return this.base_dir;
+	}
+
+	getExecutionDir() {
+		return this.execution_dir;
+	}
 	
 	readJson(jsonname) {
 		var fs = require('fs');

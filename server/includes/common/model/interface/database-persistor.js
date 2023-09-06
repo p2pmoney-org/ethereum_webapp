@@ -21,7 +21,7 @@ class DataBasePersistor {
 		var global = this.global;
 		var mysqlcon = await global.getMySqlConnectionAsync();
 
-		return mysqlcon.isActive();
+		return mysqlcon.isActiveAsync();
 	}
 	
 	getGlobalParameters(key) {

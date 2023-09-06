@@ -6,7 +6,8 @@
 var SessionSection = class {
 	constructor(global, sessionuuid, name, calltoken) {
 		this.global = global;
-		this.sessionuuid = sessionuuid;
+		this.session_uuid = sessionuuid;
+		this.sessionuuid = sessionuuid; // for obsolete code not using SessionSection.getSessionUUID
 		this.name = name;
 
 		// while we don't pass the context down to the the RemoteAuthentication server
@@ -49,6 +50,10 @@ var SessionSection = class {
 		
 	}
 
+	getSessionUUID() {
+		return this.session_uuid;
+	}
+	
 	// async version
 	async getSessionAsync() {
 		if (this.session)
@@ -59,7 +64,7 @@ var SessionSection = class {
 		var requested_on = Date.now();
 		this.record('session_requested_on');
 		
-		var mainsession = await Session.getSessionAsync(this.global, this.sessionuuid);
+		var mainsession = await Session.getSessionAsync(this.global, this.session_uuid);
 
 		if (this.authkey_server_passthrough === true) {
 			// we allow other authentication servers than the default one
@@ -98,7 +103,7 @@ var SessionSection = class {
 		
 		return this.session;
 	}
-	
+
 	// sync version
 	getSession() {
 		if (this.session)
@@ -109,7 +114,7 @@ var SessionSection = class {
 		var requested_on = Date.now();
 		this.record('session_requested_on');
 		
-		var mainsession = Session.getSession(this.global, this.sessionuuid);
+		var mainsession = Session.getSession(this.global, this.session_uuid);
 
 		if (this.authkey_server_passthrough === true) {
 			// we allow other authentication servers than the default one
@@ -153,6 +158,14 @@ var SessionSection = class {
 		// to get session from section or session objects
 		return this.getSession();
 	}
+
+	_root_session() {
+		// to get the mainsession, while we have the workaround for remote authentication
+		var session = this.session;
+		return session._root_session();
+	}
+	
+
 	
 	async _safe_sessionAsync() {
 		// to get session from section or session objects
@@ -211,12 +224,67 @@ var SessionSection = class {
 			return this.isauthenticated;
 		}
 	}
+
+	// transient variable (that do not outlive session object,
+	// sticky or not)
+	pushObject(key, object) {
+		var session = this.getSession();
+
+		return session.pushObject(key, object);
+	}
 	
+	getObject(key) {
+		var session = this.getSession();
+
+		return session.getObject(key);
+	}
+	
+	removeObject(key) {
+		var session = this.getSession();
+
+		return session.removeObject(key);
+	}
+
+
+	// session variables (saved in database
+	// session table)
+	async setSessionVariableAsync(key, value) {
+		var session = this.getSession();
+		
+		return session.setSessionVariableAsync(key, value);
+	}
+	
+	getSessionVariable(key) {
+		var session = this.getSession();
+
+		return session.getSessionVariable(key);
+	}
+	
+	// events
 	record(eventname) {
 		var global = this.global;
 		var now = Date.now();
 
 		this.events.push({name: eventname, time: now});
+	}
+
+	// clone current section for same session
+	clone(name) {
+		var session = this.getSession();
+		var section = session.openSection(name);
+		
+		return section;
+	}
+	
+	guid() {
+		var session = this.getSession();
+		return session.guid();
+	}
+	
+	// persistence
+	isSticky() {
+		var session = this.getSession();
+		return session.isSticky();
 	}
 	
 	close() {
@@ -342,7 +410,17 @@ class SessionMap {
 		}
 	}
 	
-	
+	knowsSession(uuid) {
+		if (!uuid) return false;
+
+		var key = uuid.toString().toLowerCase();
+		
+		if (key in this.map)
+		return true;
+		else
+		return false;
+	}
+
 	async getSessionAsync(uuid) {
 		var key = uuid.toString().toLowerCase();
 		
@@ -558,10 +636,12 @@ class Session {
 	// sections for call contexts
 	openSection(name) {
 		var global = this.global;
-		var sessionuuid = this.sessionuuid;
+		var sessionuuid = this.session_uuid;
 		var section = Session.openSessionSection(global, sessionuuid);
 		
 		section.session = this;
+
+		return section;
 	}
 	
 	closeSection(section) {
@@ -571,6 +651,17 @@ class Session {
 	_safe_session() {
 		// to get session from section or session objects
 		return this;
+	}
+
+	_root_session() {
+		// to get the mainsession, while we have the workaround for remote authentication
+		var rootsession = this;
+
+		while(rootsession.getParentSession()) {
+			rootsession = rootsession.getParentSession();
+		}
+		
+		return rootsession;
 	}
 	
 	async _safe_sessionAsync() {
@@ -941,7 +1032,7 @@ class Session {
 		var persistor = server.getPersistor();
 		
 		if (persistor.canPersistData()) {
-			var array = persistor.getSession(this.sessionuuid);
+			var array = persistor.getSession(this.session_uuid);
 			
 			this._init(array);
 		}
@@ -956,7 +1047,7 @@ class Session {
 		var canPersistData = await persistor.canPersistDataAsync();
 
 		if (canPersistData) {
-			var array = await persistor.getSessionAsync(this.sessionuuid);
+			var array = await persistor.getSessionAsync(this.session_uuid);
 			
 			this._init(array);
 		}
@@ -1659,6 +1750,15 @@ class Session {
 		}
 	}
 	
+	static knowsSession(global, sessionuuid) {
+		if (!sessionuuid)
+		return false;
+
+		var sessionmap = Session.getSessionMap(global);
+
+		return sessionmap.knowsSession(sessionuuid);
+	}
+
 	static async getSessionAsync(global, sessionuuid) {
 		var session;
 		
