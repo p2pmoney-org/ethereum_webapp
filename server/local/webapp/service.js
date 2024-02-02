@@ -390,6 +390,10 @@ class Service {
 		return app;
 	}
 
+	getWebApp() {
+		return this.app;
+	}
+
 	startMiddleware() {
 		var global = this.global;
 		var app = this.app;

@@ -207,7 +207,7 @@ class AdminServer {
 		
 		var commonservice = global.getServiceInstance('common');
 		
-		var parameters = commonservice.getGlobalParameters('CurrentVersion');
+		var parameters = await commonservice.getGlobalParametersAsync('CurrentVersion');
 		
 		for (var i = 0; i < (parameters ? parameters.length : 0); i++) {
 			variables['Install version'] = parameters[i].value;
@@ -451,8 +451,8 @@ class AdminServer {
 		
 		var commonservice = global.getServiceInstance('common');
 		
-		commonservice.addGlobalParameter('CurrentVersion', currentversion);
-		commonservice.addGlobalParameter('VersionInstallation', currentversion + ';' + nowstring);
+		await commonservice.addGlobalParameterAsync('CurrentVersion', currentversion);
+		await commonservice.addGlobalParameterAsync('VersionInstallation', currentversion + ';' + nowstring);
 	}
 	
 	// user management
@@ -493,7 +493,7 @@ class AdminServer {
 		user.setUserUUID(session.guid());
 		user.setAccountStatus(2);
 		
-		authserver.saveUser(session, user);
+		await authserver.saveUserAsync(session, user);
 		
 		// save password
 		var clearpassword = userpassword;

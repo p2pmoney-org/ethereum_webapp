@@ -24,6 +24,10 @@ class Server {
 		return this.persistor.getGlobalParameters(key);
 	}
 	
+	async getGlobalParametersAsync(key) {
+		return this.persistor.getGlobalParametersAsync(key);
+	}
+	
 	saveGlobalParameter(key, value) {
 		// turn to string
 		var valuestring = value.toString();
@@ -39,6 +43,21 @@ class Server {
 		}
 	}
 	
+	async saveGlobalParameterAsync(key, value) {
+		// turn to string
+		var valuestring = value.toString();
+		var type = 0;
+		
+		var parameters = await this.persistor.getGlobalParametersAsync(key);
+		
+		if (parameters.length) {
+			await this.persistor.updateGlobalParameterAsync(key, type, value);
+		}
+		else {
+			await this.persistor.putGlobalParameterAsync(key, type, value);
+		}
+	}
+	
 	addGlobalParameter(key, value) {
 		if ((!key) || (!value))
 			return;
@@ -48,6 +67,17 @@ class Server {
 		var type = 0;
 		
 		this.persistor.putGlobalParameter(key, type, value);
+	}
+
+	async addGlobalParameterAsync(key, value) {
+		if ((!key) || (!value))
+			return;
+		
+		// turn to string
+		var valuestring = value.toString();
+		var type = 0;
+		
+		await this.persistor.putGlobalParameterAsync(key, type, value);
 	}
 }
 

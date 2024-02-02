@@ -350,7 +350,7 @@ class Service {
 					// save user
 					user.altloginmethod = 'remote-authkey-server';
 					
-					authenticationserver.saveUser(session, user);
+					await authenticationserver.saveUserAsync(session, user);
 				}
 				else {
 					global.log('remote user found in database with uuid: ' + useruuid);

@@ -1021,6 +1021,10 @@ class Global {
 		return this.config[key];
 	}
 	
+	setConfigValue(key, value) {
+		this.config[key] = value;
+	}
+	
 	getCurrentVersion() {
 		//return this.getConstant('CURRENT_VERSION');
 		return (this.current_version ? this.current_version : "undefined");

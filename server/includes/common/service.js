@@ -121,16 +121,34 @@ class Service {
 		return server.getGlobalParameters(key);
 	}
 	
+	async getGlobalParametersAsync(key) {
+		var server = this.getServerInstance();
+		
+		return server.getGlobalParametersAsync(key);
+	}
+	
 	saveGlobalParameter(key, value) {
 		var server = this.getServerInstance();
 		
 		server.saveGlobalParameter(key, value);
 	}
 	
+	async saveGlobalParameterAsync(key, value) {
+		var server = this.getServerInstance();
+		
+		await server.saveGlobalParameterAsync(key, value);
+	}
+	
 	addGlobalParameter(key, value) {
 		var server = this.getServerInstance();
 		
 		server.addGlobalParameter(key, value);
+	}
+
+	async addGlobalParameterAsync(key, value) {
+		var server = this.getServerInstance();
+		
+		await server.addGlobalParameterAsync(key, value);
 	}
 
 }

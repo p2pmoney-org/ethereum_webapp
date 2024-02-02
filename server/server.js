@@ -23,7 +23,7 @@ if (process.env.ETHEREUM_WEBAPP_EXEC_DIR) {
 //instantiating global object
 var global = Global.getGlobalInstance();
 
-global.current_version = "0.40.25.2023.09.06";
+global.current_version = "0.40.26.2024.02.02";
 global.version_support = ["0.40", "0.30", "0.20"];
 
 
@@ -171,14 +171,25 @@ global.log("****Loading express*****");
 
 try {
 	// starting express
-	var app = global.getServiceInstance('ethereum_webapp').startWebApp();
+	let bStartNoWebApp = global.getConfigValue('start_no_webapp');
+
+	if (bStartNoWebApp !== true) {
+		var app = global.getServiceInstance('ethereum_webapp').startWebApp();
 	
-	// express middleware
-	global.getServiceInstance('ethereum_webapp').startMiddleware();
+		// express middleware
+		let bStartNoMiddleware = global.getConfigValue('start_no_middleware');
 	
-	//admin ui
-	// (should be after middleware because of bodyParser)
-	global.getServiceInstance('admin').startAdminUI(app);
+		if (bStartNoMiddleware !== true)
+		global.getServiceInstance('ethereum_webapp').startMiddleware();
+		
+		//admin ui
+		// (should be after middleware because of bodyParser)
+		let bStartNoAdminUI = global.getConfigValue('start_no_admin_ui');
+	
+		if (bStartNoAdminUI !== true)
+		global.getServiceInstance('admin').startAdminUI(app);
+	
+	}
 }
 catch(e) {
 	global.log("ERROR during express load: " + e);

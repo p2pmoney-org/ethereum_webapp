@@ -690,7 +690,7 @@ class AuthenticationServer {
 		if (!canAccess)
 			throw 'User does not have the rights to read another user';
 			
-		var userdetails = this._readRealUserDetails(session, useruuid);
+		var userdetails = await this._readRealUserDetailsAsync(session, useruuid);
 		
 		var global = this.global;
 		var commonservice = global.getServiceInstance('common');
