@@ -3,35 +3,60 @@ form(method='POST' action='?action=install')
 	input#action.form-control(type='hidden' name='action' value='install')
 	input#session.form-control(type='hidden' name='sessionuuid' value=session.sessionuuid)
 	
-	h3 SuperAdmin
-	
-	div.form-group
-		label(for='pw') Mysql root password:
-		input#pw.form-control(type='password' name='rootpassword', required)
+	if remove_superadmin_group !== true
 
-	h3 Mysql
-	
-	div.form-group
-		label(for='name') Webapp database name:
-		input#name.form-control(type='text', placeholder='webapp' name='webappdatabasename')
-	div.form-group
-		label(for='name') Webapp sql user:
-		input#name.form-control(type='text', placeholder='webappuser' name='webappusername')
-	div.form-group
-		label(for='pw') Webapp user password:
-		input#pw.form-control(type='password' name='webapppassword', required)
-	div.form-group
-		label(for='name') Prefix for table names (if needed):
-		input#name.form-control(type='text', placeholder='' name='webapptableprefix')
+		h3 SuperAdmin
 		
-	h3 REST access
-	
-	div.form-group
-		label(for='name') Domain server for rest:
-		input#name.form-control(type='text', placeholder='https://rest.example.com' name='rest_server_url', required)
+		div.form-group
+			label(for='pw') Mysql root password:
+			input#pw.form-control(type='password' name='rootpassword', required)
+		
 
-	div.form-group
-		label(for='name') Path :
-		input#name.form-control(type='text', placeholder='/dapp/api' name='rest_server_api_path', required)
+	if remove_mysql_group !== true
+
+		h3 Mysql
+		
+		div.form-group
+			label(for='name') Webapp database name:
+			input#name.form-control(type='text', placeholder='webapp' name='webappdatabasename')
+		div.form-group
+			label(for='name') Webapp sql user:
+			input#name.form-control(type='text', placeholder='webappuser' name='webappusername')
+		div.form-group
+			label(for='pw') Webapp user password:
+			input#pw.form-control(type='password' name='webapppassword', required)
+		div.form-group
+			label(for='name') Prefix for table names (if needed):
+			input#name.form-control(type='text', placeholder='' name='webapptableprefix')
+
+	if remove_rest_group !== true
+
+		h3 REST access
+		
+		div.form-group
+			label(for='name') Domain server for rest:
+			input#name.form-control(type='text', placeholder='https://rest.example.com' name='rest_server_url', required)
+
+		div.form-group
+			label(for='name') Path :
+			input#name.form-control(type='text', placeholder='/dapp/api' name='rest_server_api_path', required)
+
+
+	if form_xtra_inputs
+
+		if form_xtra_inputs.group_title
+			h3 #{form_xtra_inputs.group_title}
+		else
+			h3 Extra Information
+		
+		each entry in form_xtra_inputs
+			if entry.notrequired
+				label(for='name') #{entry.label} :
+				input#name.form-control(type='text', placeholder=`${entry.placeholder}` name=`${entry.name}`)
+			else
+				label(for='name') #{entry.label} :
+				input#name.form-control(type='text', placeholder=`${entry.placeholder}` name=`${entry.name}`, required)
+
+
 
 	button.btn.btn-primary(type='submit') Install

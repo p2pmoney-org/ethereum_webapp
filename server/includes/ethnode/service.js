@@ -75,35 +75,46 @@ class Service {
 
 		var session = params[0];
 		var mysqlcon = params[1];
-		
-		// we create tables
-		var tablename;
-		var sql;
-		
-		// open connection
-		await mysqlcon.openAsync();
-		
-		// users table
-		tablename = mysqlcon.getTableName('ethereum_transactions_logs');
-		sql = "CREATE TABLE IF NOT EXISTS ";
-	
-		sql += tablename;
-		sql += ` (  id INT NOT NULL AUTO_INCREMENT,
-				  transaction_uuid VARCHAR(36) NOT NULL,
-				  transactionHash varchar(68) DEFAULT NULL,
-  				  UserId INT NOT NULL,
-				  method VARCHAR(64) NOT NULL,
-				  action INT NOT NULL,
-				  CreationDate DATETIME NOT NULL,
-				  log TEXT NULL,
-				  PRIMARY KEY (id)
-				)`;
-		
-		// execute query
-		var res = await mysqlcon.executeAsync(sql);
-		
-		// close connection
-		await mysqlcon.closeAsync();
+		var install_step = params[2];
+
+		switch(install_step) {
+			case 'initial_setup': {
+				// we create tables
+				var tablename;
+				var sql;
+				
+				// open connection
+				await mysqlcon.openAsync();
+				
+				// users table
+				tablename = mysqlcon.getTableName('ethereum_transactions_logs');
+				sql = "CREATE TABLE IF NOT EXISTS ";
+			
+				sql += tablename;
+				sql += ` (  id INT NOT NULL AUTO_INCREMENT,
+						transaction_uuid VARCHAR(36) NOT NULL,
+						transactionHash varchar(68) DEFAULT NULL,
+						UserId INT NOT NULL,
+						method VARCHAR(64) NOT NULL,
+						action INT NOT NULL,
+						CreationDate DATETIME NOT NULL,
+						log TEXT NULL,
+						PRIMARY KEY (id)
+						)`;
+				
+				// execute query
+				var res = await mysqlcon.executeAsync(sql);
+				
+				// close connection
+				await mysqlcon.closeAsync();
+
+			}
+			break;
+
+			default:
+				break;
+		}
+
 		
 
 		result.push({service: this.name, handled: true});

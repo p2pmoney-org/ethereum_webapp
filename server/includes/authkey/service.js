@@ -68,97 +68,108 @@ class Service {
 
 		var session = params[0];
 		var mysqlcon = params[1];
-		
-		// we create tables
-		var tablename;
-		var sql;
-		
-		// open connection
-		await mysqlcon.openAsync();
-		
-		// users table
-		tablename = mysqlcon.getTableName('users');
-		sql = "CREATE TABLE IF NOT EXISTS ";
-	
-		sql += tablename;
-		sql += ` (   UserId int(11) NOT NULL AUTO_INCREMENT,
-					  UserUUID varchar(36) NOT NULL,
-					  UserEmail varchar(100) NOT NULL,
-					  Password varchar(64) DEFAULT NULL,
-					  Salt varchar(16) NOT NULL,
-					  HashMethod int(11) NOT NULL DEFAULT '-1',
-					  AltLoginMethod varchar(25) NOT NULL,
-					  AccountStatus int(11) NOT NULL,
-					  UserName varchar(50) NOT NULL,
-					  RegistrationDate datetime NOT NULL,
-					  LastModificationOn datetime NOT NULL,
-					  DisabledOn datetime DEFAULT NULL,
-					  DiscardedOn datetime DEFAULT NULL,
-					  LastLoginOn datetime DEFAULT NULL,
-					  LastSessionOn datetime DEFAULT NULL,
-					  PRIMARY KEY (UserId),
-					  UNIQUE KEY UserUUID (UserUUID),
-					  KEY UserId (UserId)
-				)`;
-		
-		// execute query
-		var res = await mysqlcon.executeAsync(sql);
-		
+		var install_step = params[2];
 
-		// roles table
-		tablename = mysqlcon.getTableName('roles');
-		sql = "CREATE TABLE IF NOT EXISTS ";
-	
-		sql += tablename;
-		sql += ` ( RoleId int(11) NOT NULL,
-				  RoleValue int(11) NOT NULL,
-				  RoleName varchar(50) NOT NULL,
-				  PRIMARY KEY (RoleId)
-				)`;
-		
-		// execute query
-		var res = await mysqlcon.executeAsync(sql);
-		
-		// insert values
-		sql = "INSERT INTO " + tablename + "(`RoleId`, `RoleValue`, `RoleName`) VALUES ('1', '1', 'SuperAdmin')";
-		
-		// users_roles table
-		tablename = mysqlcon.getTableName('users_roles');
-		sql = "CREATE TABLE IF NOT EXISTS ";
-	
-		sql += tablename;
-		sql += ` ( UserId int(11) NOT NULL,
-					RoleId int(11) NOT NULL
-				)`;
-		
-		// execute query
-		var res = await mysqlcon.executeAsync(sql);
-		
-		
-		// keys table
-		tablename = mysqlcon.getTableName('keys');
-		sql = "CREATE TABLE IF NOT EXISTS ";
-	
-		sql += tablename;
-		sql += ` ( KeyId int(11) NOT NULL AUTO_INCREMENT,
-				  UserId int(11) DEFAULT NULL,
-				  KeyUUID varchar(36) NOT NULL,
-				  UserUUID varchar(36) DEFAULT NULL,
-				  Type int(11) NOT NULL,
-				  PrivateKey varchar(192) DEFAULT NULL,
-				  Address varchar(44) DEFAULT NULL,
-				  PublicKey varchar(132) DEFAULT NULL,
-				  RsaPublicKey varchar(132) DEFAULT NULL,
-				  Description varchar(256) DEFAULT NULL,
-				  PRIMARY KEY (KeyId)
-				)`;
-		
-		// execute query
-		var res = await mysqlcon.executeAsync(sql);
-		
-		
-		// close connection
-		await mysqlcon.closeAsync();
+		switch(install_step) {
+			case 'initial_setup': {
+				// we create tables
+				var tablename;
+				var sql;
+				
+				// open connection
+				await mysqlcon.openAsync();
+				
+				// users table
+				tablename = mysqlcon.getTableName('users');
+				sql = "CREATE TABLE IF NOT EXISTS ";
+			
+				sql += tablename;
+				sql += ` (   UserId int(11) NOT NULL AUTO_INCREMENT,
+							UserUUID varchar(36) NOT NULL,
+							UserEmail varchar(100) NOT NULL,
+							Password varchar(64) DEFAULT NULL,
+							Salt varchar(16) NOT NULL,
+							HashMethod int(11) NOT NULL DEFAULT '-1',
+							AltLoginMethod varchar(25) NOT NULL,
+							AccountStatus int(11) NOT NULL,
+							UserName varchar(50) NOT NULL,
+							RegistrationDate datetime NOT NULL,
+							LastModificationOn datetime NOT NULL,
+							DisabledOn datetime DEFAULT NULL,
+							DiscardedOn datetime DEFAULT NULL,
+							LastLoginOn datetime DEFAULT NULL,
+							LastSessionOn datetime DEFAULT NULL,
+							PRIMARY KEY (UserId),
+							UNIQUE KEY UserUUID (UserUUID),
+							KEY UserId (UserId)
+						)`;
+				
+				// execute query
+				var res = await mysqlcon.executeAsync(sql);
+				
+
+				// roles table
+				tablename = mysqlcon.getTableName('roles');
+				sql = "CREATE TABLE IF NOT EXISTS ";
+			
+				sql += tablename;
+				sql += ` ( RoleId int(11) NOT NULL,
+						RoleValue int(11) NOT NULL,
+						RoleName varchar(50) NOT NULL,
+						PRIMARY KEY (RoleId)
+						)`;
+				
+				// execute query
+				var res = await mysqlcon.executeAsync(sql);
+				
+				// insert values
+				sql = "INSERT INTO " + tablename + "(`RoleId`, `RoleValue`, `RoleName`) VALUES ('1', '1', 'SuperAdmin')";
+				
+				// users_roles table
+				tablename = mysqlcon.getTableName('users_roles');
+				sql = "CREATE TABLE IF NOT EXISTS ";
+			
+				sql += tablename;
+				sql += ` ( UserId int(11) NOT NULL,
+							RoleId int(11) NOT NULL
+						)`;
+				
+				// execute query
+				var res = await mysqlcon.executeAsync(sql);
+				
+				
+				// keys table
+				tablename = mysqlcon.getTableName('keys');
+				sql = "CREATE TABLE IF NOT EXISTS ";
+			
+				sql += tablename;
+				sql += ` ( KeyId int(11) NOT NULL AUTO_INCREMENT,
+						UserId int(11) DEFAULT NULL,
+						KeyUUID varchar(36) NOT NULL,
+						UserUUID varchar(36) DEFAULT NULL,
+						Type int(11) NOT NULL,
+						PrivateKey varchar(192) DEFAULT NULL,
+						Address varchar(44) DEFAULT NULL,
+						PublicKey varchar(132) DEFAULT NULL,
+						RsaPublicKey varchar(132) DEFAULT NULL,
+						Description varchar(256) DEFAULT NULL,
+						PRIMARY KEY (KeyId)
+						)`;
+				
+				// execute query
+				var res = await mysqlcon.executeAsync(sql);
+				
+				
+				// close connection
+				await mysqlcon.closeAsync();
+				
+
+			}
+			break;
+
+			default:
+				break;
+		}
 		
 
 		result.push({service: this.name, handled: true});

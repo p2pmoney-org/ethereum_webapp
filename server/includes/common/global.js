@@ -362,7 +362,7 @@ class Global {
 		return bSuccess;
 	}
 
-	async saveJsonAsync(jsonname, jsoncontent) {
+	async saveJsonAsync(jsonname, jsoncontent, bPretty) {
 		var bSuccess = false;
 		var fs = require('fs');
 		var path = require('path');
@@ -376,13 +376,17 @@ class Global {
 			
 			jsonPath = path.join(this.execution_dir, './settings', jsonFileName);
 		
-			var jsonstring = JSON.stringify(jsoncontent);
+			var jsonstring = (bPretty === true ? JSON.stringify(jsoncontent, null, 4) : JSON.stringify(jsoncontent));
 
 			await new Promise( (resolve, reject) => {
-				fs.writeFile(jsonPath, jsonstring, 'utf8', function() {
-					bSuccess = true;
+				fs.writeFile(jsonPath, jsonstring, 'utf8', (err) => {
+					if (err)
+					reject(err);
+					else {
+						bSuccess = true;
 				
-					resolve(true);
+						resolve(true);
+					}
 				});
 			});
 				
@@ -658,6 +662,10 @@ class Global {
 			return require(process.env.NODE_PATH + '/' + module);
 		else
 			return require(module);
+	}
+
+	flushMySqlConnectionPool() {
+		this.mysqlconnectionpool = [];
 	}
 	
 	async getMySqlConnectionAsync() {

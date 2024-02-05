@@ -50,31 +50,42 @@ class Service {
 
 		var session = params[0];
 		var mysqlcon = params[1];
-		
-		// we create tables
-		var tablename;
-		var sql;
-		
-		// open connection
-		await mysqlcon.openAsync();
-		
-		
-		// storage_users table
-		tablename = mysqlcon.getTableName('storage_users');
-		sql = "CREATE TABLE IF NOT EXISTS ";
-	
-		sql += tablename;
-		sql += ` ( UserUUID varchar(36) NOT NULL,
-				  \`Key\` varchar(256) NOT NULL,
-				  Content text
-				)`;
-		
-		// execute query
-		var res = await mysqlcon.executeAsync(sql);
-		
-		
-		// close connection
-		await mysqlcon.closeAsync();
+		var install_step = params[2];
+
+		switch(install_step) {
+			case 'initial_setup': {
+				// we create tables
+				var tablename;
+				var sql;
+				
+				// open connection
+				await mysqlcon.openAsync();
+				
+				
+				// storage_users table
+				tablename = mysqlcon.getTableName('storage_users');
+				sql = "CREATE TABLE IF NOT EXISTS ";
+			
+				sql += tablename;
+				sql += ` ( UserUUID varchar(36) NOT NULL,
+						\`Key\` varchar(256) NOT NULL,
+						Content text
+						)`;
+				
+				// execute query
+				var res = await mysqlcon.executeAsync(sql);
+				
+				
+				// close connection
+				await mysqlcon.closeAsync();
+
+			}
+			break;
+
+			default:
+				break;
+		}
+
 		
 
 		result.push({service: this.name, handled: true});

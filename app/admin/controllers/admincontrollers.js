@@ -172,8 +172,16 @@ class AdminControllers {
 			}
 			
 			switch(navigationdata.tab) {
-				case -1:
+				case -1: {
 					// setup
+					var result = [];
+					var params = [];
+
+					params.push(session);
+					params.push(data);
+
+					let ret = await global.invokeAsyncHooks('prepareInitialSetupForm_asynchook', result, params);
+				}
 					break;
 			
 				case 0:
@@ -427,7 +435,10 @@ class AdminControllers {
 	}
 
 	async handleInstall(req, session) {
-		var installinputs = {}
+		var installinputs = Object.assign({}, req.body);
+
+		// controlled inputs
+		installinputs.install_step = 'initial_setup';
 		
 		installinputs.rootpassword = (req.body ? req.body.rootpassword : null);
 
@@ -455,7 +466,7 @@ class AdminControllers {
 			
 			await adminserver.installWebappConfig(session, installinputs);
 			
-			await adminserver.installFinal();
+			await adminserver.installFinal(session, installinputs);
 			
 			// reload application
 			global.reload();

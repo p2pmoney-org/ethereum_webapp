@@ -39,49 +39,60 @@ class Service {
 
 		var session = params[0];
 		var mysqlcon = params[1];
-		
-		// open connection
-		await mysqlcon.openAsync();
-		
-		// we create tables
-		var tablename;
-		var sql;
-		
-		// globalparameters table
-		tablename = mysqlcon.getTableName('globalparameters');
-		sql = "CREATE TABLE IF NOT EXISTS ";
-	
-		sql += tablename;
-		sql += ` ( \`Key\` varchar(25) NOT NULL,
-				  Type int(11) NOT NULL,
-				  Value varchar(250) NOT NULL
-				)`;
-		
-		// execute query
-		var res = await mysqlcon.executeAsync(sql);
-		
-		// sessions tables
-		tablename = mysqlcon.getTableName('sessions');
-		sql = "CREATE TABLE IF NOT EXISTS ";
-	
-		sql += tablename;
-		sql += ` ( SessionId int(11) NOT NULL AUTO_INCREMENT,
-				  SessionUUID varchar(36) NOT NULL,
-				  UserId int(11) NOT NULL,
-				  CreatedOn datetime NOT NULL,
-				  LastPingOn datetime NOT NULL,
-				  IsAuthenticated int(11) NOT NULL,
-				  SessionVariables longblob COMMENT 'Serialized content of Session variables array',
-				  PRIMARY KEY (SessionId),
-				  UNIQUE KEY SessionUUID (SessionUUID)
-				)`;
-		
-		// execute query
-		var res = await mysqlcon.executeAsync(sql);
-		
-		
-		// close connection
-		await mysqlcon.closeAsync();
+		var install_step = params[2];
+
+		switch(install_step) {
+			case 'initial_setup': {
+				// open connection
+				await mysqlcon.openAsync();
+				
+				// we create tables
+				var tablename;
+				var sql;
+				
+				// globalparameters table
+				tablename = mysqlcon.getTableName('globalparameters');
+				sql = "CREATE TABLE IF NOT EXISTS ";
+			
+				sql += tablename;
+				sql += ` ( \`Key\` varchar(25) NOT NULL,
+						Type int(11) NOT NULL,
+						Value varchar(250) NOT NULL
+						)`;
+				
+				// execute query
+				var res = await mysqlcon.executeAsync(sql);
+				
+				// sessions tables
+				tablename = mysqlcon.getTableName('sessions');
+				sql = "CREATE TABLE IF NOT EXISTS ";
+			
+				sql += tablename;
+				sql += ` ( SessionId int(11) NOT NULL AUTO_INCREMENT,
+						SessionUUID varchar(36) NOT NULL,
+						UserId int(11) NOT NULL,
+						CreatedOn datetime NOT NULL,
+						LastPingOn datetime NOT NULL,
+						IsAuthenticated int(11) NOT NULL,
+						SessionVariables longblob COMMENT 'Serialized content of Session variables array',
+						PRIMARY KEY (SessionId),
+						UNIQUE KEY SessionUUID (SessionUUID)
+						)`;
+				
+				// execute query
+				var res = await mysqlcon.executeAsync(sql);
+				
+				
+				// close connection
+				await mysqlcon.closeAsync();
+
+			}
+			break;
+
+			default:
+				break;
+		}
+
 		
 
 		result.push({module: this.name, handled: true});

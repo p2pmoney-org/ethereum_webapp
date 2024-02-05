@@ -350,9 +350,13 @@ class AdminServer {
 		var result = [];
 		
 		var params = [];
-		
+
+		//
+		// session
 		params.push(session);
-		
+
+		//
+		// mysql connection
 		var org_mysqlcon = await global.getMySqlConnectionAsync();
 		var mysqlcon = org_mysqlcon.clone();
 
@@ -362,7 +366,7 @@ class AdminServer {
 		mysqlcon.setTablePrefix(inputs.mysql_table_prefix);
 		
 		params.push(mysqlcon);
-		
+
 		// keep connection in the session for subsequent install steps
 		session.pushObject('mysqlcon', mysqlcon);
 		
@@ -379,7 +383,18 @@ class AdminServer {
 		
 		// create globalparameters table
 		await this._createMysqlWebappTables(mysqlcon, webappdatabase);
+
+		//
+		// install step (e.g. 'initial_setup')
+		let install_step = (inputs.install_step ? inputs.install_step : 'initial_setup');
 		
+		params.push(install_step);
+
+		//
+		// all form inputs
+		params.push(inputs);
+		
+		//
 		// invoke hooks to let services add their tables
 		var ret = global.invokeHooks('installMysqlTables_hook', result, params); // legacy sync
 		ret = await global.invokeAsyncHooks('installMysqlTables_asynchook', result, params);
@@ -427,8 +442,24 @@ class AdminServer {
 		
 		var params = [];
 
+		//
+		// session
 		params.push(session);
+
+		//
+		// config to be saved
 		params.push(config);
+
+		//
+		// install step (e.g. 'initial_setup')
+		let install_step = (inputs.install_step ? inputs.install_step : 'initial_setup');
+		
+		params.push(install_step);
+
+		//
+		// all form inputs
+		params.push(inputs);
+
 
 		var ret = global.invokeHooks('installWebappConfig_hook', result, params); // legacy sync
 		ret = await global.invokeAsyncHooks('installWebappConfig_asynchook', result, params);
@@ -438,14 +469,26 @@ class AdminServer {
 		}
 		
 		// save json
-		global.saveJsonAsync('config', config);
+		await global.saveJsonAsync('config', config, true).catch(err=> {global.log(err);}); // true = pretty
 	}
 	
-	async installFinal() {
+	async installFinal(session, installinputs) {
 		var global = this.global;
-		
+
+		// set mysql config in global
+		global.mysql_host="127.0.0.1";
+		global.mysql_port=3306;
+		global.mysql_database=installinputs.mysql_database;
+		global.mysql_username=installinputs.mysql_username;
+		global.mysql_password=installinputs.mysql_password;
+		global.mysql_table_prefix=installinputs.mysql_table_prefix;
+
+		// flush connection pool to avoid re-using root with no password connection
+		global.flushMySqlConnectionPool();
+
+		// save installation event
 		var currentversion = global.getCurrentVersion();
-		var now = new Date()
+		var now = new Date();
 		
 		var nowstring = global.formatDate(now, 'YYYY-mm-dd HH:MM:SS');
 		
