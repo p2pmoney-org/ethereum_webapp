@@ -131,7 +131,17 @@ class AdminControllers {
 			global.log('session NOT logged under root');
 
 			sessiondata.islogged = false;
-			navigationdata.tab = 2;
+
+			let tabparam = req.query.tab;
+
+			switch(tabparam) {
+				case 'restarting':
+					navigationdata.tab = -2;
+					break;
+				default:
+					navigationdata.tab = 0;
+					break;
+			}
 		}
 		else {
 			global.log('session is logged under root');
@@ -140,11 +150,15 @@ class AdminControllers {
 			sessiondata.islogged = true;
 			
 			// read request parameter
-			var tabparam = req.query.tab;
+			let tabparam = req.query.tab;
 
 			// tab requested
 			if (serverdata.setupdone) {
 				switch(tabparam) {
+					case 'restarting':
+						navigationdata.tab = -2;
+						break;
+						
 					case 'login':
 						navigationdata.tab = 0;
 						break;
@@ -168,10 +182,19 @@ class AdminControllers {
 			
 			}
 			else {
-				navigationdata.tab = -1; // setup
+				if (req.tab === 'restarting')
+				navigationdata.tab = -2; // restarting
+				else
+				navigationdata.tab = -1; // initial setup
 			}
 			
 			switch(navigationdata.tab) {
+				case -2: {
+					// restarting
+					await this.prepareRestartingView(req, session, data);
+				}
+				break;
+
 				case -1: {
 					// setup
 					var result = [];
@@ -243,6 +266,8 @@ class AdminControllers {
 		switch(action) {
 			case 'install':
 				await this.handleInstall(req, session);
+				req.query.tab = 'restarting';
+				req.tab = 'restarting';
 				break;
 			case 'login':
 				await this.handleLogin(req, session);
@@ -263,6 +288,14 @@ class AdminControllers {
 	}
 	
 	// views
+	async prepareRestartingView(req, session, data) {
+		var restarting = {};
+
+		restarting.time = Date.now();
+
+		data['restarting'] = restarting;
+	}
+
 	async prepareContainerStatusView(req, session, data) {
 		var global = this.global;
 		var adminserver = this.adminserver ;
@@ -468,8 +501,11 @@ class AdminControllers {
 			
 			await adminserver.installFinal(session, installinputs);
 			
-			// reload application
-			global.reload();
+			// reload application in 1s
+			global.sleep(1000).
+			then(() => {
+				global.reload();
+			});
 		}
 	}
 	

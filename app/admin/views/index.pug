@@ -20,6 +20,9 @@ block content
 			include ./partials/tab-bar.pug
 			
 			case navigation.tab
+				when -2  
+					h2 Restarting
+					include ./partials/restarting.pug
 				when 0  
 					h2 Login/logout
 					include ./partials/login.pug
@@ -38,9 +41,19 @@ block content
 		else
 			+Header
 		
-			h2 Login
-			include ./partials/login.pug
+			case navigation.tab
+				when -2  
+					h2 Restarting
+					include ./partials/restarting.pug
+				default
+					h2 Login
+					include ./partials/login.pug
 	else
-		h2 Setup
-		include ./partials/install.pug
+		case navigation.tab
+			when -2  
+				h2 Restarting
+				include ./partials/restarting.pug
+			default
+				h2 Setup
+				include ./partials/install.pug
 	

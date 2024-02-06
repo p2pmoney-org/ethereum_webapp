@@ -243,6 +243,10 @@ class Global {
 		// dirty exit to restart process
 		this.exit();
 	}
+
+	async sleep(ms) {
+		return new Promise(resolve => setTimeout(resolve, ms));
+	}
 	
 	getExecutionGlobalScope() {
 		return this.globalscope;
