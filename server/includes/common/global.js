@@ -677,21 +677,52 @@ class Global {
 			this.mysqlconnectionpool = [];
 		}
 		
+		var sqlcon;
+
 		if (this.mysqlconnectionpool.length) {
-			// could do round robin
-			return this.mysqlconnectionpool[0];
+			// just maintain a pool of one
+			// could do round robin on several connections
+			sqlcon = this.mysqlconnectionpool[this.mysqlconnectionpool.length - 1];
+
+			let isActive = sqlcon.connectionactive; // no async op here to prevent race condition
+
+			if (isActive) 
+			return sqlcon;
+			else {
+				let isconnecting = sqlcon.isconnecting;
+				
+				if (isconnecting) {
+					// wait for end of connection
+					isActive = await sqlcon.isActiveAsync();
+
+					if (isActive)
+					return sqlcon;
+					else {
+						this.log('mysqlconnectionasyncpool element failed to open connection');
+						sqlcon = null;
+					}
+				}
+				else {
+					// connection is dead
+					this.log('flushing mysqlconnectionasyncpool of length: ' + this.mysqlconnectionpool.length);
+					this.flushMySqlConnectionPool();
+	
+					await sqlcon.closeAsync();
+					sqlcon = null;
+				}
+			}
 		}
 		
 		var MySqlConnection = require('./model/mysqlcon.js')
 		
-		var sqlcon = new MySqlConnection(this, this.mysql_host, this.mysql_port, this.mysql_database, this.mysql_username, this.mysql_password);
+		sqlcon = new MySqlConnection(this, this.mysql_host, this.mysql_port, this.mysql_database, this.mysql_username, this.mysql_password);
 		
 		if (this.mysql_table_prefix)
 			sqlcon.setTablePrefix(this.mysql_table_prefix);
 		
 		this.mysqlconnectionpool.push(sqlcon);
 		
-		this.log('growing mysqlconnectionpool to ' + this.mysqlconnectionpool.length);
+		this.log('growing mysqlconnectionasyncpool to ' + this.mysqlconnectionpool.length);
 		
 		// increment to never end connection
 		await sqlcon.openAsync();
@@ -704,9 +735,23 @@ class Global {
 			this.mysqlconnectionpool = [];
 		}
 		
+		var sqlcon;
+
 		if (this.mysqlconnectionpool.length) {
-			// could do round robin
-			return this.mysqlconnectionpool[0];
+			// just maintain a pool of one
+			// could do round robin on several connections
+			sqlcon = this.mysqlconnectionpool[0];
+
+			let isActive = sqlcon.isActive();
+
+			if (isActive) 
+			return sqlcon;
+			else {
+				this.log('flushing mysqlconnectionpool of length: ' + this.mysqlconnectionpool.length);
+				sqlcon.close();
+				sqlcon = null;
+				this.flushMySqlConnectionPool();
+			}
 		}
 		
 		var MySqlConnection = require('./model/mysqlcon.js')

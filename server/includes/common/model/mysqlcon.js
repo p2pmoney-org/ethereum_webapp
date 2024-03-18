@@ -20,6 +20,7 @@ class MySqlConnection {
 		this.connection = null;
 		this.opencount = 0;
 		this.connectionactive = false;
+		this.isconnecting = false;
 	}
 	
 	clone() {
@@ -56,62 +57,71 @@ class MySqlConnection {
 		try {
 			var mysql = require('mysql');
 			
-			var self = this;
-			
 			var host = this.host;
 			var port = this.port;
 			var database = this.database;
 			var user = this.username;
 			var password = this.password;
 
-			this.connection = mysql.createConnection({
-				host: host,
-				port: port,
-				database: database,
-				user: user,
-				password: password
-			});
-
-			// catch errors
-			this.connection.on('error', (err) => {
-				global.log("error on connection to mysql database: " + err);
-				try {
-					global.log("error on connection opencount was: " + this.opencount);
-					if (this.connection) {
-						console.log('ending connection on error');
-						this.connection.end();
-						this.connection = null;
-						this.connectionactive = false;
-					}
-					else {
-						console.log('this.connection was null!');
-						this.connectionactive = false;
-					}	
-				}
-				catch(e) {
-					global.log("exception in onConnectionError: " + e);
-				}
-			});
-			
-			// connects
-			await new Promise((resolve, reject) => {
-				this.connection.connect(function(err) {
-					if (err) {
-						global.log("error connecting to mysql database: " + err);
-						
-						self.connectionactive = false;
-						reject(err);
-					}
-					else {
-						global.log("successfully connected to mysql database: " + database);
-	
-						self.connectionactive = true;
-						resolve(true);
-					}
-				
+			if (this.connection) {
+				global.log("warning: race condition when connecting to mysql database");
+			}
+			else {
+				this.connection = mysql.createConnection({
+					host: host,
+					port: port,
+					database: database,
+					user: user,
+					password: password
 				});
-			});
 
+				// catch errors
+				this.connection.on('error', (err) => {
+					global.log("error on connection to mysql database: " + err);
+					try {
+						global.log("error on connection opencount was: " + this.opencount);
+						if (this.connection) {
+							console.log('ending connection on error');
+							this.connection.end();
+							this.connection = null;
+							this.connectionactive = false;
+						}
+						else {
+							console.log('this.connection was null!');
+							this.connectionactive = false;
+						}	
+					}
+					catch(e) {
+						global.log("exception in onConnectionError: " + e);
+					}
+				});
+			}
+
+
+			// connects
+			if (!this.connection._connection_promise) {
+				this.isconnecting = true;
+
+				this.connection._connection_promise = new Promise((resolve, reject) => {
+					this.connection.connect((err) => {
+						if (err) {
+							global.log("error connecting to mysql database: " + err);
+							
+							this.connectionactive = false;
+							this.isconnecting = false;
+							reject(err);
+						}
+						else {
+							global.log("successfully connected to mysql database: " + database);
+		
+							this.connectionactive = true;
+							this.isconnecting = false;
+							resolve(true);
+						}
+					
+					});
+				});
+			}
 			
 		}
 		catch(e) {
@@ -120,12 +130,14 @@ class MySqlConnection {
 			global.log("exception connecting to mysql database; " + e);
 		}
 
+		return this.connection._connection_promise;
 	}
 	
 	_connect() {
 		var global = this.global;
 		
 		global.log("connecting to mysql database");
+		global.log("OBSOLETE: use _connectAsync!!!");
 		
 		var finished = false;
 
@@ -266,21 +278,6 @@ class MySqlConnection {
 	
 	execute(queryString) {
 		
-/*  		var global = this.global;
-
-		var finished = false;
-
-		var result = {};
-
-		this.executeAsync(queryString)
-		.then( (res) => {
-			result = res;
-			finished = true;
-		})
-		.catch(err => {
-			finished = true;
-		}); */
- 
  		if (!this.connection)
 			this._connect();
 		
@@ -358,9 +355,6 @@ class MySqlConnection {
 		if (!this.connection)
 			this._connect();
 		
-		/*if (!this.connectionactive)
-			return val;*/
-		
 		return this.connection.escape(val);
 	}
 	
@@ -375,9 +369,6 @@ class MySqlConnection {
 	escapeId(id) {
 		if (!this.connection)
 			this._connect();
-		
-		/*if (!this.connectionactive)
-			return id;*/
 		
 		return this.connection.escapeId(id);
 	}
