@@ -23,7 +23,7 @@ if (process.env.ETHEREUM_WEBAPP_EXEC_DIR) {
 //instantiating global object
 var global = Global.getGlobalInstance();
 
-global.current_version = "0.40.29.2024.03.18";
+global.current_version = "0.40.30.2024.07.19";
 global.version_support = ["0.40", "0.30", "0.20"];
 
 
@@ -35,7 +35,7 @@ global.setExecutionEnvironment('dev');*/
 
 if (global.execution_env) {
 	// DEBUG
-	Error.stackTraceLimit = Infinity;
+	//Error.stackTraceLimit = Infinity;
 	// DEBUG
 }
 
@@ -74,7 +74,7 @@ try {
 
 	Service = require('./includes/crypto/service.js');
 	global.registerServiceInstance(new Service());
-	
+
 	// optional services
 	if (global.config['activate_ethnode'] != 0) {
 		Service = require('./includes/ethnode/service.js');
@@ -174,13 +174,15 @@ try {
 	let bStartNoWebApp = global.getConfigValue('start_no_webapp');
 
 	if (bStartNoWebApp !== true) {
-		var app = global.getServiceInstance('ethereum_webapp').startWebApp();
+		let app = global.getServiceInstance('ethereum_webapp').startWebApp();
 	
 		// express middleware
 		let bStartNoMiddleware = global.getConfigValue('start_no_middleware');
 	
 		if (bStartNoMiddleware !== true)
 		global.getServiceInstance('ethereum_webapp').startMiddleware();
+		else 
+		global.invokeHooks('start_middleware_hook', [], [app]);
 		
 		//admin ui
 		// (should be after middleware because of bodyParser)
@@ -188,7 +190,12 @@ try {
 	
 		if (bStartNoAdminUI !== true)
 		global.getServiceInstance('admin').startAdminUI(app);
+		else
+		global.invokeHooks('start_admin_ui_hook', [], [app]);
 	
+	}
+	else {
+		global.invokeHooks('start_webapp_hook', [], []);
 	}
 }
 catch(e) {

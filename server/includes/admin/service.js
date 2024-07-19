@@ -21,7 +21,7 @@ class Service {
 	startAdminUI(app) {
 		var global = this.global;
 		
-		global.log('startAdminUI called');
+		global.log('startAdminUI called for ' + this.name);
 
 		var express = require('express');
 		var path = require('path');

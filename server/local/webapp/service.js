@@ -322,6 +322,8 @@ class Service {
 		var global = this.global;
 		var self = this;
 		webapp = this;
+
+		global.log('startWebApp called for ' + this.name);
 		
 		var express = require('express');
 		var path = require('path');
@@ -397,6 +399,8 @@ class Service {
 	startMiddleware() {
 		var global = this.global;
 		var app = this.app;
+		
+		global.log('startMiddleware called for ' + this.name);
 		
 		//
 		// Middleware

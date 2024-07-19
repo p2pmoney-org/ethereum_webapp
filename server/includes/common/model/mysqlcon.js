@@ -109,7 +109,7 @@ class MySqlConnection {
 							
 							this.connectionactive = false;
 							this.isconnecting = false;
-							reject(err);
+							resolve(false);
 						}
 						else {
 							global.log("successfully connected to mysql database: " + database);
