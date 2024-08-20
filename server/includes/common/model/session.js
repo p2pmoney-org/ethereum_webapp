@@ -227,10 +227,22 @@ var SessionSection = class {
 
 	// transient variable (that do not outlive session object,
 	// sticky or not)
+	async pushObjectAsync(key, object) {
+		var session = await this.getSessionAsync();
+
+		return session.pushObject(key, object);
+	}
+	
 	pushObject(key, object) {
 		var session = this.getSession();
 
 		return session.pushObject(key, object);
+	}
+	
+	async getObjectAsync(key) {
+		var session = await this.getSessionAsync();
+
+		return session.getObject(key);
 	}
 	
 	getObject(key) {
@@ -239,6 +251,12 @@ var SessionSection = class {
 		return session.getObject(key);
 	}
 	
+	async removeObjectAsync(key) {
+		var session = await this.getSessionAsync();
+
+		return session.removeObject(key);
+	}
+
 	removeObject(key) {
 		var session = this.getSession();
 
@@ -249,9 +267,15 @@ var SessionSection = class {
 	// session variables (saved in database
 	// session table)
 	async setSessionVariableAsync(key, value) {
-		var session = this.getSession();
+		var session = await this.getSessionAsync();
 		
 		return session.setSessionVariableAsync(key, value);
+	}
+	
+	async getSessionVariableAsync(key) {
+		var session = await this.getSessionAsync();
+
+		return session.getSessionVariable(key);
 	}
 	
 	getSessionVariable(key) {
@@ -269,11 +293,23 @@ var SessionSection = class {
 	}
 
 	// clone current section for same session
+	async cloneAsync(name) {
+		var session = await this.getSessionAsync();
+		var section = session.openSection(name);
+		
+		return section;
+	}
+	
 	clone(name) {
 		var session = this.getSession();
 		var section = session.openSection(name);
 		
 		return section;
+	}
+	
+	async guidAsync() {
+		var session = await this.getSessionAsync();
+		return session.guidAsync();
 	}
 	
 	guid() {
@@ -282,6 +318,11 @@ var SessionSection = class {
 	}
 	
 	// persistence
+	async isStickyAsync() {
+		var session = await this.getSessionAsync();
+		return session.isSticky();
+	}
+	
 	isSticky() {
 		var session = this.getSession();
 		return session.isSticky();
@@ -622,6 +663,10 @@ class Session {
 	
 	getSessionUUID() {
 		return this.session_uuid;
+	}
+	
+	async guidAsync() {
+		return this.global.guidAsync();
 	}
 	
 	guid() {

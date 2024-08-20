@@ -1013,6 +1013,12 @@ class Global {
 		return new Tracker(this, name, uuid);
 	}
 	
+	async guidAsync() {
+		// could be used to look at a incremented seed
+		return this.generateUUID(8) + '-' + this.generateUUID(4) + '-' + this.generateUUID(4) + '-' +
+		this.generateUUID(4) + '-' + this.generateUUID(12);
+	}
+	
 	guid() {
 		  return this.generateUUID(8) + '-' + this.generateUUID(4) + '-' + this.generateUUID(4) + '-' +
 		  this.generateUUID(4) + '-' + this.generateUUID(12);
