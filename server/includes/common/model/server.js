@@ -36,7 +36,7 @@ class Server {
 		var parameters = this.persistor.getGlobalParameters(key);
 		
 		if (parameters.length) {
-			this.persistor.updateGlobalParameter(key, type, value);
+			this.persistor.updateGlobalParameters(key, type, value);
 		}
 		else {
 			this.persistor.putGlobalParameter(key, type, value);
@@ -51,7 +51,7 @@ class Server {
 		var parameters = await this.persistor.getGlobalParametersAsync(key);
 		
 		if (parameters.length) {
-			await this.persistor.updateGlobalParameterAsync(key, type, value);
+			await this.persistor.updateGlobalParametersAsync(key, type, value);
 		}
 		else {
 			await this.persistor.putGlobalParameterAsync(key, type, value);

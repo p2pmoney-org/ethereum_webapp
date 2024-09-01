@@ -18,7 +18,7 @@ class Service {
 
 		this.apikeys = [];
 
-		this.cors_tokens = ["sessiontoken", "accesstoken", "apikey", "calltoken"];
+		this.cors_tokens = ["sessiontoken", "accesstoken", "apikey", "calltoken", "User-Agent"];
 	}
 	
 	loadService() {
