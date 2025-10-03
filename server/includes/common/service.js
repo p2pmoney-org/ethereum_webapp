@@ -40,9 +40,24 @@ class Service {
 		var session = params[0];
 		var mysqlcon = params[1];
 		var install_step = params[2];
+		var install_inputs = params[3];
+
+		if (install_inputs && install_inputs[this.name] && install_inputs[this.name].install_step) {
+			// run specific
+			install_step = install_inputs[this.name].install_step;
+		}
+
+		// timestamp of update
+		let now = new Date();
+		
+		let nowstring = global.formatDate(now, 'YYYY-mm-dd HH:MM:SS');
+		
+		let commonservice = global.getServiceInstance('common');
 
 		switch(install_step) {
 			case 'initial_setup': {
+				let update_step = 'initial_setup';
+
 				// open connection
 				await mysqlcon.openAsync();
 				
@@ -86,11 +101,20 @@ class Service {
 				// close connection
 				await mysqlcon.closeAsync();
 
+				await commonservice.addGlobalParameterAsync('VersionUpdate_' + this.name, update_step + ';' + nowstring);
+			}
+
+			default: {
+				//
+				// Version and timestamp of install execution
+				//
+
+				let currentversion = global.getCurrentVersion();
+
+				await commonservice.saveGlobalParameterAsync('CurrentVersion', currentversion);
+				await commonservice.addGlobalParameterAsync('CurrentVersion_' + this.name, currentversion);
 			}
 			break;
-
-			default:
-				break;
 		}
 
 		
@@ -126,6 +150,12 @@ class Service {
 	}
 	
 	// persistence
+	async getGlobalAllParametersAsync() {
+		var server = this.getServerInstance();
+		
+		return server.getGlobalAllParametersAsync();
+	}
+
 	getGlobalParameters(key) {
 		var server = this.getServerInstance();
 		

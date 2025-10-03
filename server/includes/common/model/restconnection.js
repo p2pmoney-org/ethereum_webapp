@@ -97,7 +97,7 @@ class RestConnection  {
 		var xhttp = new _XMLHttpRequest();
 		
 		var rest_call_url = this.getRestCallUrl();
-		var resource_url = rest_call_url + resource;
+		var resource_url = rest_call_url + (resource ? resource : '');
 		
 		// allow Set-Cookie for CORS calls
 		//xhttp.withCredentials = true;

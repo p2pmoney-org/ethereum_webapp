@@ -28,8 +28,12 @@ var SessionSection = class {
 
 		this.session = null;
 
+		this.no_reentrancy = false;
+
 		this.isanonymous = null;
 		this.isauthenticated = null;
+
+		this.section_variables = {};
 		
 		this.record('section_opened_on');
 		
@@ -53,6 +57,14 @@ var SessionSection = class {
 	getSessionUUID() {
 		return this.session_uuid;
 	}
+
+	getCallToken() {
+		return this.calltoken;
+	}
+
+	setNoReentrancy(choice) {
+		this.no_reentrancy = choice;
+	}
 	
 	// async version
 	async getSessionAsync() {
@@ -61,10 +73,23 @@ var SessionSection = class {
 		
 		var global = this.global;
 
-		var requested_on = Date.now();
+		let requested_on = Date.now();
 		this.record('session_requested_on');
+
+		let mainsession;
+
+		if (this.no_reentrancy === true) {
+			// we get mainsession directly from the SessionMap
+			// to avoid a deadly loop when using Session.getSessionAsync
+			let sessionmap = Session.getSessionMap(this.global);
+
+			let key = this.session_uuid.toString();
+			mainsession = sessionmap.map[key];
+		}
+		else {
+			mainsession = await Session.getSessionAsync(this.global, this.session_uuid, this);
+		}
 		
-		var mainsession = await Session.getSessionAsync(this.global, this.session_uuid);
 
 		if (this.authkey_server_passthrough === true) {
 			// we allow other authentication servers than the default one
@@ -96,13 +121,47 @@ var SessionSection = class {
 		}
 		
 		
-		var retrieved_on = Date.now();
+		let retrieved_on = Date.now();
 		this.record('session_retrieved_on');
 		
 		global.log('retrieving session ' + (this.name ? 'for "' + this.name + '" ' : '') + 'took ' + (retrieved_on - requested_on) + ' ms');
 		
 		return this.session;
 	}
+
+	async getRootSessionAsync() {
+		if (this.section_variables.root_session)
+			return this.section_variables.root_session;
+			
+
+		// we get mainsession directly from the SessionMap
+		// to avoid a deadly loop when using Session.getSessionAsync
+		var sessionmap = Session.getSessionMap(this.global);
+
+		var key = this.session_uuid.toString();
+		var mainsession = sessionmap.map[key];
+	
+		if (mainsession.getParentSession()) {
+			return Promise.reject("session section has a session uuid that is not a root session!");
+		}
+
+		this.section_variables.root_session = mainsession;
+
+		return this.section_variables.root_session;
+	}
+
+	async getRestConnectionAsync(rest_server_url, rest_server_api_path) {
+		let mainsession = await this.getRootSessionAsync();
+		
+		return mainsession.getRestConnection(rest_server_url, rest_server_api_path);
+	}
+
+	async getAuthKeyRestConnectionAsync(rest_server_url, rest_server_api_path) {
+		let mainsession = await this.getRootSessionAsync();
+
+		return mainsession.getAuthKeyRestConnectionAsync(rest_server_url, rest_server_api_path, this.calltoken);
+	}
+
 
 	// sync version
 	getSession() {
@@ -193,7 +252,7 @@ var SessionSection = class {
 			return this.isanonymous;
 		else {
 			var session = await this.getSessionAsync();
-			this.isanonymous = await session.isAnonymousAsync();
+			this.isanonymous = await session.isAnonymousAsync(this);
 
 			return this.isanonymous;
 		}
@@ -219,7 +278,7 @@ var SessionSection = class {
 			return this.isauthenticated;
 		else {
 			var session = await this.getSessionAsync();
-			this.isauthenticated = await session.isAuthenticatedAsync();
+			this.isauthenticated = await session.isAuthenticatedAsync(this);
 
 			return this.isauthenticated;
 		}
@@ -462,7 +521,7 @@ class SessionMap {
 		return false;
 	}
 
-	async getSessionAsync(uuid) {
+	async getSessionAsync(uuid, session_section) {
 		var key = uuid.toString().toLowerCase();
 		
 		if (key in this.map) {
@@ -471,7 +530,7 @@ class SessionMap {
 			session.ping();
 			
 			// time to check on the database
-			let isAuthenticated = await session.isAuthenticatedAsync();
+			let isAuthenticated = await session.isAuthenticatedAsync(session_section);
 			if (isAuthenticated) {
 				if (!session.checkAuthenticationStatus())
 					await session.logoutAsync();
@@ -762,6 +821,31 @@ class Session {
 			return parentsession;
 		}
 	}
+
+	isRootSession() {
+		var parentsession = this.getParentSession();
+
+		return (parentsession ? false : true);
+	}
+
+	isChildSession() {
+		var parentsession = this.getParentSession();
+		
+		return (parentsession ? true : false);
+	}
+
+	getRootSession() {
+		var parentsession = this.getParentSession();
+		var rootsession = this;
+
+		while (parentsession) {
+			rootsession = parentsession;
+			parentsession = rootsession.getParentSession();
+		}
+
+		return rootsession;
+	}
+	
 	
 	attachAsChild(parentsession) {
 		var session = this;
@@ -1201,7 +1285,7 @@ class Session {
 		return isA;
 	}
 	
-	async isAnonymousAsync() {
+	async isAnonymousAsync(session_section) {
 		var global = this.global;
 		
 		// invoke hooks to let services interact with the session object
@@ -1212,6 +1296,7 @@ class Session {
 		var params = [];
 		
 		params.push(this);
+		params.push(session_section);
 
 		var ret = global.invokeHooks('isSessionAnonymous_hook', result, params); // legacy
 		ret = await global.invokeAsyncHooks('isSessionAnonymous_asynchook', result, params); 
@@ -1256,10 +1341,10 @@ class Session {
 		return isA;
 	}
 	
-	async isAuthenticatedAsync() {
+	async isAuthenticatedAsync(session_section) {
 		var global = this.global;
 		
-		var isAnonymous = await this.isAnonymousAsync();
+		var isAnonymous = await this.isAnonymousAsync(session_section);
 		if (isAnonymous)
 			return false;
 		
@@ -1272,6 +1357,7 @@ class Session {
 		var params = [];
 		
 		params.push(this);
+		params.push(session_section);
 
 		var ret = global.invokeHooks('isSessionAuthenticated_hook', result, params); // legacy
 		ret = await global.invokeAsyncHooks('isSessionAuthenticated_asynchook', result, params); 
@@ -1407,6 +1493,17 @@ class Session {
 		var RestConnection = require('./restconnection.js');
 		
 		return new RestConnection(this, rest_server_url, rest_server_api_path);
+	}
+
+	async getAuthKeyRestConnectionAsync(rest_server_url, rest_server_api_path, calltoken) {
+		// used to get sessiontoken and calltoken set to specific authorization server
+		let RestConnection = require('./restconnection.js');
+		let restconnection = new RestConnection(this, rest_server_url, rest_server_api_path);
+
+		if (calltoken)
+		restconnection.addToHeader({key: 'calltoken', value: JSON.stringify(calltoken)});
+
+		return restconnection;
 	}
 	
 	// privileges
@@ -1707,7 +1804,7 @@ class Session {
 	}
 	
 
-	static async _initStickySessionObject(global, session) {
+	static async _initStickySessionObject(global, session, session_section) {
 		try {
 			let sessionuuid = session.session_uuid;
 			global.log('starting initialization of sticky session object for ' + sessionuuid);
@@ -1729,6 +1826,7 @@ class Session {
 			let params = [];
 			
 			params.push(session);
+			params.push(session_section);
 
 			let ret = global.invokeHooks('createSession_hook', result, params); // legacy synchroneous hooks
 			ret = await global.invokeAsyncHooks('createSession_asynchook', result, params); // recommended async implementation
@@ -1751,7 +1849,7 @@ class Session {
 		}
 	}
 
-	static async _initTransientSessionObject(global, session, calluuid) {
+	static async _initTransientSessionObject(global, session, calluuid, session_section) {
 		try {
 			let sessionuuid = session.session_uuid;
 			global.log('starting initialization of non sticky session object for ' + sessionuuid + ' call ' + calluuid);
@@ -1773,6 +1871,7 @@ class Session {
 			let params = [];
 			
 			params.push(session);
+			params.push(session_section);
 
 			let ret = global.invokeHooks('createSession_hook', result, params); // legacy synchroneous hooks
 			ret = await global.invokeAsyncHooks('createSession_asynchook', result, params); // recommended async implementation
@@ -1804,7 +1903,7 @@ class Session {
 		return sessionmap.knowsSession(sessionuuid);
 	}
 
-	static async getSessionAsync(global, sessionuuid) {
+	static async getSessionAsync(global, sessionuuid, session_section) {
 		var session;
 		
 		if (!sessionuuid) {
@@ -1817,7 +1916,7 @@ class Session {
 			var sessionmap = Session.getSessionMap(global);
 			
 			var key = sessionuuid.toString();
-			var mapvalue = await sessionmap.getSessionAsync(key);
+			var mapvalue = await sessionmap.getSessionAsync(key, session_section);
 			
 			var account;
 			
@@ -1856,7 +1955,7 @@ class Session {
 				initializationpromise = sessionlatch.getInitializationPromise();
 
 				if (!initializationpromise) {
-					initializationpromise = Session._initStickySessionObject(global, session)
+					initializationpromise = Session._initStickySessionObject(global, session, session_section)
 					.then(function (res) {
 						global.log('session ' + sessionuuid + ' resolved the initialization promise');
 	
@@ -1904,7 +2003,7 @@ class Session {
 			let initializationfinished = false;
 			
 			global.log('creating session initialization promise for non sticky session ' + sessionuuid + ' call ' + calluuid);
-			let initializationpromise = Session._initTransientSessionObject(global, session, calluuid)
+			let initializationpromise = Session._initTransientSessionObject(global, session, calluuid, session_section)
 			.then( (res) => {
 				global.log('session ' + sessionuuid + ' is now ready!');
 

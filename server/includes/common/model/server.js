@@ -20,6 +20,10 @@ class Server {
 		return this.persistor;
 	}
 	
+	async getGlobalAllParametersAsync() {
+		return this.persistor.getGlobalAllParametersAsync();
+	}
+	
 	getGlobalParameters(key) {
 		return this.persistor.getGlobalParameters(key);
 	}
@@ -65,6 +69,9 @@ class Server {
 		// turn to string
 		var valuestring = value.toString();
 		var type = 0;
+
+		if (key.length > 25)
+		key = key.substring(0, 25); // cut key name to fit in `Key` varchar(25) NOT NULL,
 		
 		this.persistor.putGlobalParameter(key, type, value);
 	}
@@ -76,6 +83,10 @@ class Server {
 		// turn to string
 		var valuestring = value.toString();
 		var type = 0;
+
+		if (key.length > 25)
+		key = key.substring(0, 25); // cut key name to fit in `Key` varchar(25) NOT NULL,
+		
 		
 		await this.persistor.putGlobalParameterAsync(key, type, value);
 	}

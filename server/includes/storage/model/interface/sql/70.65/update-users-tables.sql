@@ -1,0 +1,1 @@
+ALTER TABLE `webapp_storage_users` MODIFY `UserUUID` VARCHAR(128) ;

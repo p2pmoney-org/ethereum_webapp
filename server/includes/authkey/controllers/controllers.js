@@ -73,8 +73,8 @@ class AuthKeyControllers {
 			var session = await section.getSessionAsync();
 
 			if (session) {
-				var isanonymous = await session.isAnonymousAsync();
-				var isauthenticated = await session.isAuthenticatedAsync();
+				var isanonymous = await session.isAnonymousAsync(section);
+				var isauthenticated = await session.isAuthenticatedAsync(section);
 				
 				// return user details
 				jsonresult = {status: 1, sessionuuid: sessionuuid, isanonymous: isanonymous, isauthenticated: isauthenticated};
@@ -213,7 +213,7 @@ class AuthKeyControllers {
 
 				var section = Session.openSessionSection(global, sessionuuid, 'session_getUser', calltokenjson);
 				var session = await section.getSessionAsync();
-				var isAnonymous = await session.isAnonymousAsync();
+				var isAnonymous = await session.isAnonymousAsync(section);
 				
 				if (!isAnonymous) {
 					var user = session.getUser();
@@ -267,7 +267,7 @@ class AuthKeyControllers {
 
 				var section = Session.openSessionSection(global, sessionuuid, 'session_updateUser', calltokenjson);
 				var session = await section.getSessionAsync();
-				var isAuthenticated = await session.isAuthenticatedAsync();
+				var isAuthenticated = await session.isAuthenticatedAsync(section);
 				
 				if (isAuthenticated) {
 						var user = session.getUser();
@@ -322,7 +322,7 @@ class AuthKeyControllers {
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'session_getCryptoKeys', calltokenjson);
 			var session = await section.getSessionAsync();
-			var isAuthenticated = await session.isAuthenticatedAsync();
+			var isAuthenticated = await session.isAuthenticatedAsync(section);
 				
 			if (isAuthenticated) {
 			// get user details
@@ -413,7 +413,7 @@ class AuthKeyControllers {
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'user_addKey', calltokenjson);
 			var session = await section.getSessionAsync();
-			var isAuthenticated = await session.isAuthenticatedAsync();
+			var isAuthenticated = await session.isAuthenticatedAsync(section);
 				
 			if (isAuthenticated) {
 				var user = await authenticationserver.getUserFromUUIDAsync(session, useruuid);
@@ -477,7 +477,7 @@ class AuthKeyControllers {
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'session_getAccountKeys', calltokenjson);
 			var session = await section.getSessionAsync();
-			var isAuthenticated = await session.isAuthenticatedAsync();
+			var isAuthenticated = await session.isAuthenticatedAsync(section);
 			
 			if (isAuthenticated) {
 				// get user details
@@ -548,7 +548,7 @@ class AuthKeyControllers {
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'user_addAccount', calltokenjson);
 			var session = await section.getSessionAsync();
-			var isAuthenticated = await session.isAuthenticatedAsync();
+			var isAuthenticated = await session.isAuthenticatedAsync(section);
 			
 			if (isAuthenticated) {
 				var user = await authenticationserver.getUserFromUUIDAsync(session, useruuid);
@@ -618,7 +618,7 @@ class AuthKeyControllers {
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'user_updateAccount', calltokenjson);
 			var session = await section.getSessionAsync();
-			var isAuthenticated = await session.isAuthenticatedAsync();
+			var isAuthenticated = await session.isAuthenticatedAsync(section);
 			
 			if (isAuthenticated) {
 				var user = await authenticationserver.getUserFromUUIDAsync(session, useruuid);
@@ -680,7 +680,7 @@ class AuthKeyControllers {
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'user_reactivateAccount', calltokenjson);
 			var session = await section.getSessionAsync();
-			var isAuthenticated = await session.isAuthenticatedAsync();
+			var isAuthenticated = await session.isAuthenticatedAsync(section);
 			
 			if (isAuthenticated) {
 				var user = await authenticationserver.getUserFromUUIDAsync(session, useruuid);
@@ -739,7 +739,7 @@ class AuthKeyControllers {
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'user_deactivateAccount', calltokenjson);
 			var session = await section.getSessionAsync();
-			var isAuthenticated = await session.isAuthenticatedAsync();
+			var isAuthenticated = await session.isAuthenticatedAsync(section);
 			
 			if (isAuthenticated) {
 				var user = await authenticationserver.getUserFromUUIDAsync(session, useruuid);
@@ -797,7 +797,7 @@ class AuthKeyControllers {
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'user_removeAccount', calltokenjson);
 			var session = await section.getSessionAsync();
-			var isAuthenticated = await session.isAuthenticatedAsync();
+			var isAuthenticated = await session.isAuthenticatedAsync(section);
 			
 			if (isAuthenticated) {
 				var user = await authenticationserver.getUserFromUUIDAsync(session, useruuid);

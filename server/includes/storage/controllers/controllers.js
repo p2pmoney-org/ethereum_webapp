@@ -49,7 +49,7 @@ class StorageControllers {
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'user_storage', calltokenjson);
 			var session = await section.getSessionAsync();
-			var isAuthenticated = await session.isAuthenticatedAsync();
+			var isAuthenticated = await session.isAuthenticatedAsync(section);
 			
 			if (isAuthenticated) {
 				var storageservice = global.getServiceInstance('storage');
@@ -97,7 +97,7 @@ class StorageControllers {
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'put_user_storage', calltokenjson);
 			var session = await section.getSessionAsync();
-			var isAuthenticated = await session.isAuthenticatedAsync();
+			var isAuthenticated = await session.isAuthenticatedAsync(section);
 			
 			if (isAuthenticated) {
 				var storageservice = global.getServiceInstance('storage');
@@ -145,7 +145,7 @@ class StorageControllers {
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'put_user_storage', calltokenjson);
 			var session = await section.getSessionAsync();
-			var isAuthenticated = await session.isAuthenticatedAsync();
+			var isAuthenticated = await session.isAuthenticatedAsync(section);
 			
 			if (isAuthenticated) {
 				var storageservice = global.getServiceInstance('storage');
@@ -195,7 +195,7 @@ class StorageControllers {
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'user_import', calltokenjson);
 			var session = await section.getSessionAsync();
-			var isAuthenticated = await session.isAuthenticatedAsync();
+			var isAuthenticated = await session.isAuthenticatedAsync(section);
 			
 			if (isAuthenticated) {
 				var storageservice = global.getServiceInstance('storage');
@@ -244,7 +244,7 @@ class StorageControllers {
 		try {
 			var section = Session.openSessionSection(global, sessionuuid, 'user_export', calltokenjson);
 			var session = await section.getSessionAsync();
-			var isAuthenticated = await session.isAuthenticatedAsync();
+			var isAuthenticated = await session.isAuthenticatedAsync(section);
 			
 			if (isAuthenticated) {
 				var storageservice = global.getServiceInstance('storage');

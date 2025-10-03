@@ -23,6 +23,48 @@ class DataBasePersistor {
 
 		return mysqlcon.isActiveAsync();
 	}
+
+	async getGlobalAllParametersAsync() {
+		var global = this.global;
+		
+		var mysqlcon = await global.getMySqlConnectionAsync();
+		
+		var tablename = mysqlcon.getTableName('globalparameters');
+		
+		var sql = "SELECT * FROM " + tablename + ";";
+		
+		// open connection
+		await mysqlcon.openAsync();
+		
+		// execute query
+		var result = await mysqlcon.executeAsync(sql);
+		
+		
+		var array = [];
+		
+		if (result) {
+			var rows = (result['rows'] ? result['rows'] : []);
+			
+			for (var i = 0; i < rows.length; i++) {
+				var row = rows[i];
+				var rowarray = {};
+				
+				rowarray['key'] = row.Key;
+				rowarray['type'] = row.Type;
+				rowarray['value'] = row.Value;
+				
+				array.push(rowarray);
+			}
+			
+		}
+		
+		
+		// close connection
+		await mysqlcon.closeAsync();
+			
+			
+		return array;
+	}
 	
 	getGlobalParameters(key) {
 		var global = this.global;

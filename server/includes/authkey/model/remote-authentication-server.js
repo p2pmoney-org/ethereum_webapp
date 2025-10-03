@@ -18,6 +18,7 @@ class RemoteAuthenticationServer {
 
 	_getSessionRestDetails(session) {
 		var global = this.global;
+		global.log('OBSOLETE: use _getSessionAuthRestDetailsAsync');
 
 		var rest_server_url;
 		var	rest_server_api_path;
@@ -35,24 +36,126 @@ class RemoteAuthenticationServer {
 		return {rest_server_url, rest_server_api_path};
 	}
 
-	_getSessionRestConnection(session) {
+	async _getSessionAuthRestDetailsAsync(session, session_section) {
 		var global = this.global;
 
-		var rest_details = this._getSessionRestDetails(session);
+		var authkey_rest_server_url;
+		var	authkey_rest_server_api_path;
+
+		if (this.authkey_server_passthrough === true) {
+			// since legacy calls do not pass a session_section, we assume that the session is authenticated
+			// on only one external authentication server and keep the first calltoken passed, if any,
+			// this is a lazzy calltoken discovery
+			let lazzy_session_section_calltoken = this.service._getSessionLazzyCallTokenMap(session);
+
+			if (session_section) {
+				let calltoken = session_section.getCallToken();
+
+				if ((calltoken) && (calltoken.auth !== '_local_')) {
+					authkey_rest_server_url = calltoken.auth;
+					authkey_rest_server_api_path = ''; // we do not try to find the path back from url
+
+					// check if we already set a lazzy token for root session
+					let root_session = await session_section.getRootSessionAsync();
+					if (root_session) {
+						let root_session_uuid = root_session.getSessionUUID();
+						let _lazzy_session_section_calltoken = this.service._getSessionLazzyCallTokenMap(root_session);
+	
+						if (!_lazzy_session_section_calltoken[root_session_uuid]) {
+							_lazzy_session_section_calltoken[root_session_uuid] = {calltoken};
+							global.log('setting lazzy calltoken thanks to session_section ' + session_section.name + ' into session ' + session_section.session_uuid);
+						}
+					}
+
+				}
+				else if ((calltoken) && (calltoken.auth === '_local_')) {
+					authkey_rest_server_url = null; // do not make rest calls
+					authkey_rest_server_api_path = null;
+				}
+				else if (session.auth_url_hash && (session.auth_url_hash != 'default')) {
+					authkey_rest_server_url = session.auth_url;
+					authkey_rest_server_api_path = ''; // we do not try to find the path back from url
+				}
+				else {
+					// no calltoken in session_section and no auth_url in session
+					global.log('client did not pass a calltoken for session_section ' + session_section.name + ' and session ' + session_section.session_uuid);
+
+					if (session.auth_url_hash && (session.auth_url_hash != 'default')) {
+						authkey_rest_server_url = session.auth_url;
+						authkey_rest_server_api_path = ''; // we do not try to find the path back from url
+						global.log('using session.auth_url for session_section ' + session_section.name + ' and session ' + session_section.session_uuid);
+					}
+					else if (lazzy_session_section_calltoken[session.session_uuid] && lazzy_session_section_calltoken[session.session_uuid].calltoken) {
+						authkey_rest_server_url = lazzy_session_section_calltoken[session.session_uuid].calltoken.auth;
+						authkey_rest_server_api_path = ''; // we do not try to find the path back from url
+						
+						global.log('using lazzy calltoken for session_section ' + session_section.name + ' and session ' + session_section.session_uuid);
+					}
+				}
+
+			}
+			else {
+				// legacy call missing a session_section
+				if (session.auth_url_hash && (session.auth_url_hash != 'default')) {
+					authkey_rest_server_url = session.auth_url;
+					authkey_rest_server_api_path = ''; // we do not try to find the path back from url
+				}
+				else if (lazzy_session_section_calltoken[session.session_uuid] && lazzy_session_section_calltoken[session.session_uuid].calltoken) {
+					authkey_rest_server_url = lazzy_session_section_calltoken[session.session_uuid].calltoken.auth;
+					authkey_rest_server_api_path = ''; // we do not try to find the path back from url
+					
+					global.log('no session_section, using lazzy calltoken for session ' + session_section.session_uuid);
+				}
+			}
+		}
+
+		if (!authkey_rest_server_url) {
+			// default
+			authkey_rest_server_url = this.rest_server_url;
+			authkey_rest_server_api_path = this.rest_server_api_path;
+		}
+
+		let json = {authkey_rest_server_url, authkey_rest_server_api_path};
+
+		// legacy
+		json.rest_server_url = authkey_rest_server_url;
+		json.rest_server_api_path = authkey_rest_server_api_path;
+
+		return json;
+	}
+
+	async _getSessionAuthRestConnectionAsync(session, session_section) {
+		var global = this.global;
+
+		var rest_details = await this._getSessionAuthRestDetailsAsync(session, session_section);
 		var rest_server_url = rest_details.rest_server_url;
 		var	rest_server_api_path = rest_details.rest_server_api_path;
 
 		var restcon;
 		
-		if ((this.authkey_server_passthrough === true) && session.auth_url_hash && (session.auth_url_hash != 'default')) {
-			var parentsession = session.getParentSession();
+		if (this.authkey_server_passthrough === true) {
+			if (session.auth_url_hash && (session.auth_url_hash != 'default')) {
+				var parentsession = session.getParentSession();
 
-			if (parentsession)
-				restcon  = parentsession.getRestConnection(rest_server_url, rest_server_api_path);
-			else
-				throw new Error('child session is not set correctly for remote authentication');
+				if (parentsession) {
+					restcon  = parentsession.getRestConnection(rest_server_url, rest_server_api_path);
+				}
+				else
+					throw new Error('child session is not set correctly for remote authentication');
+			}
+			else {
+				restcon  = session.getRestConnection(rest_server_url, rest_server_api_path);
+			}
+	
+			// add a _local_ calltoken to notify it is a final call for another authkey_server_passthrough
+			// necessary to avoid infinite loops when calling back itself
+			let calltoken = {auth: '_local_'};
+			let calltokenstring = JSON.stringify(calltoken);
+			restcon.addToHeader({key: 'calltoken', value: calltokenstring});
+
 		}
 		else {
+			// standard, fixed authentication server authorization
 			restcon  = session.getRestConnection(rest_server_url, rest_server_api_path);
 		}
 
@@ -79,11 +182,11 @@ class RemoteAuthenticationServer {
 		return sessionuuid;
 	}
 
-	async getSessionStatusAsync(session) {
+	async getSessionStatusAsync(session, session_section) {
 		var global = this.global;
 		var sessionuuid = this._getSessionUUID(session);
 		
-		var restcon = this._getSessionRestConnection(session);
+		var restcon = await this._getSessionAuthRestConnectionAsync(session, session_section);
 		
 		var sessionstatus = [];
 		
@@ -124,6 +227,7 @@ class RemoteAuthenticationServer {
 	
 	getSessionStatus(session) {
 		var global = this.global;
+		global.log('OBSOLETE: use getSessionStatusAsync');
 		var sessionuuid = this._getSessionUUID(session);
 		
 		var restcon = this._getSessionRestConnection(session);
@@ -166,12 +270,17 @@ class RemoteAuthenticationServer {
 		return sessionstatus;
 	}
 
-	async getUserDetailsAsync(session) {
+	async getUserDetailsAsync(session, session_section) {
 		var global = this.global;
-		var self = this;
+
+		if (session_section && session_section.calltoken && (session_section.calltoken.auth === '_local_') && session.user) {
+			// it's a re-entrant call
+			return session.user;
+		}
+ 
 		var sessionuuid = this._getSessionUUID(session);
 		
-		var rest_details = this._getSessionRestDetails(session);
+		var rest_details = await this._getSessionAuthRestDetailsAsync(session, session_section);
 		var rest_server_url = rest_details.rest_server_url;
 		var	rest_server_api_path = rest_details.rest_server_api_path;
 		
@@ -193,35 +302,38 @@ class RemoteAuthenticationServer {
 			return userdetails;
 		
 		// not in cache (or dimmed obsolete)
-		var restcon = this._getSessionRestConnection(session);
+		if (rest_server_url) {
+			var restcon = await this._getSessionAuthRestConnectionAsync(session, session_section);
 		
-		console.log('RemoteAuthenticationServer.getUserDetailsAsync called for ' + sessionuuid + ' on ' + restcon.rest_server_url);
-
-		try {
-			var resource = "/session/" + sessionuuid + "/user";
-			
-			userdetails = await new Promise( (resolve, reject) => {
-				restcon.rest_get(resource, function (err, res) {
-					if (res) {
-						global.log('success calling ' + resource +' result is: ' + JSON.stringify(res));
+			console.log('RemoteAuthenticationServer.getUserDetailsAsync called for ' + sessionuuid + ' on ' + restcon.rest_server_url);
+	
+			try {
+				var resource = "/session/" + sessionuuid + "/user";
+				
+				userdetails = await new Promise( (resolve, reject) => {
+					restcon.rest_get(resource, function (err, res) {
+						if (res) {
+							global.log('success calling ' + resource +' result is: ' + JSON.stringify(res));
+							
+							if (res['status'] == 1)
+							resolve(res);
+							else
+							reject('no result');
+						}
+						else {
+							global.log('rest error calling ' + resource);
+							reject(err);
+						}
 						
-						if (res['status'] == 1)
-						resolve(res);
-						else
-						reject('no result');
-					}
-					else {
-						global.log('rest error calling ' + resource);
-						reject(err);
-					}
-					
+					});
 				});
-			});
+	
+			}
+			catch(e) {
+				global.log('rest exception: ' + e);
+			}
+		}
 
-		}
-		catch(e) {
-			global.log('rest exception: ' + e);
-		}
 		
 		// put in cache
 		if ((userdetails) && (userdetails['useruuid']))
@@ -232,6 +344,7 @@ class RemoteAuthenticationServer {
 	
 	getUserDetails(session) {
 		var global = this.global;
+		global.log('OBSOLETE: use getUserDetailsAsync');
 		var self = this;
 		var sessionuuid = this._getSessionUUID(session);
 
@@ -268,35 +381,6 @@ class RemoteAuthenticationServer {
 			finished = true;
 		});
 		
-
-/* 		var restcon = this._getSessionRestConnection(session);
-		
-		console.log('RemoteAuthenticationServer.getUserDetails called for ' + sessionuuid + ' on ' + restcon.rest_server_url);
-
-		try {
-			var resource = "/session/" + sessionuuid + "/user";
-			
-			restcon.rest_get(resource, function (err, res) {
-				if (res) {
-					global.log('success calling ' + resource +' result is: ' + JSON.stringify(res));
-					
-					if (res['status'] == 1)
-					userdetails = res;
-
-					finished = true;
-				}
-				else {
-					global.log('rest error calling ' + resource);
-					finished = true;
-				}
-				
-			});
-		}
-		catch(e) {
-			global.log('rest exception: ' + e);
-			finished = true;
-		} */
-		
 		// wait to turn into synchronous call
 		while(!finished)
 		{global.deasync().runLoopOnce();}
@@ -308,8 +392,8 @@ class RemoteAuthenticationServer {
 		return userdetails;
 	}
 	
-	async getUserAsync(session) {
-		var userdetails = await this.getUserDetailsAsync(session);
+	async getUserAsync(session, session_section) {
+		var userdetails = await this.getUserDetailsAsync(session, session_section);
 		
 		if (!userdetails)
 			return;
@@ -329,6 +413,7 @@ class RemoteAuthenticationServer {
 			return;
 		
 		var global = this.global;
+		global.log('OBSOLETE: use getUserAsync');
 		var commonservice = global.getServiceInstance('common');
 		
 		var user = this._getUserFromArray(commonservice, userdetails);

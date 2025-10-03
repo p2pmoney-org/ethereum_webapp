@@ -1,0 +1,3 @@
+ALTER TABLE `webapp_users` MODIFY `UserUUID` VARCHAR(128) ;
+
+ALTER TABLE `webapp_keys` MODIFY `UserUUID` VARCHAR(128) ;

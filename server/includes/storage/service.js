@@ -51,9 +51,25 @@ class Service {
 		var session = params[0];
 		var mysqlcon = params[1];
 		var install_step = params[2];
+		var install_inputs = params[3];
+
+		if (install_inputs && install_inputs[this.name] && install_inputs[this.name].install_step) {
+			// run specific
+			install_step = install_inputs[this.name].install_step;
+		}
+
+		// timestamp of update
+		let now = new Date();
+		
+		let nowstring = global.formatDate(now, 'YYYY-mm-dd HH:MM:SS');
+		
+		let commonservice = global.getServiceInstance('common');
+
 
 		switch(install_step) {
 			case 'initial_setup': {
+				let update_step = 'initial_setup';
+
 				// we create tables
 				var tablename;
 				var sql;
@@ -79,11 +95,58 @@ class Service {
 				// close connection
 				await mysqlcon.closeAsync();
 
+				await commonservice.addGlobalParameterAsync('VersionUpdate_' + this.name, update_step + ';' + nowstring);
+			}
+
+			case 'update_0.70.65': {
+				let update_step = 'update_0.70.65';
+
+				var tablename;
+				var sql;
+				
+				// open connection
+				await mysqlcon.openAsync();
+
+
+				//
+				// Creation of new tables
+				//
+				
+				//
+				// Modification of existing tables
+				//
+				
+				// keys
+				tablename = mysqlcon.getTableName('storage_users');
+				sql = "ALTER TABLE ";
+				sql += tablename;
+				sql += ` MODIFY UserUUID VARCHAR(128);`;
+				
+				// execute query
+				var res = await mysqlcon.executeAsync(sql);
+				
+				//
+				// Insert new data in existing tables
+				//
+				
+
+
+				// close connection
+				await mysqlcon.closeAsync();
+
+				await commonservice.addGlobalParameterAsync('VersionUpdate_' + this.name, update_step + ';' + nowstring);
+			}
+
+			default: {
+				//
+				// Version and timestamp of install execution
+				//
+
+				let currentversion = global.getCurrentVersion();
+
+				await commonservice.addGlobalParameterAsync('CurrentVersion_' + this.name, currentversion);
 			}
 			break;
-
-			default:
-				break;
 		}
 
 		

@@ -34,7 +34,7 @@ class Service {
 		this.auth_check_frequency = (auth_check_frequency ? parseInt(auth_check_frequency) : 5000);
 
 		var authkey_server_passthrough = global.getConfigValue('authkey_server_passthrough');
-		this.authkey_server_passthrough = (authkey_server_passthrough == 1 ? true : false);
+		this.authkey_server_passthrough = (authkey_server_passthrough == 1 ? true : false); // used by SessionSection
 	}
 
 	// optional  service functions
@@ -69,9 +69,25 @@ class Service {
 		var session = params[0];
 		var mysqlcon = params[1];
 		var install_step = params[2];
+		var install_inputs = params[3];
+
+		if (install_inputs && install_inputs[this.name] && install_inputs[this.name].install_step) {
+			// run specific
+			install_step = install_inputs[this.name].install_step;
+		}
+
+		// timestamp of update
+		let now = new Date();
+		
+		let nowstring = global.formatDate(now, 'YYYY-mm-dd HH:MM:SS');
+		
+		let commonservice = global.getServiceInstance('common');
+
 
 		switch(install_step) {
 			case 'initial_setup': {
+				let update_step = 'initial_setup';
+
 				// we create tables
 				var tablename;
 				var sql;
@@ -162,13 +178,59 @@ class Service {
 				
 				// close connection
 				await mysqlcon.closeAsync();
+
+				await commonservice.addGlobalParameterAsync('VersionUpdate_' + this.name, update_step + ';' + nowstring);
+			}
+
+			case 'update_0.70.65': {
+				let update_step = 'update_0.70.65';
+
+				var tablename;
+				var sql;
+				
+				// open connection
+				await mysqlcon.openAsync();
+
+
+				//
+				// Creation of new tables
+				//
+				
+				//
+				// Modification of existing tables
+				//
+				
+				// keys
+				tablename = mysqlcon.getTableName('keys');
+				sql = "ALTER TABLE ";
+				sql += tablename;
+				sql += ` MODIFY UserUUID VARCHAR(128);`;
+				
+				// execute query
+				var res = await mysqlcon.executeAsync(sql);
+				
+				//
+				// Insert new data in existing tables
+				//
 				
 
+
+				// close connection
+				await mysqlcon.closeAsync();
+
+				await commonservice.addGlobalParameterAsync('VersionUpdate_' + this.name, update_step + ';' + nowstring);
+			}
+
+			default: {
+				//
+				// Version and timestamp of install execution
+				//
+
+				let currentversion = global.getCurrentVersion();
+
+				await commonservice.addGlobalParameterAsync('CurrentVersion_' + this.name, currentversion);
 			}
 			break;
-
-			default:
-				break;
 		}
 		
 
@@ -341,11 +403,113 @@ class Service {
 		result.push({service: this.name, handled: true});
 	}
 
-	async _getUserFromRemoteAuthenticationServerAsync(session) {
+	_persistRemoteUsers() {
+		var global = this.global;
+		
+		var persist_users = global.getConfigValue('authkey_persist_remote_users');
+
+		return (persist_users === false || persist_users === 'false' ? false : true);
+	}
+
+	_getSessionLazzyCallTokenMap(session) {
+		let lazzy_session_section_calltoken = session.getObject('lazzy_session_section_calltoken');
+		if (!lazzy_session_section_calltoken) {
+			lazzy_session_section_calltoken = {};
+			session.pushObject('lazzy_session_section_calltoken', lazzy_session_section_calltoken);
+		}
+
+		return lazzy_session_section_calltoken;
+	}
+
+	isSessionPassthrough(session, session_section) {
+		var global = this.global;
+		var authkey_server_passthrough = global.getConfigValue('authkey_server_passthrough');
+
+		switch(authkey_server_passthrough) {
+			case "1": {
+				if (session_section && (session_section.authkey_server_passthrough === false))
+				return false; // unless prevented by section
+
+				return true;
+			}
+
+			case "0": {
+				if (session_section && (session_section.authkey_server_passthrough === true))
+				return true; // unless asked by section
+
+				return false;
+			}
+
+			case "-1": {
+				// absolutely prevented
+				return false;
+			}
+
+			default: {
+				// no passthrough if nothing specified
+				return false;
+			}
+		}
+	}
+	
+	async findSessionUserAsync(session, session_section) {
+		if (session.user)
+			return session.user;
+
+		const authkey_server_passthrough = this.isSessionPassthrough(session, session_section);
+
+		if ((authkey_server_passthrough === true) && session.auth_url_hash && (session.auth_url_hash != 'default')) {
+
+			let calltoken = (session_section ? session_section.calltoken : null);
+
+			if (!calltoken) {
+				// find from lazzy calltoken
+				let lazzy_session_section_calltoken = this.service._getSessionLazzyCallTokenMap(session);
+				if (lazzy_session_section_calltoken[session.session_uuid].calltoken)
+				calltoken = lazzy_session_section_calltoken[session.session_uuid].calltoken;
+			}
+
+			if (calltoken) {
+				let auth_url_hash = this.getAuthUrlHash(calltoken.auth);
+				let childsessionmap = session.getObject('childsessionmap');
+
+				if (childsessionmap && childsessionmap[auth_url_hash]) {
+					let childsession = childsessionmap[auth_url_hash];
+	
+					return childsession.user;	
+				}
+			}
+		}
+	}
+
+	async _getUserFromLocalServerAsync(session, session_section) {
+		var global = this.global;
+		let local_user;
+
+		if (!session_section || !session_section.calltoken || (session_section.calltoken.auth !== '_local_'))
+		return Promise.reject('_getUserFromLocalServerAsync should only be used for re-entrant calls')
+
+		if (session.user)
+		local_user = session.user;
+
+		if (!local_user && session.getObject('parentsession')) {
+			let parentsession = session.getObject('parentsession');
+
+			if (parentsession.user)
+			local_user = parentsession.user;
+		}
+
+		if (local_user)
+		global.log('local user found for re-entrant call for session: ' + session.session_uuid);
+
+		return local_user;
+	}
+
+	async _getUserFromRemoteAuthenticationServerAsync(session, session_section) {
 		var global = this.global;
 		var remoteauthenticationserver = this.getRemoteAuthenticationServerInstance();
 		
-		var user = await remoteauthenticationserver.getUserAsync(session);
+		var user = await remoteauthenticationserver.getUserAsync(session, session_section);
 		
 		if (user) {
 			var useruuid = user.getUserUUID();
@@ -355,7 +519,7 @@ class Service {
 				var authenticationserver = this.getAuthenticationServerInstance();
 				var userexists = await authenticationserver.userExistsFromUUIDAsync(session, useruuid);
 				
-				if (!userexists) {
+				if (!userexists && this._persistRemoteUsers()) {
 					global.log('remote user not found in database, inserting user with uuid: ' + useruuid);
 					
 					// save user
@@ -376,6 +540,8 @@ class Service {
 	_getUserFromRemoteAuthenticationServer(session) {
 		var global = this.global;
 		var remoteauthenticationserver = this.getRemoteAuthenticationServerInstance();
+
+		global.log('OBSOLETE: use _getUserFromRemoteAuthenticationServerAsync');
 		
 		var user = remoteauthenticationserver.getUser(session);
 		
@@ -409,6 +575,7 @@ class Service {
 		var global = this.global;
 		
 		var session = params[0];
+		var session_section = params[1];
 		
 		if (!session)
 			return false;
@@ -419,13 +586,11 @@ class Service {
 		
 		if (global.config['authkey_server_url']) {
 			
-			var user = await this._getUserFromRemoteAuthenticationServerAsync(session);
+			var user = await this._getUserFromRemoteAuthenticationServerAsync(session, session_section);
 			
 			if (user) {
-				
 				// attach user to session
-				await session.impersonateUserAsync(user);
-				
+				await this._impersonateSessionUserAsync(session, user, session_section);
 			}
 
 			result.push({service: this.name, handled: true});
@@ -475,11 +640,53 @@ class Service {
 		return session.getUser().isSuperAdmin();
 	}
 
+	async _impersonateSessionUserAsync(session, user, session_section) {
+		var global = this.global;
+		const authkey_server_passthrough = this.isSessionPassthrough(session, session_section);
+
+		global.log('CONNECTING USER for session uuid ' + session.session_uuid + ' on section ' + (session_section && session_section.name ? session_section.name : 'unknown')
+		+ ' with uuid ' + (session_section ? session_section.uuid : ' none ') + ' and auth_url_hash ' + (session_section && session_section.auth_url_hash ? session_section.auth_url_hash : 'unknown'));
+
+		if ((authkey_server_passthrough === true) && session.auth_url_hash && (session.auth_url_hash != 'default')) {
+			var parentsession = session.getParentSession();
+
+			if (parentsession) {
+				await session.impersonateUserAsync(user);
+			}
+			else
+				throw new Error('child session is not set correctly for remote authentication');
+		}
+		else {
+			await session.impersonateUserAsync(user);
+		}
+	}
+
+	async _disconnectSessionUserAsync(session, session_section) {
+		var global = this.global;
+		const authkey_server_passthrough = this.isSessionPassthrough(session, session_section);
+
+		global.log('DISCONNECTING USER for session uuid ' + session.session_uuid + ' on section ' + (session_section && session_section.name ? session_section.name : 'unknown')
+		+ ' with uuid ' + (session_section ? session_section.uuid : ' none ') + ' and auth_url_hash ' + (session_section && session_section.auth_url_hash ? session_section.auth_url_hash : 'unknown'));
+
+		if ((authkey_server_passthrough === true) && session.auth_url_hash && (session.auth_url_hash != 'default')) {
+			var parentsession = session.getParentSession();
+
+			if (parentsession) {
+				await session.disconnectUserAsync();
+			}
+			else
+				throw new Error('child session is not set correctly for remote authentication');
+		}
+		else {
+			await session.disconnectUserAsync();
+		}
+	}
 
 	async isSessionAnonymous_asynchook(result, params) {
 		var global = this.global;
 		
 		var session = params[0];
+		var session_section = params[1]; // will progressively be set (2025.08.30)
 		
 		if (!session)
 			return false;
@@ -490,26 +697,90 @@ class Service {
 		var sessionuuid = session.getSessionUUID();
 
 		global.log('isSessionAnonymous_asynchook called for ' + this.name + ' on session ' + sessionuuid);
-		
-		if ((global.config['authkey_server_url']) || (this.authkey_server_passthrough === true)) {
+
+		const authkey_server_remote = (global.config['authkey_server_url'] ? true : false);
+		const authkey_server_passthrough = this.isSessionPassthrough(session, session_section);
+
+		if ((authkey_server_remote === true) || (authkey_server_passthrough === true)) {
 			// we have a defined/default authentication server
 			// or we delegate to an external authentication server
 			
-			var sessioncontext = this._getSessionTransientContext(session) ;
+			// check if we have checked lately
+			let sessioncontext = this._getSessionTransientContext(session) ;
 			
-			var now = Date.now();
+			let now = Date.now();
+
+			let last_anonymousupdate;
+			let is_checking;
+
+			sessioncontext.anonymousupdates = (sessioncontext.anonymousupdates ? sessioncontext.anonymousupdates : {});
+			sessioncontext.anonymousupdates['_main'] = (sessioncontext.anonymousupdates['_main'] ? sessioncontext.anonymousupdates['_main'] : {});
+
+			if (session_section && session_section.auth_url_hash) {
+				// check separately for different external authentication servers
+				sessioncontext.anonymousupdates[session_section.auth_url_hash] = (sessioncontext.anonymousupdates[session_section.auth_url_hash] ?
+					sessioncontext.anonymousupdates[session_section.auth_url_hash] : {});
+
+				last_anonymousupdate = sessioncontext.anonymousupdates[session_section.auth_url_hash].time;
+				is_checking = sessioncontext.anonymousupdates[session_section.auth_url_hash].checking;
+			}
+			else {
+				// no session_section or calltoken
+				last_anonymousupdate = sessioncontext.anonymousupdates['_main'].time;
+				is_checking = sessioncontext.anonymousupdates['_main'].checking;
+			}
+
+			global.log('is checking is ' + is_checking);
 			
-			if (sessioncontext.anonymousupdate && ((now - sessioncontext.anonymousupdate) < this.auth_check_frequency)) {
+			if (!is_checking && (last_anonymousupdate && ((now - last_anonymousupdate) < this.auth_check_frequency))) {
+				global.log('NO CHECKING for session uuid ' + sessionuuid + ' on section ' + (session_section && session_section.name ? session_section.name : 'unknown')
+				+ ' with uuid ' + (session_section ? session_section.uuid : ' none ') + ' and auth_url_hash ' + (session_section && session_section.auth_url_hash ? session_section.auth_url_hash : 'unknown'));
+				global.log('is checking is ' + (session_section && sessioncontext.anonymousupdates[session_section.auth_url_hash] ? sessioncontext.anonymousupdates[session_section.auth_url_hash].checking : ' unknown')
+				+ ' is checked is ' + (session_section && sessioncontext.anonymousupdates[session_section.auth_url_hash] ? sessioncontext.anonymousupdates[session_section.auth_url_hash].checked : ' unknown'));
+				global.log('session is considered anonymous ' + (session.user ? false : true)
+				+ ' and is considered authenticated ' + session.isauthenticated);
+
 				// update only every 5s
 				result.push({service: this.name, handled: true});
 				return true;
 			}
 			
-			sessioncontext.anonymousupdate = now;
+			global.log('LIVE CHECKING for session uuid ' + sessionuuid + ' on section ' + (session_section && session_section.name ? session_section.name : 'unknown')
+			+ ' with uuid ' + (session_section ? session_section.uuid : ' none ') + ' and auth_url_hash ' + (session_section && session_section.auth_url_hash ? session_section.auth_url_hash : 'unknown'));
+
+			// otherwise do an update now
+			sessioncontext.anonymousupdates['_main'].time = now;
+			sessioncontext.anonymousupdates['_main'].checking = true;
+			sessioncontext.anonymousupdates['_main'].checked = false;
+			if (session_section && session_section.auth_url_hash) {
+				sessioncontext.anonymousupdates[session_section.auth_url_hash] = (sessioncontext.anonymousupdates[session_section.auth_url_hash] ?
+																					sessioncontext.anonymousupdates[session_section.auth_url_hash] : {});
+				sessioncontext.anonymousupdates[session_section.auth_url_hash].time = now;
+				sessioncontext.anonymousupdates[session_section.auth_url_hash].checking = true;
+				sessioncontext.anonymousupdates[session_section.auth_url_hash].checked = false;
+			}
+
+			var user;
 			
-			global.log('checking remote user details');
+			if (authkey_server_passthrough && session_section && session_section.calltoken && (session_section.calltoken.auth === '_local_')) {
+				// this is a re-entrant call
+				global.log('checking user locally for anonymity');
+				user = await this. _getUserFromLocalServerAsync(session, session_section);
+			}
+	
+			if (!user) {
+				global.log('checking remote user details for anonymity');
 			
-			var user = await this._getUserFromRemoteAuthenticationServerAsync(session);
+				user = await this._getUserFromRemoteAuthenticationServerAsync(session, session_section);
+
+				// mark check is finished
+				sessioncontext.anonymousupdates['_main'].checking = false;
+				sessioncontext.anonymousupdates['_main'].checked = true;
+				if (session_section && session_section.auth_url_hash) {
+					sessioncontext.anonymousupdates[session_section.auth_url_hash].checking = false;
+					sessioncontext.anonymousupdates[session_section.auth_url_hash].checked = true;
+				}
+			}			
 
 			
 			if (user) {
@@ -520,14 +791,14 @@ class Service {
 					global.log('remote user not found in session, inserting user with uuid: ' + useruuid);
 					
 					// impersonate user
-					await session.impersonateUserAsync(user);
+					await this._impersonateSessionUserAsync(session, user, session_section);
 				}
 				
 			}
 			else {
 				if (session.user) {
 					global.log('remote session became anonymous, set local session accordingly');
-					await session.disconnectUserAsync();
+					await this. _disconnectSessionUserAsync(session, session_section);
 				}
 			}
 
@@ -543,6 +814,7 @@ class Service {
 		var global = this.global;
 		
 		var session = params[0];
+		var session_section = params[1]; // will progressively be set (2025.08.30)
 		
 		if (!session)
 			return false;
@@ -553,8 +825,10 @@ class Service {
 		var sessionuuid = session.getSessionUUID();
 
 		global.log('isSessionAuthenticated_asynchook called for ' + this.name + ' on session ' + sessionuuid);
+
+		const authkey_server_passthrough = this.isSessionPassthrough(session, session_section);
 		
-		if ((global.config['authkey_server_url']) || (this.authkey_server_passthrough === true)) {
+		if ((global.config['authkey_server_url']) || (authkey_server_passthrough === true)) {
 			// we have a defined/default authentication server
 			// or we delegate to an external authentication server
 			
@@ -562,18 +836,68 @@ class Service {
 			
 			var now = Date.now();
 			
-			if (sessioncontext.authenticatedupdate && ((now - sessioncontext.authenticatedupdate) < this.auth_check_frequency)) {
+			let last_authenticatedupdate;
+			let is_checking;
+	
+			sessioncontext.authenticatedupdates = (sessioncontext.authenticatedupdates ? sessioncontext.authenticatedupdates : {});
+			sessioncontext.authenticatedupdates['_main'] = (sessioncontext.authenticatedupdates['_main'] ? sessioncontext.authenticatedupdates['_main'] : {});
+			
+			if (session_section && session_section.auth_url_hash) {
+				// check separately for different external authentication servers
+				sessioncontext.authenticatedupdates[session_section.auth_url_hash] = (sessioncontext.authenticatedupdates[session_section.auth_url_hash] ?
+					sessioncontext.authenticatedupdates[session_section.auth_url_hash] : {});
+	
+				last_authenticatedupdate = sessioncontext.authenticatedupdates[session_section.auth_url_hash].time;
+				is_checking = sessioncontext.authenticatedupdates[session_section.auth_url_hash].checking;
+			}
+			else {
+				// no session_section or calltoken
+				last_authenticatedupdate = sessioncontext.authenticatedupdates['_main'].time;
+				is_checking = sessioncontext.authenticatedupdates['_main'].checking;
+			}
+	
+			if (!is_checking && last_authenticatedupdate && ((now - last_authenticatedupdate) < this.auth_check_frequency)) {
 				// update only every 5s
 				result.push({service: this.name, handled: true});
 				return true;
 			}
+
+			var sessionstatus;
 			
-			sessioncontext.authenticatedupdate = now;
+			// otherwise do an update now
+			sessioncontext.authenticatedupdates['_main'].time = now;
+			sessioncontext.authenticatedupdates['_main'].checking = true;
+			sessioncontext.authenticatedupdates['_main'].checked = false;
+			if (session_section && session_section.auth_url_hash) {
+				sessioncontext.authenticatedupdates[session_section.auth_url_hash] = (sessioncontext.authenticatedupdates[session_section.auth_url_hash] ?
+																					sessioncontext.authenticatedupdates[session_section.auth_url_hash] : {});
+				sessioncontext.authenticatedupdates[session_section.auth_url_hash].time = now;
+				sessioncontext.authenticatedupdates[session_section.auth_url_hash].checking = true;
+				sessioncontext.authenticatedupdates[session_section.auth_url_hash].checked = false;
+			}
+
+
+			if (authkey_server_passthrough && session_section && session_section.calltoken && (session_section.calltoken.auth === '_local_')) {
+				// this is a re-entrant call
+				global.log('checking session status locally');
+				sessionstatus = (session.user ? {sessionuuid: session.session_uuid, isanonymous: false, isauthenticated: true} : null);
+			}
 			
-			global.log('checking remote session details');
-			var remoteauthenticationserver = this.getRemoteAuthenticationServerInstance();
+			if (sessionstatus == null ) {
+				global.log('checking remote session details');
+				var remoteauthenticationserver = this.getRemoteAuthenticationServerInstance();
+				
+				sessionstatus = await remoteauthenticationserver.getSessionStatusAsync(session, session_section);
+
+				sessioncontext.authenticatedupdates['_main'].checking = false;
+				sessioncontext.authenticatedupdates['_main'].checked = true;
+				if (session_section && session_section.auth_url_hash) {
+					sessioncontext.authenticatedupdates[session_section.auth_url_hash].checking = false;
+					sessioncontext.authenticatedupdates[session_section.auth_url_hash].checked = true;
+				}
+
+			}
 			
-			var sessionstatus = await remoteauthenticationserver.getSessionStatusAsync(session);
 			
 			if (sessionstatus) {
 				var isauthenticated = sessionstatus['isauthenticated'];
@@ -592,7 +916,7 @@ class Service {
 				
 				if (session.user) {
 					global.log('remote session does not exist and local session thinks is is not anonymous');
-					await session.disconnectUserAsync();
+					await this. _disconnectSessionUserAsync(session, session_section);
 				}
 			}
 
