@@ -199,6 +199,15 @@ class Service {
 				//
 				// Modification of existing tables
 				//
+
+				// users
+				tablename = mysqlcon.getTableName('users');
+				sql = "ALTER TABLE ";
+				sql += tablename;
+				sql += ` MODIFY UserUUID VARCHAR(128);`;
+				
+				// execute query
+				var res = await mysqlcon.executeAsync(sql);
 				
 				// keys
 				tablename = mysqlcon.getTableName('keys');
