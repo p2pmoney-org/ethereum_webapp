@@ -368,23 +368,39 @@ var SessionSection = class {
 	
 	async guidAsync() {
 		var session = await this.getSessionAsync();
+
+		if (session)
 		return session.guidAsync();
+		else
+		return this.global.guid();
 	}
 	
 	guid() {
 		var session = this.getSession();
+
+		if (session)
 		return session.guid();
+		else
+		return this.global.guid();
 	}
 	
 	// persistence
 	async isStickyAsync() {
 		var session = await this.getSessionAsync();
+
+		if (session)
 		return session.isSticky();
+		else
+		return false;
 	}
 	
 	isSticky() {
 		var session = this.getSession();
+
+		if (session)
 		return session.isSticky();
+		else
+		return false;
 	}
 	
 	close() {
