@@ -7,7 +7,7 @@
 class XtraConfigModule {
 	constructor() {
 		this.name = 'xtraconfig';
-		this.current_version = "0.70.67.2025.11.02";
+		this.current_version = "0.70.68.2025.11.05";
 		
 		this.global = null; // put by global on registration
 		this.isready = false;

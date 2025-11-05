@@ -284,6 +284,23 @@ var SessionSection = class {
 		}
 	}
 
+	// user
+	async getUserAsync() {
+		var session = await this.getSessionAsync();
+
+		if (session)
+		return session.getUser();
+	}
+	
+	async getUserUUIDAsync() {
+		var session = await this.getSessionAsync();
+
+		if (session)
+		return session.getUserUUID();
+	}
+	
+
+
 	// transient variable (that do not outlive session object,
 	// sticky or not)
 	async pushObjectAsync(key, object) {
