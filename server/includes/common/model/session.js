@@ -140,6 +140,11 @@ var SessionSection = class {
 
 		var key = this.session_uuid.toString();
 		var mainsession = sessionmap.map[key];
+
+		if (!mainsession) {
+			// we are in a session_section that has not created a session object yet
+			mainsession = await Session.getSessionAsync(this.global, this.session_uuid, this);
+		}
 	
 		if (mainsession.getParentSession()) {
 			return Promise.reject("session section has a session uuid that is not a root session!");
